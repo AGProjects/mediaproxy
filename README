@@ -1,0 +1,15 @@
+Media relay for SIP VoIP calls
+
+Mediaproxy is a media relay server for the OpenSER SIP proxy that handles
+NAT traversal for media streams from user agents behind NAT and has the
+following features:
+
+ - Distributed geographical location
+ - Scalability, load balancing and redundancy
+ - Real-time sessions statistics
+ - Configurable IP and UDP port range
+ - Support for audio and video streams
+ - Support for multiple media streams per call
+ - Accounting of network traffic
+
+Mediaproxy is meant to be used together with OpenSER's mediaproxy module.
