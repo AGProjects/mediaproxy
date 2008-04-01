@@ -18,7 +18,7 @@
 
 #define DEFAULT_TIMEOUT 60
 
-static PyObject *ConntrackError;
+static PyObject *Error;
 
 #define IPTC_ENTRY_SIZE IPT_ALIGN(sizeof(struct ipt_entry))
 #define IPTC_MATCH_SIZE IPT_ALIGN(sizeof(struct ipt_entry_match) + sizeof(struct ipt_udp))
@@ -33,24 +33,24 @@ enum {
 };
 
 enum {
-    COUNTER_CALLER_PACKET_COUNT = 0,
-    COUNTER_CALLER_BYTE_COUNT,
-    COUNTER_CALLEE_PACKET_COUNT,
-    COUNTER_CALLEE_BYTE_COUNT
+    CALLER_PACKETS = 0,
+    CALLER_BYTES,
+    CALLEE_PACKETS,
+    CALLEE_BYTES
 };
 
 
-typedef struct RelayStream {
+typedef struct ForwardingRule {
     PyObject_HEAD
     
     struct nf_conntrack *conntrack;
     int is_active;
     int done_init;
-    struct RelayStream *prev;
-    struct RelayStream *next;
+    struct ForwardingRule *prev;
+    struct ForwardingRule *next;
     uint32_t counter[4];
     PyObject *dict;
-} RelayStream;
+} ForwardingRule;
 
 typedef struct ExpireWatcher {
     PyObject_HEAD
@@ -58,19 +58,19 @@ typedef struct ExpireWatcher {
     struct nfct_handle *ct_handle;
 } ExpireWatcher;
 
-typedef struct ConntrackBlock {
+typedef struct Inhibitor {
     PyObject_HEAD
 
     int done_init;
     struct ipt_entry *entry;
-} ConntrackBlock;
+} Inhibitor;
 
 
-static RelayStream *RelayStream_head = NULL;
+static ForwardingRule *forwarding_rules = NULL;
 
 
 static int
-conntrack_cb_one(enum nf_conntrack_msg_type type, struct nf_conntrack *ct, void *data)
+conntrack_callback(enum nf_conntrack_msg_type type, struct nf_conntrack *ct, void *data)
 {
     struct nf_conntrack **found_conntrack = (struct nf_conntrack **) data;
 
@@ -80,7 +80,7 @@ conntrack_cb_one(enum nf_conntrack_msg_type type, struct nf_conntrack *ct, void 
 
 
 static int
-RelayStream_traverse(RelayStream *self, visitproc visit, void *arg)
+ForwardingRule_traverse(ForwardingRule *self, visitproc visit, void *arg)
 {
     Py_VISIT(self->dict);
     return 0;
@@ -88,7 +88,7 @@ RelayStream_traverse(RelayStream *self, visitproc visit, void *arg)
 
 
 static int
-RelayStream_clear(RelayStream *self)
+ForwardingRule_clear(ForwardingRule *self)
 {
     Py_CLEAR(self->dict);
     return 0;
@@ -96,12 +96,12 @@ RelayStream_clear(RelayStream *self)
 
 
 static PyObject *
-RelayStream_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+ForwardingRule_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
-    RelayStream *self;
+    ForwardingRule *self;
     int i;
 
-    self = (RelayStream *) type->tp_alloc(type, 0);
+    self = (ForwardingRule *) type->tp_alloc(type, 0);
     if (self != NULL) {
         self->is_active = 0;
         self->done_init = 0;
@@ -128,14 +128,14 @@ RelayStream_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 
 
 static void
-RelayStream_dealloc(RelayStream *self)
+ForwardingRule_dealloc(ForwardingRule *self)
 {
     struct nfct_handle *ct_handle;
 
     if (self->is_active)
     {
         if (self->prev == NULL)
-            RelayStream_head = self->next;
+            forwarding_rules = self->next;
         else
             self->prev->next = self->prev->next;
         if (self->next != NULL)
@@ -150,14 +150,14 @@ RelayStream_dealloc(RelayStream *self)
         Py_END_ALLOW_THREADS
     }
 
-    RelayStream_clear(self);
+    ForwardingRule_clear(self);
     nfct_destroy(self->conntrack);
     self->ob_type->tp_free((PyObject *) self);
 }
 
 
 static int
-RelayStream_init(RelayStream *self, PyObject *args, PyObject *kwds)
+ForwardingRule_init(ForwardingRule *self, PyObject *args, PyObject *kwds)
 {
     char *address_string[4];
     struct in_addr address[4];
@@ -196,7 +196,7 @@ RelayStream_init(RelayStream *self, PyObject *args, PyObject *kwds)
     ct_handle = nfct_open(CONNTRACK, 0);
     Py_END_ALLOW_THREADS
     if (ct_handle == NULL) {
-        PyErr_SetString(ConntrackError, strerror(errno));
+        PyErr_SetString(Error, strerror(errno));
         return -1;
     }
 
@@ -228,18 +228,18 @@ RelayStream_init(RelayStream *self, PyObject *args, PyObject *kwds)
     Py_END_ALLOW_THREADS
     if (result) {
         nfct_close(ct_handle);
-        PyErr_SetString(ConntrackError, strerror(errno));
+        PyErr_SetString(Error, strerror(errno));
         return -1;
     }
 
     Py_BEGIN_ALLOW_THREADS
     nfct_close(ct_handle);
     Py_END_ALLOW_THREADS
-    if (RelayStream_head != NULL) {
-        self->next = RelayStream_head;
-        RelayStream_head->prev = self;
+    if (forwarding_rules != NULL) {
+        self->next = forwarding_rules;
+        forwarding_rules->prev = self;
     }
-    RelayStream_head = self;
+    forwarding_rules = self;
     self->is_active = 1;
     self->done_init = 1;
     return 0;
@@ -247,28 +247,28 @@ RelayStream_init(RelayStream *self, PyObject *args, PyObject *kwds)
 
 
 struct nf_conntrack *
-RelayStream_retrieve_ct(RelayStream *self)
+ForwardingRule_get_conntrack(ForwardingRule *self)
 {
     struct nfct_handle *ct_handle;
     struct nf_conntrack *conntrack = NULL;
 
     if ((ct_handle = nfct_open(CONNTRACK, 0)) == NULL) {
-        PyErr_SetString(ConntrackError, strerror(errno));
+        PyErr_SetString(Error, strerror(errno));
         return NULL;
     }
 
-    if (nfct_callback_register(ct_handle, NFCT_T_ALL, conntrack_cb_one, &conntrack)) {
+    if (nfct_callback_register(ct_handle, NFCT_T_ALL, conntrack_callback, &conntrack)) {
         nfct_close(ct_handle);
-        PyErr_SetString(ConntrackError, strerror(errno));
+        PyErr_SetString(Error, strerror(errno));
         return NULL;
     }
 
     if (nfct_query(ct_handle, NFCT_Q_GET, self->conntrack) || (conntrack == NULL)) {
         nfct_close(ct_handle);
         if (errno == ENOENT)
-            PyErr_SetString(ConntrackError, "Connection tracking entry is already removed");
+            PyErr_SetString(Error, "Connection tracking entry is already removed");
         else
-            PyErr_SetString(ConntrackError, strerror(errno));
+            PyErr_SetString(Error, strerror(errno));
         return NULL;
     }
 
@@ -280,19 +280,19 @@ RelayStream_retrieve_ct(RelayStream *self)
 typedef struct {
     enum nf_conntrack_attr type;
     int counter_index;
-} RelayStream_get_attr_type;
+} ForwardingRule_get_attr_type;
 
 
 static PyObject *
-RelayStream_get_attr(RelayStream *self, void *closure)
+ForwardingRule_get_attr(ForwardingRule *self, void *closure)
 {
     struct nf_conntrack *conntrack;
     uint32_t attr;
-    RelayStream_get_attr_type *type;
+    ForwardingRule_get_attr_type *type;
 
-    type = (RelayStream_get_attr_type *) closure;
+    type = (ForwardingRule_get_attr_type *) closure;
     if (self->is_active) {
-        if ((conntrack = RelayStream_retrieve_ct(self)) == NULL)
+        if ((conntrack = ForwardingRule_get_conntrack(self)) == NULL)
             return NULL;
         attr = nfct_get_attr_u32(conntrack, type->type);
         nfct_destroy(conntrack);
@@ -308,7 +308,7 @@ RelayStream_get_attr(RelayStream *self, void *closure)
 
 
 static int
-RelayStream_set_timeout(RelayStream *self, PyObject *value, void *closure)
+ForwardingRule_set_timeout(ForwardingRule *self, PyObject *value, void *closure)
 {
     struct nf_conntrack *conntrack;
     struct nfct_handle *ct_handle;
@@ -331,11 +331,11 @@ RelayStream_set_timeout(RelayStream *self, PyObject *value, void *closure)
     }
 
     if ((ct_handle = nfct_open(CONNTRACK, 0)) == NULL) {
-        PyErr_SetString(ConntrackError, strerror(errno));
+        PyErr_SetString(Error, strerror(errno));
         return -1;
     }
 
-    if ((conntrack = RelayStream_retrieve_ct(self)) == NULL) {
+    if ((conntrack = ForwardingRule_get_conntrack(self)) == NULL) {
         nfct_close(ct_handle);
         return -1;
     } else {
@@ -344,7 +344,7 @@ RelayStream_set_timeout(RelayStream *self, PyObject *value, void *closure)
         if (nfct_query(ct_handle, NFCT_Q_UPDATE, conntrack)) {
             nfct_destroy(conntrack);
             nfct_close(ct_handle);
-            PyErr_SetString(ConntrackError, strerror(errno));
+            PyErr_SetString(Error, strerror(errno));
             return -1;
         }
     }
@@ -355,71 +355,71 @@ RelayStream_set_timeout(RelayStream *self, PyObject *value, void *closure)
 }
 
 
-static RelayStream_get_attr_type RelayStream_get_attr_types[] = {
+static ForwardingRule_get_attr_type ForwardingRule_get_attr_types[] = {
     { ATTR_TIMEOUT, -1 },
-    { ATTR_ORIG_COUNTER_PACKETS, COUNTER_CALLER_PACKET_COUNT },
-    { ATTR_ORIG_COUNTER_BYTES, COUNTER_CALLER_BYTE_COUNT },
-    { ATTR_REPL_COUNTER_PACKETS, COUNTER_CALLEE_PACKET_COUNT },
-    { ATTR_REPL_COUNTER_BYTES, COUNTER_CALLEE_BYTE_COUNT }
+    { ATTR_ORIG_COUNTER_PACKETS, CALLER_PACKETS },
+    { ATTR_ORIG_COUNTER_BYTES, CALLER_BYTES },
+    { ATTR_REPL_COUNTER_PACKETS, CALLEE_PACKETS },
+    { ATTR_REPL_COUNTER_BYTES, CALLEE_BYTES }
 };
 
 
-static PyGetSetDef RelayStream_getseters[] = {
-    { "timeout", (getter) RelayStream_get_attr, (setter) RelayStream_set_timeout, "timeout value", &RelayStream_get_attr_types[0] },
-    { "caller_packet_count", (getter) RelayStream_get_attr, 0, "caller packet count", &RelayStream_get_attr_types[1] },
-    { "caller_byte_count", (getter) RelayStream_get_attr, 0, "caller byte count", &RelayStream_get_attr_types[2] },
-    { "callee_packet_count", (getter) RelayStream_get_attr, 0, "callee packet count", &RelayStream_get_attr_types[3] },
-    { "callee_byte_count", (getter) RelayStream_get_attr, 0, "callee byte count", &RelayStream_get_attr_types[4] },
+static PyGetSetDef ForwardingRule_getseters[] = {
+    { "timeout", (getter) ForwardingRule_get_attr, (setter) ForwardingRule_set_timeout, "timeout value", &ForwardingRule_get_attr_types[0] },
+    { "caller_packets", (getter) ForwardingRule_get_attr, 0, "caller packet count", &ForwardingRule_get_attr_types[1] },
+    { "caller_bytes",   (getter) ForwardingRule_get_attr, 0, "caller byte count",   &ForwardingRule_get_attr_types[2] },
+    { "callee_packets", (getter) ForwardingRule_get_attr, 0, "callee packet count", &ForwardingRule_get_attr_types[3] },
+    { "callee_bytes",   (getter) ForwardingRule_get_attr, 0, "callee byte count",   &ForwardingRule_get_attr_types[4] },
     { NULL }  /* Sentinel */
 };
 
 
-static PyMemberDef RelayStream_members[] = {
-    { "__dict__", T_OBJECT, offsetof(RelayStream, dict), 0 },
+static PyMemberDef ForwardingRule_members[] = {
+    { "__dict__", T_OBJECT, offsetof(ForwardingRule, dict), 0 },
     { NULL } /* Sentinel */
 };
 
 
-static PyTypeObject RelayStream_Type = {
+static PyTypeObject ForwardingRule_Type = {
     PyObject_HEAD_INIT(NULL)
-    0,                                   /* ob_size */
-    "mediaproxy.interfaces.system._conntrack.RelayStream",         /* tp_name */
-    sizeof(RelayStream),                 /* tp_basicsize */
-    0,                                   /* tp_itemsize */
-    (destructor) RelayStream_dealloc,    /* tp_dealloc */
-    0,                                   /* tp_print */
-    0,                                   /* tp_getattr */
-    0,                                   /* tp_setattr */
-    0,                                   /* tp_compare */
-    0,                                   /* tp_repr */
-    0,                                   /* tp_as_number */
-    0,                                   /* tp_as_sequence */
-    0,                                   /* tp_as_mapping */
-    0,                                   /* tp_hash */
-    0,                                   /* tp_call */
-    0,                                   /* tp_str */
-    0,                                   /* tp_getattro */
-    0,                                   /* tp_setattro */
-    0,                                   /* tp_as_buffer */
+    0,                                      /* ob_size */
+    "mediaproxy.interfaces.system._conntrack.ForwardingRule",  /* tp_name */
+    sizeof(ForwardingRule),                 /* tp_basicsize */
+    0,                                      /* tp_itemsize */
+    (destructor) ForwardingRule_dealloc,    /* tp_dealloc */
+    0,                                      /* tp_print */
+    0,                                      /* tp_getattr */
+    0,                                      /* tp_setattr */
+    0,                                      /* tp_compare */
+    0,                                      /* tp_repr */
+    0,                                      /* tp_as_number */
+    0,                                      /* tp_as_sequence */
+    0,                                      /* tp_as_mapping */
+    0,                                      /* tp_hash */
+    0,                                      /* tp_call */
+    0,                                      /* tp_str */
+    0,                                      /* tp_getattro */
+    0,                                      /* tp_setattro */
+    0,                                      /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, /* tp_flags */
-    "RelayStream objects",               /* tp_doc */
-    (traverseproc) RelayStream_traverse, /* tp_traverse */
-    (inquiry) RelayStream_clear,         /* tp_clear */
-    0,                                   /* tp_richcompare */
-    0,                                   /* tp_weaklistoffset */
-    0,                                   /* tp_iter */
-    0,                                   /* tp_iternext */
-    0,                                   /* tp_methods */
-    RelayStream_members,                 /* tp_members */
-    RelayStream_getseters,               /* tp_getset */
-    0,                                   /* tp_base */
-    0,                                   /* tp_dict */
-    0,                                   /* tp_descr_get */
-    0,                                   /* tp_descr_set */
-    offsetof(RelayStream, dict),         /* tp_dictoffset */
-    (initproc) RelayStream_init,         /* tp_init */
-    0,                                   /* tp_alloc */
-    RelayStream_new,                     /* tp_new */
+    "ForwardingRule objects",               /* tp_doc */
+    (traverseproc) ForwardingRule_traverse, /* tp_traverse */
+    (inquiry) ForwardingRule_clear,         /* tp_clear */
+    0,                                      /* tp_richcompare */
+    0,                                      /* tp_weaklistoffset */
+    0,                                      /* tp_iter */
+    0,                                      /* tp_iternext */
+    0,                                      /* tp_methods */
+    ForwardingRule_members,                 /* tp_members */
+    ForwardingRule_getseters,               /* tp_getset */
+    0,                                      /* tp_base */
+    0,                                      /* tp_dict */
+    0,                                      /* tp_descr_get */
+    0,                                      /* tp_descr_set */
+    offsetof(ForwardingRule, dict),         /* tp_dictoffset */
+    (initproc) ForwardingRule_init,         /* tp_init */
+    0,                                      /* tp_alloc */
+    ForwardingRule_new,                     /* tp_new */
 };
 
 
@@ -462,14 +462,14 @@ ExpireWatcher_init(ExpireWatcher *self, PyObject *args, PyObject *kwds)
     }
 
     if ((self->ct_handle = nfct_open(CONNTRACK, NF_NETLINK_CONNTRACK_DESTROY)) == NULL) {
-        PyErr_SetString(ConntrackError, strerror(errno));
+        PyErr_SetString(Error, strerror(errno));
         return -1;
     }
 
     if (fcntl(nfct_fd(self->ct_handle), F_SETFL, O_NONBLOCK) < 0) {
         nfct_close(self->ct_handle);
         self->ct_handle = NULL;
-        PyErr_SetString(ConntrackError, strerror(errno));
+        PyErr_SetString(Error, strerror(errno));
         return -1;
     }
 
@@ -482,12 +482,12 @@ static PyObject *
 ExpireWatcher_read(ExpireWatcher *self)
 {
     struct nf_conntrack *conntrack;
-    RelayStream *relay_stream = RelayStream_head;
+    ForwardingRule *rule;
     int i;
     PyObject *retval;
 
-    if (nfct_callback_register(self->ct_handle, NFCT_T_ALL, conntrack_cb_one, &conntrack)) {
-        PyErr_SetString(ConntrackError, strerror(errno));
+    if (nfct_callback_register(self->ct_handle, NFCT_T_ALL, conntrack_callback, &conntrack)) {
+        PyErr_SetString(Error, strerror(errno));
         return NULL;
     }
 
@@ -497,7 +497,7 @@ ExpireWatcher_read(ExpireWatcher *self)
             Py_INCREF(Py_None);
             return Py_None;
         } else {
-            PyErr_SetString(ConntrackError, strerror(errno));
+            PyErr_SetString(Error, strerror(errno));
             return NULL;
         }
     }
@@ -515,29 +515,29 @@ ExpireWatcher_read(ExpireWatcher *self)
     if (nfct_get_attr_u8(conntrack, ATTR_REPL_L4PROTO) != IPPROTO_UDP)
         goto ExpireWatcher_read_none;
 
-    for (relay_stream = RelayStream_head; relay_stream != NULL; relay_stream = relay_stream->next) {
-        if (nfct_get_attr_u32(relay_stream->conntrack, ATTR_ORIG_IPV4_SRC) != nfct_get_attr_u32(conntrack, ATTR_ORIG_IPV4_SRC))
+    for (rule = forwarding_rules; rule != NULL; rule = rule->next) {
+        if (nfct_get_attr_u32(rule->conntrack, ATTR_ORIG_IPV4_SRC) != nfct_get_attr_u32(conntrack, ATTR_ORIG_IPV4_SRC))
             continue;
-        if (nfct_get_attr_u32(relay_stream->conntrack, ATTR_ORIG_PORT_SRC) != nfct_get_attr_u32(conntrack, ATTR_ORIG_PORT_SRC))
+        if (nfct_get_attr_u32(rule->conntrack, ATTR_ORIG_PORT_SRC) != nfct_get_attr_u32(conntrack, ATTR_ORIG_PORT_SRC))
             continue;
-        if (nfct_get_attr_u32(relay_stream->conntrack, ATTR_DNAT_IPV4) != nfct_get_attr_u32(conntrack, ATTR_REPL_IPV4_SRC))
+        if (nfct_get_attr_u32(rule->conntrack, ATTR_DNAT_IPV4) != nfct_get_attr_u32(conntrack, ATTR_REPL_IPV4_SRC))
             continue;
-        if (nfct_get_attr_u32(relay_stream->conntrack, ATTR_DNAT_PORT) != nfct_get_attr_u32(conntrack, ATTR_REPL_PORT_SRC))
+        if (nfct_get_attr_u32(rule->conntrack, ATTR_DNAT_PORT) != nfct_get_attr_u32(conntrack, ATTR_REPL_PORT_SRC))
             continue;
 
-        relay_stream->is_active = 0;
-        if (relay_stream->prev == NULL)
-            RelayStream_head = relay_stream->next;
+        rule->is_active = 0;
+        if (rule->prev == NULL)
+            forwarding_rules = rule->next;
         else
-            relay_stream->prev->next = relay_stream->prev->next;
-        if (relay_stream->next != NULL)
-            relay_stream->next->prev = relay_stream->prev;
+            rule->prev->next = rule->prev->next;
+        if (rule->next != NULL)
+            rule->next->prev = rule->prev;
         for (i = 1; i < 5; i++)
-            relay_stream->counter[RelayStream_get_attr_types[i].counter_index] = nfct_get_attr_u32(conntrack, RelayStream_get_attr_types[i].type);
+            rule->counter[ForwardingRule_get_attr_types[i].counter_index] = nfct_get_attr_u32(conntrack, ForwardingRule_get_attr_types[i].type);
 
         Py_DECREF(Py_None);
-        Py_INCREF(relay_stream);
-        retval = (PyObject *) relay_stream;
+        Py_INCREF(rule);
+        retval = (PyObject *) rule;
         break;
     }
 
@@ -587,8 +587,7 @@ static PyTypeObject ExpireWatcher_Type = {
     0,                                     /* tp_getattro */
     0,                                     /* tp_setattro */
     0,                                     /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT |
-        Py_TPFLAGS_BASETYPE,               /* tp_flags */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
     "ExpireWatcher objects",               /* tp_doc */
     0,                                     /* tp_traverse */
     0,                                     /* tp_clear */
@@ -611,11 +610,11 @@ static PyTypeObject ExpireWatcher_Type = {
 
 
 static PyObject *
-ConntrackBlock_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+Inhibitor_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
-    ConntrackBlock *self;
+    Inhibitor *self;
 
-    self = (ConntrackBlock *) type->tp_alloc(type, 0);
+    self = (Inhibitor *) type->tp_alloc(type, 0);
     if (self != NULL) {
         self->done_init = 0;
         if ((self->entry = malloc(IPTC_FULL_SIZE)) == NULL) {
@@ -630,7 +629,7 @@ ConntrackBlock_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 
 
 static void
-ConntrackBlock_dealloc(ConntrackBlock *self)
+Inhibitor_dealloc(Inhibitor *self)
 {
     iptc_handle_t ct_handle;
     unsigned char matchmask[IPTC_FULL_SIZE];
@@ -649,7 +648,7 @@ ConntrackBlock_dealloc(ConntrackBlock *self)
 
 
 static int
-ConntrackBlock_init(ConntrackBlock *self, PyObject *args, PyObject *kwds)
+Inhibitor_init(Inhibitor *self, PyObject *args, PyObject *kwds)
 {
     int port;
     char *address_string = NULL;
@@ -699,19 +698,19 @@ ConntrackBlock_init(ConntrackBlock *self, PyObject *args, PyObject *kwds)
     strcpy(target->u.user.name, "NOTRACK");
 
     if ((ct_handle = iptc_init("raw")) == NULL) {
-        PyErr_SetString(ConntrackError, iptc_strerror(errno));
+        PyErr_SetString(Error, iptc_strerror(errno));
         return -1;
     }
 
     if (!iptc_append_entry("PREROUTING", self->entry, &ct_handle)) {
         iptc_free(&ct_handle);
-        PyErr_SetString(ConntrackError, iptc_strerror(errno));
+        PyErr_SetString(Error, iptc_strerror(errno));
         return -1;
     }
 
     if (!iptc_commit(&ct_handle)) {
         iptc_free(&ct_handle);
-        PyErr_SetString(ConntrackError, iptc_strerror(errno));
+        PyErr_SetString(Error, iptc_strerror(errno));
         return -1;
     }
 
@@ -720,13 +719,13 @@ ConntrackBlock_init(ConntrackBlock *self, PyObject *args, PyObject *kwds)
 }
 
 
-static PyTypeObject ConntrackBlock_Type = {
+static PyTypeObject Inhibitor_Type = {
     PyObject_HEAD_INIT(NULL)
     0,                                   /* ob_size */
-    "mediaproxy.interfaces.system._conntrack.ConntrackBlock", /* tp_name */
-    sizeof(ConntrackBlock),              /* tp_basicsize */
+    "mediaproxy.interfaces.system._conntrack.Inhibitor", /* tp_name */
+    sizeof(Inhibitor),                   /* tp_basicsize */
     0,                                   /* tp_itemsize */
-    (destructor) ConntrackBlock_dealloc, /* tp_dealloc */
+    (destructor) Inhibitor_dealloc,      /* tp_dealloc */
     0,                                   /* tp_print */
     0,                                   /* tp_getattr */
     0,                                   /* tp_setattr */
@@ -741,9 +740,8 @@ static PyTypeObject ConntrackBlock_Type = {
     0,                                   /* tp_getattro */
     0,                                   /* tp_setattro */
     0,                                   /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT |
-        Py_TPFLAGS_BASETYPE,             /* tp_flags */
-    "ConntrackBlock objects",            /* tp_doc */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
+    "Inhibitor objects",                 /* tp_doc */
     0,                                   /* tp_traverse */
     0,                                   /* tp_clear */
     0,                                   /* tp_richcompare */
@@ -758,9 +756,9 @@ static PyTypeObject ConntrackBlock_Type = {
     0,                                   /* tp_descr_get */
     0,                                   /* tp_descr_set */
     0,                                   /* tp_dictoffset */
-    (initproc) ConntrackBlock_init,      /* tp_init */
+    (initproc) Inhibitor_init,           /* tp_init */
     0,                                   /* tp_alloc */
-    ConntrackBlock_new,                  /* tp_new */
+    Inhibitor_new,                       /* tp_new */
 };
 
 
@@ -774,24 +772,24 @@ init_conntrack(void)
 {
     PyObject* module;
 
-    if (PyType_Ready(&RelayStream_Type) < 0)
+    if (PyType_Ready(&ForwardingRule_Type) < 0)
         return;
     if (PyType_Ready(&ExpireWatcher_Type) < 0)
         return;
-    if (PyType_Ready(&ConntrackBlock_Type) < 0)
+    if (PyType_Ready(&Inhibitor_Type) < 0)
         return;
 
     module = Py_InitModule3("mediaproxy.interfaces.system._conntrack", _conntrack_methods, "Low level connection tracking manipulation for MediaProxy");
 
-    Py_INCREF(&RelayStream_Type);
-    PyModule_AddObject(module, "RelayStream", (PyObject *) &RelayStream_Type);
+    Py_INCREF(&ForwardingRule_Type);
+    PyModule_AddObject(module, "ForwardingRule", (PyObject *) &ForwardingRule_Type);
     Py_INCREF(&ExpireWatcher_Type);
     PyModule_AddObject(module, "ExpireWatcher", (PyObject *) &ExpireWatcher_Type);
-    Py_INCREF(&ConntrackBlock_Type);
-    PyModule_AddObject(module, "ConntrackBlock", (PyObject *) &ConntrackBlock_Type);
+    Py_INCREF(&Inhibitor_Type);
+    PyModule_AddObject(module, "Inhibitor", (PyObject *) &Inhibitor_Type);
 
-    ConntrackError = PyErr_NewException("mediaproxy.interfaces.system._conntrack.ConntrackError", NULL, NULL);
-    Py_INCREF(ConntrackError);
-    PyModule_AddObject(module, "ConntrackError", ConntrackError);
+    Error = PyErr_NewException("mediaproxy.interfaces.system._conntrack.Error", NULL, NULL);
+    Py_INCREF(Error);
+    PyModule_AddObject(module, "Error", Error);
 }
 
