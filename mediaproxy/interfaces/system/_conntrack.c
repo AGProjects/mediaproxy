@@ -267,7 +267,7 @@ ForwardingRule_get_conntrack(ForwardingRule *self)
         return NULL;
     }
 
-    if (nfct_query(ct_handle, NFCT_Q_GET, self->conntrack) || (conntrack == NULL)) {
+    if (nfct_query(ct_handle, NFCT_Q_GET, self->conntrack) < 0 || conntrack == NULL) {
         nfct_close(ct_handle);
         if (errno == ENOENT)
             PyErr_SetString(Error, "Connection tracking entry is already removed");
@@ -345,7 +345,7 @@ ForwardingRule_set_timeout(ForwardingRule *self, PyObject *value, void *closure)
     } else {
         nfct_set_attr_u32(conntrack, ATTR_TIMEOUT, timeout);
 
-        if (nfct_query(ct_handle, NFCT_Q_UPDATE, conntrack)) {
+        if (nfct_query(ct_handle, NFCT_Q_UPDATE, conntrack) < 0) {
             nfct_destroy(conntrack);
             nfct_close(ct_handle);
             PyErr_SetString(Error, strerror(errno));
