@@ -407,7 +407,7 @@ static PyTypeObject ForwardingRule_Type = {
     0,                                      /* tp_setattro */
     0,                                      /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, /* tp_flags */
-    "ForwardingRule objects",               /* tp_doc */
+    "A conntrack based mediaproxy forwarding rule",                /* tp_doc */
     (traverseproc) ForwardingRule_traverse, /* tp_traverse */
     (inquiry) ForwardingRule_clear,         /* tp_clear */
     0,                                      /* tp_richcompare */
@@ -586,8 +586,8 @@ static PyTypeObject ExpireWatcher_Type = {
     0,                                     /* tp_getattro */
     0,                                     /* tp_setattro */
     0,                                     /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
-    "ExpireWatcher objects",               /* tp_doc */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,  /* tp_flags */
+    "Monitor forwarding rules for expiration", /* tp_doc */
     0,                                     /* tp_traverse */
     0,                                     /* tp_clear */
     0,                                     /* tp_richcompare */
@@ -740,7 +740,7 @@ static PyTypeObject Inhibitor_Type = {
     0,                                   /* tp_setattro */
     0,                                   /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
-    "Inhibitor objects",                 /* tp_doc */
+    "Inhibit the connection tracking system for the given target", /* tp_doc */
     0,                                   /* tp_traverse */
     0,                                   /* tp_clear */
     0,                                   /* tp_richcompare */
