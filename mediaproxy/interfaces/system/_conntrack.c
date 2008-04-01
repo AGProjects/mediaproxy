@@ -32,8 +32,8 @@
 
 enum {
     CALLER_REMOTE = 0,
-    CALLEE_REMOTE,
     CALLER_LOCAL,
+    CALLEE_REMOTE,
     CALLEE_LOCAL
 };
 
@@ -180,9 +180,9 @@ ForwardingRule_init(ForwardingRule *self, PyObject *args, PyObject *kwds)
 
     if (!PyArg_ParseTuple(args, "(si)(si)(si)(si)|II:ForwardingRule",
                           &address_string[CALLER_REMOTE], &port[CALLER_REMOTE],
+                          &address_string[CALLER_LOCAL],  &port[CALLER_LOCAL],
                           &address_string[CALLEE_REMOTE], &port[CALLEE_REMOTE],
-                          &address_string[CALLER_LOCAL], &port[CALLER_LOCAL],
-                          &address_string[CALLEE_LOCAL], &port[CALLEE_LOCAL],
+                          &address_string[CALLEE_LOCAL],  &port[CALLEE_LOCAL],
                           &mark, &timeout))
         return -1;
 
