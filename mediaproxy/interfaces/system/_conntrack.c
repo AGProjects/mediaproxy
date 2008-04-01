@@ -780,16 +780,21 @@ init_conntrack(void)
 
     module = Py_InitModule3("mediaproxy.interfaces.system._conntrack", _conntrack_methods, "Low level connection tracking manipulation for MediaProxy");
 
-    Py_INCREF(&ForwardingRule_Type);
-    PyModule_AddObject(module, "ForwardingRule", (PyObject *) &ForwardingRule_Type);
-    Py_INCREF(&ExpireWatcher_Type);
-    PyModule_AddObject(module, "ExpireWatcher", (PyObject *) &ExpireWatcher_Type);
-    Py_INCREF(&Inhibitor_Type);
-    PyModule_AddObject(module, "Inhibitor", (PyObject *) &Inhibitor_Type);
+    if (module == NULL)
+        return;
 
     Error = PyErr_NewException("mediaproxy.interfaces.system._conntrack.Error", NULL, NULL);
+    if (Error == NULL)
+        return;
     Py_INCREF(Error);
     PyModule_AddObject(module, "Error", Error);
+
+    Py_INCREF(&ForwardingRule_Type);
+    PyModule_AddObject(module, "ForwardingRule", (PyObject*) &ForwardingRule_Type);
+    Py_INCREF(&ExpireWatcher_Type);
+    PyModule_AddObject(module, "ExpireWatcher", (PyObject*) &ExpireWatcher_Type);
+    Py_INCREF(&Inhibitor_Type);
+    PyModule_AddObject(module, "Inhibitor", (PyObject*) &Inhibitor_Type);
 
     // Module version (the MODULE_VERSION macro is defined by setup.py)
     PyModule_AddStringConstant(module, "__version__", string(MODULE_VERSION));
