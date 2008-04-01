@@ -79,7 +79,7 @@ static ForwardingRule *forwarding_rules = NULL;
 static int
 conntrack_callback(enum nf_conntrack_msg_type type, struct nf_conntrack *ct, void *data)
 {
-    struct nf_conntrack **found_conntrack = (struct nf_conntrack **) data;
+    struct nf_conntrack **found_conntrack = (struct nf_conntrack**) data;
 
     *found_conntrack = nfct_clone(ct);
     return NFCT_CB_STOP;
@@ -102,12 +102,12 @@ ForwardingRule_clear(ForwardingRule *self)
 }
 
 
-static PyObject *
+static PyObject*
 ForwardingRule_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
     ForwardingRule *self;
 
-    self = (ForwardingRule *) type->tp_alloc(type, 0);
+    self = (ForwardingRule*) type->tp_alloc(type, 0);
     if (self != NULL) {
         self->is_active = 0;
         self->done_init = 0;
@@ -127,8 +127,8 @@ ForwardingRule_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         nfct_set_attr_u8(self->conntrack, ATTR_ORIG_L3PROTO, AF_INET);
         nfct_set_attr_u8(self->conntrack, ATTR_ORIG_L4PROTO, IPPROTO_UDP);
     }
-            
-    return (PyObject *) self;
+
+    return (PyObject*) self;
 }
 
 
@@ -137,8 +137,7 @@ ForwardingRule_dealloc(ForwardingRule *self)
 {
     struct nfct_handle *ct_handle;
 
-    if (self->is_active)
-    {
+    if (self->is_active) {
         if (self->prev == NULL)
             forwarding_rules = self->next;
         else
@@ -157,7 +156,7 @@ ForwardingRule_dealloc(ForwardingRule *self)
 
     ForwardingRule_clear(self);
     nfct_destroy(self->conntrack);
-    self->ob_type->tp_free((PyObject *) self);
+    self->ob_type->tp_free((PyObject*)self);
 }
 
 
@@ -250,7 +249,7 @@ ForwardingRule_init(ForwardingRule *self, PyObject *args, PyObject *kwds)
 }
 
 
-struct nf_conntrack *
+struct nf_conntrack*
 ForwardingRule_get_conntrack(ForwardingRule *self)
 {
     struct nfct_handle *ct_handle;
@@ -287,25 +286,23 @@ typedef struct {
 } ForwardingRule_get_attr_type;
 
 
-static PyObject *
+static PyObject*
 ForwardingRule_get_attr(ForwardingRule *self, void *closure)
 {
     struct nf_conntrack *conntrack;
     uint32_t attr;
     ForwardingRule_get_attr_type *type;
 
-    type = (ForwardingRule_get_attr_type *) closure;
+    type = (ForwardingRule_get_attr_type*) closure;
     if (self->is_active) {
         if ((conntrack = ForwardingRule_get_conntrack(self)) == NULL)
             return NULL;
         attr = nfct_get_attr_u32(conntrack, type->type);
         nfct_destroy(conntrack);
         return Py_BuildValue("I", attr);
-    } else 
-        if (type->counter_index >= 0)
-            attr = self->counter[type->counter_index];
-        else
-            attr = 0;
+    } else {
+        attr = (type->counter_index>=0 ? self->counter[type->counter_index] : 0);
+    }
 
     return Py_BuildValue("I", attr);
 }
@@ -427,16 +424,16 @@ static PyTypeObject ForwardingRule_Type = {
 };
 
 
-static PyObject *
+static PyObject*
 ExpireWatcher_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
     ExpireWatcher *self;
 
-    self = (ExpireWatcher *) type->tp_alloc(type, 0);
+    self = (ExpireWatcher*) type->tp_alloc(type, 0);
     if (self != NULL)
         self->ct_handle = NULL;
 
-    return (PyObject *) self;
+    return (PyObject*) self;
 }
 
 
@@ -446,7 +443,7 @@ ExpireWatcher_dealloc(ExpireWatcher *self)
     if (self->ct_handle != NULL)
         nfct_close(self->ct_handle);
 
-    self->ob_type->tp_free((PyObject *) self);
+    self->ob_type->tp_free((PyObject*)self);
 }
 
 
@@ -477,7 +474,7 @@ ExpireWatcher_init(ExpireWatcher *self, PyObject *args, PyObject *kwds)
 }
 
 
-static PyObject *
+static PyObject*
 ExpireWatcher_read(ExpireWatcher *self)
 {
     struct nf_conntrack *conntrack;
@@ -541,7 +538,7 @@ ExpireWatcher_read(ExpireWatcher *self)
 }
 
 
-static PyObject *
+static PyObject*
 ExpireWatcher_get_fd(ExpireWatcher *self, void *closure)
 {
     return PyInt_FromLong(nfct_fd(self->ct_handle));
@@ -603,12 +600,12 @@ static PyTypeObject ExpireWatcher_Type = {
 };
 
 
-static PyObject *
+static PyObject*
 Inhibitor_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
     Inhibitor *self;
 
-    self = (Inhibitor *) type->tp_alloc(type, 0);
+    self = (Inhibitor*) type->tp_alloc(type, 0);
     if (self != NULL) {
         self->done_init = 0;
         if ((self->entry = malloc(IPTC_FULL_SIZE)) == NULL) {
@@ -618,7 +615,7 @@ Inhibitor_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         }
     }
 
-    return (PyObject *) self;
+    return (PyObject*) self;
 }
 
 
@@ -637,7 +634,7 @@ Inhibitor_dealloc(Inhibitor *self)
         }
 
     free(self->entry);
-    self->ob_type->tp_free((PyObject *) self);
+    self->ob_type->tp_free((PyObject*)self);
 }
 
 
@@ -676,14 +673,14 @@ Inhibitor_init(Inhibitor *self, PyObject *args, PyObject *kwds)
     }
     self->entry->target_offset = IPTC_ENTRY_SIZE + IPTC_MATCH_SIZE;
     self->entry->next_offset = IPTC_FULL_SIZE;
-    match = (void *) self->entry + IPTC_ENTRY_SIZE;
+    match = (void*) self->entry + IPTC_ENTRY_SIZE;
     match->u.user.match_size = IPTC_MATCH_SIZE;
     strcpy(match->u.user.name, "udp");
-    match_udp = (struct ipt_udp *) &match->data;
+    match_udp = (struct ipt_udp*) &match->data;
     match_udp->spts[0] = 0;
     match_udp->spts[1] = 65535;
     match_udp->dpts[0] = match_udp->dpts[1] = port;
-    target = (void *) match + IPTC_MATCH_SIZE;
+    target = (void*) match + IPTC_MATCH_SIZE;
     target->u.user.target_size = IPTC_TARGET_SIZE;
     strcpy(target->u.user.name, "NOTRACK");
 
