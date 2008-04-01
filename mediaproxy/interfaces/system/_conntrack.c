@@ -183,7 +183,7 @@ ForwardingRule_init(ForwardingRule *self, PyObject *args, PyObject *kwds)
 
     for (i = 0; i < 4; i++) {
         if (!inet_aton(address_string[i], &address[i])) {
-            PyErr_Format(PyExc_ValueError, "Invalid IP address given: \"%s\"", address_string[i]);
+            PyErr_Format(PyExc_ValueError, "Invalid IP address: %s", address_string[i]);
             return -1;
         }
         if (port[i] < 0 || port[i] > 65535) {
@@ -668,7 +668,7 @@ Inhibitor_init(Inhibitor *self, PyObject *args, PyObject *kwds)
         return -1;
     }
     if ((address_string != NULL) && !inet_aton(address_string, &address)) {
-        PyErr_Format(PyExc_ValueError, "Invalid IP address given: \"%s\"", address_string);
+        PyErr_Format(PyExc_ValueError, "Invalid IP address: %s", address_string);
         return -1;
     }
 
