@@ -549,7 +549,7 @@ ExpireWatcher_read(ExpireWatcher *self)
 static PyObject *
 ExpireWatcher_get_fd(ExpireWatcher *self, void *closure)
 {
-    return Py_BuildValue("i", nfct_fd(self->ct_handle));
+    return PyInt_FromLong(nfct_fd(self->ct_handle));
 }
 
 
