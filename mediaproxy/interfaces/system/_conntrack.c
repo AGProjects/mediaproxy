@@ -173,17 +173,17 @@ ForwardingRule_init(ForwardingRule *self, PyObject *args, PyObject *kwds)
     if (self->done_init)
         return 0;
 
-    if (kwds && PyDict_Size(kwds) > 0) {
-        PyErr_SetString(PyExc_TypeError, "Keyword arguments not supported");
+    if (kwds!=NULL && (!PyDict_Check(kwds) || PyDict_Size(kwds)!=0)) {
+        PyErr_SetString(PyExc_TypeError, "ForwardingRule() doesn't take keyword arguments");
         return -1;
     }
 
-    if (!PyArg_ParseTuple(args, "(si)(si)(si)(si)|II",
-                         &address_string[CALLER_REMOTE], &port[CALLER_REMOTE],
-                         &address_string[CALLEE_REMOTE], &port[CALLEE_REMOTE],
-                         &address_string[CALLER_LOCAL], &port[CALLER_LOCAL],
-                         &address_string[CALLEE_LOCAL], &port[CALLEE_LOCAL],
-                         &mark, &timeout))
+    if (!PyArg_ParseTuple(args, "(si)(si)(si)(si)|II:ForwardingRule",
+                          &address_string[CALLER_REMOTE], &port[CALLER_REMOTE],
+                          &address_string[CALLEE_REMOTE], &port[CALLEE_REMOTE],
+                          &address_string[CALLER_LOCAL], &port[CALLER_LOCAL],
+                          &address_string[CALLEE_LOCAL], &port[CALLEE_LOCAL],
+                          &mark, &timeout))
         return -1;
 
     for (i = 0; i < 4; i++) {
@@ -453,17 +453,13 @@ ExpireWatcher_dealloc(ExpireWatcher *self)
 static int
 ExpireWatcher_init(ExpireWatcher *self, PyObject *args, PyObject *kwds)
 {
+    static char *keywords[] = {NULL};
+
     if (self->ct_handle != NULL)
         return 0;
 
-    if (PyTuple_GET_SIZE(args) > 0) {
-        PyErr_SetString(PyExc_TypeError, "This constructor takes no arguments");
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, ":ExpireWatcher", keywords))
         return -1;
-    }
-    if (kwds && PyDict_Size(kwds) > 0) {
-        PyErr_SetString(PyExc_TypeError, "This constructor takes no arguments");
-        return -1;
-    }
 
     if ((self->ct_handle = nfct_open(CONNTRACK, NF_NETLINK_CONNTRACK_DESTROY)) == NULL) {
         PyErr_SetString(Error, strerror(errno));
@@ -648,23 +644,19 @@ Inhibitor_dealloc(Inhibitor *self)
 static int
 Inhibitor_init(Inhibitor *self, PyObject *args, PyObject *kwds)
 {
-    int port;
-    char *address_string = NULL;
     struct in_addr address;
     iptc_handle_t ct_handle;
     struct ipt_entry_match *match;
     struct ipt_udp *match_udp;
     struct ipt_entry_target *target;
+    static char *keywords[] = {"port", "ip", NULL};
+    char *address_string = NULL;
+    int port;
 
     if (self->done_init)
         return 0;
 
-    if (kwds && PyDict_Size(kwds) > 0) {
-        PyErr_SetString(PyExc_TypeError, "Keyword arguments not supported");
-        return -1;
-    }
-
-    if (!PyArg_ParseTuple(args, "i|s", &port, &address_string))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "i|s:Inhibitor", keywords, &port, &address_string))
         return -1;
 
     if (port < 0 || port > 65535) {
