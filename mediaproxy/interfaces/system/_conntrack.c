@@ -16,14 +16,19 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 
+
 #define DEFAULT_TIMEOUT 60
 
-static PyObject *Error;
+
+#define _string(x) #x
+#define string(x) _string(x)
+
 
 #define IPTC_ENTRY_SIZE IPT_ALIGN(sizeof(struct ipt_entry))
 #define IPTC_MATCH_SIZE IPT_ALIGN(sizeof(struct ipt_entry_match) + sizeof(struct ipt_udp))
 #define IPTC_TARGET_SIZE IPT_ALIGN(sizeof(struct ipt_entry_target))
 #define IPTC_FULL_SIZE IPTC_ENTRY_SIZE + IPTC_MATCH_SIZE + IPTC_TARGET_SIZE
+
 
 enum {
     CALLER_REMOTE = 0,
@@ -65,6 +70,8 @@ typedef struct Inhibitor {
     struct ipt_entry *entry;
 } Inhibitor;
 
+
+static PyObject *Error;
 
 static ForwardingRule *forwarding_rules = NULL;
 
@@ -783,5 +790,9 @@ init_conntrack(void)
     Error = PyErr_NewException("mediaproxy.interfaces.system._conntrack.Error", NULL, NULL);
     Py_INCREF(Error);
     PyModule_AddObject(module, "Error", Error);
+
+    // Module version (the MODULE_VERSION macro is defined by setup.py)
+    PyModule_AddStringConstant(module, "__version__", string(MODULE_VERSION));
+
 }
 
