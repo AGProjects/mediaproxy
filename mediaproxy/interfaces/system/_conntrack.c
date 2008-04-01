@@ -99,7 +99,6 @@ static PyObject *
 ForwardingRule_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
     ForwardingRule *self;
-    int i;
 
     self = (ForwardingRule *) type->tp_alloc(type, 0);
     if (self != NULL) {
@@ -107,12 +106,11 @@ ForwardingRule_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         self->done_init = 0;
         self->prev = NULL;
         self->next = NULL;
+        memset(self->counter, 0, sizeof(uint32_t) * 4);
         if ((self->dict = PyDict_New()) == NULL) {
             Py_DECREF(self);
             return NULL;
         }
-        for (i = 0; i < 4; i++)
-            self->counter[i] = 0;
         if ((self->conntrack = nfct_new()) == NULL) {
             Py_DECREF(self->dict);
             Py_DECREF(self);
