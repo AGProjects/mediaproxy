@@ -228,18 +228,17 @@ ForwardingRule_init(ForwardingRule *self, PyObject *args, PyObject *kwds)
     nfct_set_attr_u16(self->conntrack, ATTR_SNAT_PORT, htons(port[CALLEE_LOCAL]));
     nfct_set_attr_u32(self->conntrack, ATTR_TIMEOUT, timeout);
     nfct_set_attr_u32(self->conntrack, ATTR_MARK, mark);
+
     Py_BEGIN_ALLOW_THREADS
     result = nfct_query(ct_handle, NFCT_Q_CREATE, self->conntrack);
+    nfct_close(ct_handle);
     Py_END_ALLOW_THREADS
-    if (result) {
-        nfct_close(ct_handle);
+
+    if (result < 0) {
         PyErr_SetString(Error, strerror(errno));
         return -1;
     }
 
-    Py_BEGIN_ALLOW_THREADS
-    nfct_close(ct_handle);
-    Py_END_ALLOW_THREADS
     if (forwarding_rules != NULL) {
         self->next = forwarding_rules;
         forwarding_rules->prev = self;
