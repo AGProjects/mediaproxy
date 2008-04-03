@@ -1,0 +1,63 @@
+#!/usr/bin/env python
+
+# Copyright (C) 2008 AG Projects
+#
+
+"""MediaProxy Dispatcher component"""
+
+
+if __name__ == "__main__":
+    import sys
+    from optparse import OptionParser
+    from application.process import process, ProcessError
+    from application import log
+    from mediaproxy import __version__ as version
+
+    name = "mp-dispatcher"
+    fullname = "MediaProxy Dispatcher"
+    description = "MediaProxy Dispatcher component"
+
+    config_directory = "/etc/mediaproxy"
+    runtime_directory = "/var/run/mediaproxy"
+    default_pid = "%s/%s.pid" % (runtime_directory, name)
+
+    parser = OptionParser(version="%%prog %s" % version)
+    parser.add_option("--no-fork", action="store_false", dest="fork", default=1, help="run the process in the foreground (for debugging)")
+    parser.add_option("--pid", dest="pid_file", default=default_pid, help="pid file (%s)" % default_pid, metavar="File")
+    (options, args) = parser.parse_args()
+
+    pid_file = options.pid_file
+
+    process._system_config_directory = config_directory
+    try:
+        process.runtime_directory = runtime_directory
+    except ProcessError, e:
+        log.fatal(str(e))
+        sys.exit(1)
+
+    if options.fork:
+        try:
+            process.daemonize(pid_file)
+        except ProcessError, e:
+            log.fatal(str(e))
+            sys.exit(1)
+        log.startSyslog(name)
+    else:
+        from application.debug.memory import *
+
+    log.msg("Starting %s %s" % (fullname, version))
+
+    from mediaproxy.dispatcher import Dispatcher
+
+    try:
+    	dispatcher = Dispatcher()
+    except Exception, e:
+        log.error("failed to create MediaProxy Dispatcher: %s" % e)
+        log.err()
+        sys.exit(1)
+
+    dispatcher.run()
+
+    if not options.fork:
+        #from application.debug.memory import *
+        memory_dump()
