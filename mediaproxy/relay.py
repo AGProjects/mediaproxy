@@ -121,7 +121,7 @@ class SRVMediaRelayBase(object):
         for answer in answers:
             if answer.type == dns.SRV and answer.payload and answer.payload.target != dns.Name("."):
                 reactor.callLater(Config.srv_refresh, self._do_lookup)
-                return set([str(answer.payload.target)])
+                return [str(answer.payload.target)]
         raise DNSNameError
 
     def _eb_no_srv(self, failure):
@@ -155,6 +155,7 @@ class MediaRelay(MediaRelayBase):
         MediaRelayBase.__init__(self)
 
     def update_dispatchers(self, dispatchers):
+        dispatchers = set(dispatchers)
         for new_dispatcher in dispatchers.difference(self.dispatchers):
             log.debug('Adding new dispatcher "%s"' % new_dispatcher)
             factory = DispatcherConnectingFactory(self, new_dispatcher)
