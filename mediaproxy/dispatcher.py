@@ -53,7 +53,7 @@ class OpenSERControlFactory(Factory):
 
     def __init__(self, dispatcher):
         self.dispatcher = dispatcher
-        self.prot
+        self.prot = None
 
     def buildProtocol(self, addr):
         self.prot = Factory.buildProtocol(self, addr)
