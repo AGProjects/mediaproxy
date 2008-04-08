@@ -47,7 +47,7 @@ configuration = ConfigFile(configuration_filename)
 configuration.read_settings("Relay", Config)
 
 class RelayClientProtocol(LineOnlyReceiver):
-    required_headers = { "update": ["call_id", "from_tag", "from_header", "to_header", "cseq", "user_agent", "media_list", "type"],
+    required_headers = { "update": ["call_id", "from_tag", "from_header", "to_header", "cseq", "user_agent", "media", "type"],
                          "remove": ["call_id", "from_tag"] }
 
     def __init__(self):
