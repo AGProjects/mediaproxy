@@ -95,6 +95,7 @@ class RelayServerProtocol(LineOnlyReceiver):
                 self.factory.dispatcher.openser.reply("error")
             else:
                 self.factory.dispatcher.update_statistics(stats)
+                self.factory.dispatcher.openser.reply("removed")
         else: # update command
             self.factory.dispatcher.openser.reply(line)
 
