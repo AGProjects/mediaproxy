@@ -355,20 +355,20 @@ class SessionManager(Logger):
         self.ports.add(ports)
 
     # called by higher level
-    def update_session(self, dispatcher, call_id, from_tag, from_header, to_header, cseq, user_agent, media_list, type, **kw_rest):
+    def update_session(self, dispatcher, call_id, from_tag, from_header, to_header, cseq, user_agent, media, type, **kw_rest):
         key = (call_id, from_tag)
         if key in self.sessions:
             session = self.sessions[key]
             log.debug("updating existing session %s" % session)
             is_downstream = (session.from_tag != from_tag) ^ (type == "request")
-            session.update_media(cseq, user_agent, media_list, is_downstream)
+            session.update_media(cseq, user_agent, media, is_downstream)
         else:
             is_downstream = type == "request"
-            session = self.sessions[key] = Session(self, dispatcher, call_id, from_tag, from_header, to_header, cseq, user_agent, media_list, is_downstream)
+            session = self.sessions[key] = Session(self, dispatcher, call_id, from_tag, from_header, to_header, cseq, user_agent, media, is_downstream)
             log.debug("created new session %s" % session)
             self.relay.added_session(dispatcher)
         retval = session.get_local_media(is_downstream, cseq)
-        for index, (media_type, media_ip, media_port, media_direction) in enumerate(media_list):
+        for index, (media_type, media_ip, media_port, media_direction) in enumerate(media):
             if media_ip == "0.0.0.0":
                 retval[index][0] = "0.0.0.0"
 
