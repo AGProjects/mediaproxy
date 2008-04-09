@@ -73,7 +73,7 @@ class RelayServerProtocol(LineOnlyReceiver):
     def send_command(self, command, headers):
         self.replied = False
         self.command_sent = command
-        self.transport.write("\r\n".join([command] + headers + [""]))
+        self.transport.write("\r\n".join([command] + headers + ["", ""]))
 
     def lineReceived(self, line):
         if self.replied:
