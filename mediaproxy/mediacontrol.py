@@ -190,7 +190,7 @@ class MediaStream(object):
             self.session.stream_expired(self)
 
     def cleanup(self):
-        if not self.is_active:
+        if self.is_active:
             self.is_active = False
             self.caller.cleanup()
             self.callee.cleanup()
