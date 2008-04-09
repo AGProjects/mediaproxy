@@ -61,7 +61,7 @@ class OpenSERControlFactory(Factory):
 
     def reply(self, reply):
         if self.prot:
-            self.prot.transport.write(reply)
+            self.prot.transport.write(reply + "\r\n")
 
 
 class RelayServerProtocol(LineOnlyReceiver):
