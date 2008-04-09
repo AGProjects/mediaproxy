@@ -169,10 +169,10 @@ class MediaRelay(MediaRelayBase):
     def got_command(self, dispatcher, command, headers):
         if command == "update":
             local_media = self.session_manager.update_session(dispatcher, **headers)
-            return " ".join([local_media[0][0]] + [str(media[1]) for media in local_media])
+            return " ".join([local_media[0][0]] + [str(media[1]) for media in local_media]) + "\r\n"
         else: # remove
             session = self.session_manager.remove_session(**headers)
-            return cjson.encode(session.statistics)
+            return cjson.encode(session.statistics) + "\r\n"
 
     def session_expired(self, session):
         connector = self.connectors.get(session.dispatcher)
