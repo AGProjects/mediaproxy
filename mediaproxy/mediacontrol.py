@@ -117,7 +117,7 @@ class MediaSubStream(object):
 class MediaParty(object):
 
     def __init__(self, stream):
-        self.manager = stream.call.manager
+        self.manager = stream.session.manager
         self.remote_sdp = None
         while True:
             self.listener_rtp = None
