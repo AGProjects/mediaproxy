@@ -7,6 +7,7 @@
 
 
 import cjson
+import signal
 
 from twisted.protocols.basic import LineOnlyReceiver
 from twisted.internet.protocol import ClientFactory
@@ -22,6 +23,7 @@ from gnutls.interfaces.twisted import X509Credentials
 from application import log
 from application.configuration import *
 from application.configuration.datatypes import IPAddress
+from application.process import process
 
 from mediaproxy.tls import Certificate, PrivateKey
 from mediaproxy.headers import DecodingDict, DecodingError
@@ -133,7 +135,29 @@ class SRVMediaRelayBase(object):
         raise NotImplementedError()
 
     def run(self):
+        process.signals.add_handler(signal.SIGHUP, self._handle_SIGHUP)
+        process.signals.add_handler(signal.SIGINT, self._handle_SIGINT)
+        process.signals.add_handler(signal.SIGTERM, self._handle_SIGTERM)
         reactor.run()
+
+    def _handle_SIGHUP(self, *args):
+        log.msg("Received SIGHUP, shutting down.")
+        self.stop()
+
+    def _handle_SIGINT(self, *args):
+        if process._daemon:
+            log.msg("Received SIGINT, shutting down.")
+        else:
+            log.msg("Received KeyboardInterrupt, exiting.")
+        self.stop()
+
+    def _handle_SIGTERM(self, *args):
+        log.msg("Received SIGTERM, shutting down.")
+        self.stop()
+
+    def stop(self):
+        reactor.stop()
+        self.on_shutdown()
 
 
 try:
@@ -193,3 +217,6 @@ class MediaRelay(MediaRelayBase):
             connector.factory.cancel_delayed()
             connector.disconnect()
             del self.old_connectors[dispatcher]
+
+    def on_shutdown(self):
+        self.session_manager.cleanup()
