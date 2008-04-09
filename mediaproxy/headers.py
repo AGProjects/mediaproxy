@@ -82,7 +82,9 @@ class MediaProxyHeaders(object):
 class CodingDict(dict):
 
     def __init__(self, *args, **kwargs):
-        if kwargs:
+        if not args and not kwargs:
+            it = []
+        elif kwargs:
             it = kwargs.iteritems()
         elif isinstance(args[0], dict):
             it = args[0].iteritems()
@@ -91,6 +93,7 @@ class CodingDict(dict):
                 it = iter(args[0])
             except:
                 dict.__init__(self, *args, **kwargs)
+                return
         dict.__init__(self)
         for key, value in it:
             self.__setitem__(key, value)
