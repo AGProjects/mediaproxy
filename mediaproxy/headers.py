@@ -14,7 +14,7 @@ class DecodingError(Exception):
 
 
 class MediaProxyHeaders(object):
-    allowed_headers = ["call_id", "cseq", "type", "from_tag", "to_tag", "from_to", "user_agent", "media"]
+    allowed_headers = ["call_id", "cseq", "type", "from_tag", "to_tag", "from_header", "to_header", "user_agent", "media"]
 
     @classmethod
     def encode(cls, name, value):
