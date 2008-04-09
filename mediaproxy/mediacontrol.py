@@ -371,6 +371,7 @@ class SessionManager(Logger):
         for index, (media_type, media_ip, media_port, media_direction) in enumerate(media):
             if media_ip == "0.0.0.0":
                 retval[index][0] = "0.0.0.0"
+        return retval
 
     def remove_session(self, call_id, from_tag, **kw_rest):
         key = (call_id, from_tag)
