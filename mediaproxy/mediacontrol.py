@@ -64,6 +64,8 @@ class MediaSubParty(object):
 
     def cleanup(self):
         self.stop_block()
+        self.listener.protocol.cb_func = None
+        self.substream = None
 
 
 class MediaSubStream(object):
@@ -112,6 +114,7 @@ class MediaSubStream(object):
         self.caller.cleanup()
         self.callee.cleanup()
         self._stop_relaying()
+        self.stream = None
 
 
 class MediaParty(object):
@@ -136,6 +139,7 @@ class MediaParty(object):
         self.listener_rtp.stopListening()
         self.listener_rtcp.stopListening()
         self.manager.free_ports(self.ports)
+        self.manager = None
 
 class MediaStream(object):
 
@@ -196,6 +200,7 @@ class MediaStream(object):
             self.callee.cleanup()
             self.rtp.cleanup()
             self.rtcp.cleanup()
+            self.session = None
 
 
 class Session(object):
