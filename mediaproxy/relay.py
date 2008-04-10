@@ -201,7 +201,7 @@ class MediaRelay(MediaRelayBase):
     def session_expired(self, session):
         connector = self.connectors.get(session.dispatcher)
         if connector and connector.state == "connected":
-            connector.transport.write(" ".join(["expired", cjson.encode(session.statistics)]))
+            connector.transport.write(" ".join(["expired", cjson.encode(session.statistics)]) + "\r\n")
 
     def added_session(self, dispatcher):
         self.dispatcher_session_count[dispatcher] = self.dispatcher_session_count.setdefault(dispatcher, 0) + 1
