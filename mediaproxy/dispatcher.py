@@ -76,10 +76,7 @@ class RelayServerProtocol(LineOnlyReceiver):
         self.transport.write("\r\n".join([command] + headers + ["", ""]))
 
     def lineReceived(self, line):
-        if self.replied:
-            return
-        self.replied = True
-        line_split = line.split(" ", 1)[0]
+        line_split = line.split(" ", 1)
         if line_split[0] == "expired":
             try:
                 stats = cjson.decode(line_split[1])
@@ -87,6 +84,9 @@ class RelayServerProtocol(LineOnlyReceiver):
                 log.error("Error decoding JSON from relay")
             else:
                 self.factory.dispatcher.update_statistics(stats)
+        if self.replied:
+            return
+        self.replied = True
         if self.command_sent == "remove":
             try:
                 stats = cjson.decode(line)
