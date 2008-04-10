@@ -395,7 +395,8 @@ class SessionManager(Logger):
         session.cleanup()
         dispatcher = session.dispatcher
         del self.sessions[key]
-        self.relay.removed_session(dispatcher)
+        reactor.callLater(0, self.relay.removed_session, dispatcher)
+        return session
 
     def session_expired(self, call_id, from_tag):
         key = (call_id, from_tag)
