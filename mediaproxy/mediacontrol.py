@@ -300,10 +300,10 @@ class Session(object):
                     stream.cleanup()
 
     def get_byte_count(self, media_type, party):
-        return sum(getattr(stream.rtp, party).bytes + getattr(stream.rtcp, party).bytes for stream in set(sum(self.streams.items(), [])) if stream.media_type == media_type)
+        return sum(getattr(stream.rtp, party).bytes + getattr(stream.rtcp, party).bytes for stream in set(sum(self.streams.values(), [])) if stream.media_type == media_type)
 
     def get_packet_count(self, media_type, party):
-        return sum(getattr(stream.rtp, party).packets + getattr(stream.rtcp, party).packets for stream in set(sum(self.streams.items(), [])) if stream.media_type == media_type)
+        return sum(getattr(stream.rtp, party).packets + getattr(stream.rtcp, party).packets for stream in set(sum(self.streams.values(), [])) if stream.media_type == media_type)
 
     def stream_expired(self, stream):
         stream.cleanup()
