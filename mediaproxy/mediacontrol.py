@@ -110,7 +110,7 @@ class MediaSubStream(object):
     def check_create_conntrack(self):
         log.debug("Got traffic information for stream: %s" % self.stream)
         if self.caller.got_remote and self.callee.got_remote:
-            self.forwarding_rule = _conntrack.ForwardingRule(self.caller.remote, self.caller.local, self.callee.remote, self.callee.local, self.stream.call.mark)
+            self.forwarding_rule = _conntrack.ForwardingRule(self.caller.remote, self.caller.local, self.callee.remote, self.callee.local, self.stream.session.mark)
             self.forwarding_rule.expired_func = self.conntrack_expired
             self.caller.stop_block()
             self.callee.stop_block()
