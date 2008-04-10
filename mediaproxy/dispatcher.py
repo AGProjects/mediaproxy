@@ -100,6 +100,7 @@ class RelayServerProtocol(LineOnlyReceiver):
             self.factory.dispatcher.openser.reply(line)
 
     def connectionLost(self, reason):
+        log.debug("Relay from %s disconnected" % self.transport.getPeer().host)
         if not self.replied:
             self.factory.dispatcher.openser.reply("error")
         self.factory.protocols.remove(self)
@@ -112,6 +113,7 @@ class RelayFactory(Factory):
         self.protocols = []
 
     def buildProtocol(self, addr):
+        log.debug("Relay from %s connected" % addr.host)
         prot = Factory.buildProtocol(self, addr)
         self.protocols.append(prot)
         return prot
