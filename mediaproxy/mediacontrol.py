@@ -39,11 +39,14 @@ class MediaSubParty(object):
         self.bytes_rtcp = 0
         self.packets = 0
         self.packets_rtcp = 0
+        self.timer = None
         self.reset(True)
 
     def reset(self, expire):
         self.start_block()
         self.got_remote = False
+        if self.timer and self.timer.active():
+            self.timer.cancel()
         if expire:
             self.timer = reactor.callLater(10, self.substream.conntrack_expired)
         else:
