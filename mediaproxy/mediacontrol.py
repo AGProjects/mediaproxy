@@ -330,7 +330,7 @@ class Session(object):
         for party in ["caller", "callee"]:
             for media_type in ["audio", "video"]:
                 stats["%s_%s_packets" % (party, media_type)] = self.get_packet_count(media_type, party)
-                stats["%s_%s_bytes" % (party, media_type)] = self.get_packet_count(media_type, party)
+                stats["%s_%s_bytes" % (party, media_type)] = self.get_byte_count(media_type, party)
         for attr in ["caller_ua", "callee_ua", "from_tag", "from_header", "to_header"]:
             stats[attr] = getattr(self, attr)
         return stats
