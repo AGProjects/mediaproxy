@@ -88,10 +88,10 @@ class MediaSubStream(object):
         self.callee = MediaSubParty(self, listener_callee)
 
     def _update_counters(self):
-        self.caller.bytes += self.forwarding_rule.caller_byte_count
-        self.caller.packets += self.forwarding_rule.caller_packet_count
-        self.callee.bytes += self.forwarding_rule.callee_byte_count
-        self.callee.packets += self.forwarding_rule.callee_packet_count
+        self.caller.bytes += self.forwarding_rule.caller_bytes
+        self.caller.packets += self.forwarding_rule.caller_packets
+        self.callee.bytes += self.forwarding_rule.callee_bytes
+        self.callee.packets += self.forwarding_rule.callee_packets
 
     def _stop_relaying(self):
         if self.forwarding_rule is not None:
