@@ -39,11 +39,16 @@ class MediaSubParty(object):
         self.bytes_rtcp = 0
         self.packets = 0
         self.packets_rtcp = 0
-        self.reset()
+        self.reset(True)
 
-    def reset(self):
+    def reset(self, expire):
         self.start_block()
         self.got_remote = False
+        if expire:
+            self.timer = reactor.callLater(10, self.substream.conntrack_expired)
+        else:
+            self.timer = None
+            self.remote = None
 
     def start_block(self):
         if self.inhibitor is None:
@@ -56,6 +61,9 @@ class MediaSubParty(object):
         if not self.got_remote:
             if (host, port) == self.remote:
                 return
+            if self.timer:
+                self.timer.cancel()
+                self.timer = None
             self.got_remote = True
             self.remote = (host, port)
             self.substream.check_create_conntrack()
@@ -63,6 +71,9 @@ class MediaSubParty(object):
             pass # what to do?
 
     def cleanup(self):
+        if self.timer and self.timer.active():
+            self.timer.cancel()
+        self.timer = None
         self.stop_block()
         self.listener.protocol.cb_func = None
         self.substream = None
@@ -89,10 +100,10 @@ class MediaSubStream(object):
 
     def reset(self, party):
         if party == "caller":
-            self.caller.reset()
+            self.caller.reset(True)
             self.callee.start_block()
         else:
-            self.callee.reset()
+            self.callee.reset(True)
             self.caller.start_block()
         self._stop_relaying()
 
@@ -105,9 +116,8 @@ class MediaSubStream(object):
             self.callee.stop_block()
 
     def conntrack_expired(self):
-        self._update_counters()
-        self.caller.reset()
-        self.callee.reset()
+        if self.forwarding_rule:
+            self._update_counters()
         self.stream.substream_expired(self)
 
     def cleanup(self):
@@ -188,8 +198,8 @@ class MediaStream(object):
     def substream_expired(self, substream):
         # This will cause any re-occuronce of the same traffic to be forwarded again
         if substream is self.rtcp or self.is_on_hold:
-            substream.caller.remote = None
-            substream.callee.remote = None
+            substream.caller.reset(False)
+            substream.callee.reset(False)
         else:
             self.session.stream_expired(self)
 
