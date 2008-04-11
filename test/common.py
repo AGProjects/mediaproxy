@@ -143,28 +143,34 @@ class Session(object):
         self.call_id = "".join(chr(random.randint(97, 122)) for i in range(16))
         self.cseq = 1
 
-    def do_update(self, openser, party, type, is_final):
+    def _get_parties(self, party):
         party = getattr(self, party)
         if party is self.caller:
             other = self.callee
         else:
             other = self.caller
+        return party, other
+
+    def do_update(self, openser, party, type, is_final):
+        party, other = self._get_parties(party)
         if type == "request":
             from_tag = party.tag
+            to_tag = other.tag
             from_header = party.sip_uri
             to_header = other.sip_uri
         else:
             from_tag = other.tag
+            to_tag = party.tag
             from_header = other.sip_uri
             to_header = party.sip_uri
-        defer = openser.update(call_id = self.call_id, from_tag = from_tag, from_header = from_header, to_header = to_header, cseq = self.cseq,  user_agent = party.user_agent, media = party.get_media(), type = type)
+        defer = openser.update(call_id = self.call_id, from_tag = from_tag, to_tag = to_tag, from_header = from_header, to_header = to_header, cseq = self.cseq,  user_agent = party.user_agent, media = party.get_media(), type = type)
         if is_final:
             self.cseq += 1
         return defer
 
     def do_remove(self, openser, party):
-        party = getattr(self, party)
-        openser.remove(call_id = self.call_id, from_tag = party.tag)
+        party, other = self._get_parties(party)
+        openser.remove(call_id = self.call_id, from_tag = party.tag, to_tag = other.tag)
 
 def connect_to_dispatcher():
     factory = OpenSERConnectorFactory()

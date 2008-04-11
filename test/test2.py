@@ -31,7 +31,7 @@ def wait(result, protocol, session):
 
 def kthxbye(result, protocol, session):
     print "sending remove"
-    return session.do_remove(protocol, "caller")
+    return session.do_remove(protocol, "callee")
 
 def disconnect(result, connector):
     print "disconnecting"
