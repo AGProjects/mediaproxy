@@ -34,7 +34,7 @@ setup(name         = "mediaproxy",
           "Programming Language :: C"
       ],
       packages     = ['mediaproxy', 'mediaproxy.interfaces', 'mediaproxy.interfaces.system'],
-      #scripts      = ['mp-relay', 'mp-dispatcher'],
+      scripts      = ['mp-relay', 'mp-dispatcher'],
       ext_modules  = [
           Extension(name = 'mediaproxy.interfaces.system._conntrack',
                     sources = ['mediaproxy/interfaces/system/_conntrack.c'],
