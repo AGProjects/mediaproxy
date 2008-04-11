@@ -141,7 +141,7 @@ ForwardingRule_dealloc(ForwardingRule *self)
         if (self->prev == NULL)
             forwarding_rules = self->next;
         else
-            self->prev->next = self->prev->next;
+            self->prev->next = self->next;
         if (self->next != NULL)
             self->next->prev = self->prev;
 
