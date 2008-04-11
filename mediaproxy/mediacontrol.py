@@ -255,7 +255,7 @@ class Session(object):
             for media_type, media_ip, media_port, media_direction in media_list:
                 stream = None
                 for old_stream in old_streams:
-                    if getattr(old_stream, media_type) == media_type and getattr(old_stream, party).remote_sdp == (media_ip, media_port):
+                    if old_stream.media_type == media_type and getattr(old_stream, party).remote_sdp == (media_ip, media_port):
                         log.debug("Found matching existing stream: %s" % old_stream)
                         stream = old_stream
                         stream.update_direction(media_direction)
