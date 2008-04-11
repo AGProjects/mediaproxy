@@ -373,16 +373,26 @@ class SessionManager(Logger):
         self.ports.add(ports)
 
     # called by higher level
+    def _find_session_key(self, call_id, from_tag, kw_rest):
+        key_from = (call_id, from_tag)
+        if key_from in self.sessions:
+            return key_from
+        to_tag = kw_rest.get("to_tag")
+        if to_tag:
+            key_to = (call_id, to_tag)
+            if key_to in self.sessions:
+                return key_to
+
     def update_session(self, dispatcher, call_id, from_tag, from_header, to_header, cseq, user_agent, media, type, **kw_rest):
-        key = (call_id, from_tag)
-        if key in self.sessions:
+        key = self._find_session_key(call_id, from_tag, kw_rest)
+        if key:
             session = self.sessions[key]
             log.debug("updating existing session %s" % session)
             is_downstream = (session.from_tag != from_tag) ^ (type == "request")
             session.update_media(cseq, user_agent, media, is_downstream)
         else:
             is_downstream = type == "request"
-            session = self.sessions[key] = Session(self, dispatcher, call_id, from_tag, from_header, to_header, cseq, user_agent, media, is_downstream)
+            session = self.sessions[(call_id, from_tag)] = Session(self, dispatcher, call_id, from_tag, from_header, to_header, cseq, user_agent, media, is_downstream)
             log.debug("created new session %s" % session)
             self.relay.added_session(dispatcher)
         retval = session.get_local_media(is_downstream, cseq)
@@ -392,7 +402,7 @@ class SessionManager(Logger):
         return retval
 
     def remove_session(self, call_id, from_tag, **kw_rest):
-        key = (call_id, from_tag)
+        key = self._find_session_key(call_id, from_tag, kw_rest)
         session = self.sessions[key]
         log.debug("removing session %s" % session)
         session.cleanup()
