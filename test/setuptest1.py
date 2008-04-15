@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+"""
+This test scenario simulates the caller sending an INVITE, nothing is
+received in return. The relay should discard the session after a while.
+"""
+
 from common import *
 
 def caller_update(protocol, session):

@@ -1,5 +1,14 @@
 #!/usr/bin/env python
 
+"""
+This test simulates a normal call flow:
+   - The caller sends an INVITE
+   - the callee sends a 200 OK
+   - Both parties will start sending media
+   - Media will flow for 5 seconds
+   - The callee will send a BYE
+"""
+
 from common import *
 
 def caller_update(protocol, session, caller_media, callee_media):

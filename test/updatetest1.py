@@ -1,5 +1,17 @@
 #!/usr/bin/env python
 
+"""
+This test simulates a call setup with an updated reply from the callee:
+   - The caller sends an INVITE
+   - The callee replies with .e.g a 183
+   - Both parties start sending media
+   - Media flows for 5 seconds
+   - Media stops
+   - The callee sends a 200 OK with a new port
+   - Media flows again for 5 seconds
+   - The caller sends a BYE
+"""
+
 from common import *
 
 def caller_update(protocol, session, caller_media, callee_media):
