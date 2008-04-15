@@ -5,7 +5,8 @@ This test simulates a session with audio and video media flowing, after which
 the callee removes the video stream and only audio flows:
   - caller sends INVITE, callee sends 200 ok
   - audio and video media flows for 5 seconds
-  - callee proposes to keep only the audio stream, caller sends OK
+  - callee proposes to keep only the audio stream using a re-INVITE, caller
+    sends OK
   - audio media flows for 5 seconds
   - caller sends BYE
 """
