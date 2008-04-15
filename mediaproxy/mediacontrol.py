@@ -78,6 +78,7 @@ class MediaSubParty(object):
             self.timer.cancel()
         self.timer = None
         self.stop_block()
+        self.local = (self.local[0], 0)
         self.listener.protocol.cb_func = None
         self.substream = None
 
