@@ -266,7 +266,8 @@ class Session(object):
                 new_streams.append(stream)
             if self.previous_cseq is not None:
                 for stream in self.streams[self.previous_cseq]:
-                    stream.cleanup()
+                    if stream not in self.streams[self.cseq] + new_streams:
+                        stream.cleanup()
             self.previous_cseq = self.cseq
             self.cseq = cseq
         elif self.cseq == cseq:
