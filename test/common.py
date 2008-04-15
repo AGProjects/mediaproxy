@@ -105,29 +105,35 @@ class Endpoint(object):
         assert(len(self.connectors) == 0)
         self.media = media
         for index, (media_type, port, direction) in enumerate(self.media):
-            protocol = MediaReceiverProtocol(self, index)
-            connector = reactor.listenUDP(port, protocol)
+            if port != 0:
+                protocol = MediaReceiverProtocol(self, index)
+                connector = reactor.listenUDP(port, protocol)
+            else:
+                connector = None
             self.connectors.append(connector)
-        return DeferredList([connector.protocol.defer for connector in self.connectors])
+        return DeferredList([connector.protocol.defer for connector in self.connectors if connector is not None])
 
     def get_media(self):
         return [(media_type, default_host_ip, port, direction) for media_type, port, direction in self.media]
 
     def start_media(self, ip, ports):
         for port, connector in zip(ports, self.connectors):
-            protocol = connector.protocol
-            protocol.transport.connect(ip, port)
-            protocol.loop = LoopingCall(protocol.transport.write, random_data)
-            protocol.loop.start(random.uniform(0.5, 1))
+            if connector is not None:
+                protocol = connector.protocol
+                protocol.transport.connect(ip, port)
+                protocol.loop = LoopingCall(protocol.transport.write, random_data)
+                protocol.loop.start(random.uniform(0.5, 1))
 
     def stop_media(self):
         defers = []
         for connector in self.connectors:
-            connector.protocol.loop.stop()
-            connector.protocol.loop = None
-            defer = connector.stopListening()
-            if defer is not None:
-                defers.append(defer)
+            if connector is not None:
+                if connector.protocol.loop is not None:
+                    connector.protocol.loop.stop()
+                    connector.protocol.loop = None
+                defer = connector.stopListening()
+                if defer is not None:
+                    defers.append(defer)
         self.connectors = []
         if defers:
             return DeferredList(defers)
