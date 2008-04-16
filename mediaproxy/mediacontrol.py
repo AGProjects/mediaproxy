@@ -53,6 +53,10 @@ class MediaSubParty(object):
             self.timer = None
             self.remote = None
 
+    def after_hold(self):
+        if not self.got_remote:
+            self.timer = reactor.callLater(10, self.substream.conntrack_expired)
+
     def start_block(self):
         if self.inhibitor is None:
             self.inhibitor = _conntrack.Inhibitor(self.local[1])
@@ -136,6 +140,7 @@ class MediaParty(object):
     def __init__(self, stream):
         self.manager = stream.session.manager
         self.remote_sdp = None
+        self.is_on_hold = False
         while True:
             self.listener_rtp = None
             self.ports = port_rtp, port_rtcp = self.manager.get_ports()
@@ -160,25 +165,27 @@ class MediaStream(object):
     def __init__(self, session, media_type, media_ip, media_port, initiating_party, direction = None):
         self.is_active = True
         self.session = session
-        self.is_on_hold = False
         self.media_type = media_type
         self.caller = MediaParty(self)
         self.callee = MediaParty(self)
         self.rtp = MediaSubStream(self, self.caller.listener_rtp, self.callee.listener_rtp)
         self.rtcp = MediaSubStream(self, self.caller.listener_rtcp, self.callee.listener_rtcp)
         getattr(self, initiating_party).remote_sdp = (media_ip, media_port)
-        if direction is not None:
-            self.update_direction(direction)
+        self.check_hold(initiating_party, direction, media_ip)
 
     def __str__(self):
         if self.caller.remote_sdp is None:
             src = "Unknown"
         else:
             src = "%s:%d" % self.caller.remote_sdp
+        if self.caller.is_on_hold:
+            src += " ON HOLD"
         if self.callee.remote_sdp is None:
             dst = "Unknown"
         else:
             dst = "%s:%d" % self.callee.remote_sdp
+        if self.callee.is_on_hold:
+            dst += " ON HOLD"
         for val, sub_party in zip(["src_rtp", "src_rtcp", "dst_rtp", "dst_rtcp"], [self.rtp.caller, self.rtcp.caller, self.rtp.callee, self.rtcp.callee]):
             if sub_party.got_remote:
                 exec("%s = '%s:%d'" % ((val,) + sub_party.remote))
@@ -188,11 +195,23 @@ class MediaStream(object):
         dst_local = "%s:%d" % self.rtp.callee.local
         return "(%s) %s (RTP: %s, RTCP: %s) <-> %s <-> %s <-> %s (RTP: %s, RTCP: %s)" % (self.media_type, src, src_rtp, src_rtcp, src_local, dst_local, dst, dst_rtp, dst_rtcp)
 
-    def update_direction(self, direction):
-        if direction == "sendrecv":
-            self.is_on_hold = False
+    @property
+    def is_on_hold(self):
+        return self.caller.is_on_hold or self.callee.is_on_hold
+
+    def check_hold(self, party, direction, ip):
+        previous_hold = self.is_on_hold
+        party = getattr(self, party)
+        if direction == "sendonly" or direction == "inactive":
+            party.is_on_hold = True
+        elif ip == "0.0.0.0":
+            party.is_on_hold = True
         else:
-            self.is_on_hold = True
+            party.is_on_hold = False
+        if previous_hold and not self.is_on_hold:
+            for substream in [self.rtp, self.rtcp]:
+                for subparty in [substream.caller, substream.callee]:
+                    subparty.after_hold()
 
     def reset(self, party, media_ip, media_port):
         self.rtp.reset(party)
@@ -256,10 +275,11 @@ class Session(object):
             for media_type, media_ip, media_port, media_direction in media_list:
                 stream = None
                 for old_stream in old_streams:
-                    if old_stream.media_type == media_type and getattr(old_stream, party).remote_sdp == (media_ip, media_port):
-                        log.debug("Found matching existing stream: %s" % old_stream)
+                    old_remote = getattr(old_stream, party).remote_sdp
+                    if old_stream.media_type == media_type and ((media_ip == "0.0.0.0" and old_remote[1] == media_port) or old_remote == (media_ip, media_port)):
                         stream = old_stream
-                        stream.update_direction(media_direction)
+                        stream.check_hold(party, media_direction, media_ip)
+                        log.debug("Found matching existing stream: %s" % stream)
                         break
                 if stream is None:
                     stream = MediaStream(self, media_type, media_ip, media_port, party, media_direction)
@@ -283,13 +303,13 @@ class Session(object):
                     log.debug("Stream rejected: %s" % stream)
                     stream.cleanup()
                     continue
-                stream.update_direction(media_direction)
+                stream.check_hold(party, media_direction, media_ip)
                 party_info = getattr(stream, party)
-                if party_info.remote_sdp is None:
+                if party_info.remote_sdp is None or party_info.remote_sdp[0] == "0.0.0.0":
                     party_info.remote_sdp = (media_ip, media_port)
                     log.debug("Got initial answer from %s for stream: %s" % (party, stream))
                 else:
-                    if party_info.remote_sdp != (media_ip, media_port):
+                    if (media_ip == "0.0.0.0" and party_info.remote_sdp[1] != media_port) or party_info.remote_sdp != (media_ip, media_port):
                         stream.reset(party, media_ip, media_port)
                         log.debug("Updated %s for stream: %s" % (party, stream))
                     else:
@@ -400,7 +420,7 @@ class SessionManager(Logger):
         retval = session.get_local_media(is_downstream, cseq)
         for index, (media_type, media_ip, media_port, media_direction) in enumerate(media):
             if media_ip == "0.0.0.0":
-                retval[index][0] = "0.0.0.0"
+                retval[index] = ("0.0.0.0", retval[index][1])
         return retval
 
     def remove_session(self, call_id, from_tag, **kw_rest):
