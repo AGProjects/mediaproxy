@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
 """
-This test simulates a session that starts with only video, then two audio
-streams are added and finally only one of the audio streams remains.
+This test simulates a session that starts with 1 audio stream, then gets put
+on hold by the caller for 5 minutes, the gets taken out of hold again. This
+test uses the newer "sendonly" direction attribute to indicate hold status.
 """
 
 from common import *
