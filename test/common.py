@@ -113,8 +113,12 @@ class Endpoint(object):
             self.connectors.append(connector)
         return DeferredList([connector.protocol.defer for connector in self.connectors if connector is not None])
 
-    def get_media(self):
-        return [(media_type, default_host_ip, port, direction) for media_type, port, direction in self.media]
+    def get_media(self, use_old_hold):
+        if use_old_hold:
+            ip = "0.0.0.0"
+        else:
+            ip = default_host_ip
+        return [(media_type, ip, port, direction) for media_type, port, direction in self.media]
 
     def start_media(self, ip, ports):
         for port, connector in zip(ports, self.connectors):
@@ -157,7 +161,7 @@ class Session(object):
             other = self.caller
         return party, other
 
-    def do_update(self, openser, party, type, is_final):
+    def do_update(self, openser, party, type, is_final, use_old_hold=False):
         party, other = self._get_parties(party)
         if type == "request":
             from_tag = party.tag
@@ -169,7 +173,7 @@ class Session(object):
             to_tag = party.tag
             from_header = other.sip_uri
             to_header = party.sip_uri
-        defer = openser.update(call_id = self.call_id, from_tag = from_tag, to_tag = to_tag, from_header = from_header, to_header = to_header, cseq = self.cseq,  user_agent = party.user_agent, media = party.get_media(), type = type)
+        defer = openser.update(call_id = self.call_id, from_tag = from_tag, to_tag = to_tag, from_header = from_header, to_header = to_header, cseq = self.cseq,  user_agent = party.user_agent, media = party.get_media(use_old_hold), type = type)
         if is_final:
             self.cseq += 1
         return defer
