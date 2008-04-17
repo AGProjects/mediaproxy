@@ -73,7 +73,7 @@ class RelayClientProtocol(LineOnlyReceiver):
                     response = self.factory.parent.got_command(self.factory.host, self.command, self.headers)
                 except:
                     traceback.print_exc()
-                    response = "error"
+                    response = "error\r\n"
             finally:
                 if response:
                     self.transport.write(response)
