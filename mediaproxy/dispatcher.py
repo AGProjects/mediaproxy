@@ -120,7 +120,7 @@ class RelayServerProtocol(LineOnlyReceiver):
             log.error("Got unexpected response from relay at %s: %s" % (self.ip, line))
             return
         if line_split[0] == "error":
-            self.defer.errback(RelayError('Received error from relay at %s in response to "%s" command: %s' % (self.ip, self.command_sent, line_split[1])))
+            self.defer.errback(RelayError('Received error from relay at %s in response to "%s" command' % (self.ip, self.command_sent)))
         elif self.command_sent == "remove":
             try:
                 stats = cjson.decode(line)
