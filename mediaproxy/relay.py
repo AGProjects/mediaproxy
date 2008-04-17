@@ -8,6 +8,7 @@
 
 import cjson
 import signal
+import traceback
 
 from twisted.protocols.basic import LineOnlyReceiver
 from twisted.internet.protocol import ClientFactory
@@ -67,10 +68,16 @@ class RelayClientProtocol(LineOnlyReceiver):
                 if header not in self.headers:
                     log.error('Required header "%s" for command "%s" not found' % (header, self.command))
                     return
-            response = self.factory.parent.got_command(self.factory.host, self.command, self.headers)
-            if response:
-                self.transport.write(response)
-            self.command = None
+            try:
+                try:
+                    response = self.factory.parent.got_command(self.factory.host, self.command, self.headers)
+                except:
+                    traceback.print_exc()
+                    response = "error"
+            finally:
+                if response:
+                    self.transport.write(response)
+                self.command = None
         else:
             try:
                 name, value = line.split(": ", 1)
