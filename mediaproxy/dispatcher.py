@@ -86,9 +86,6 @@ class RelayServerProtocol(LineOnlyReceiver):
         self.defer = None
         self.timer = None
     
-    def connectionMade(self):
-        self.ip = self.transport.getPeer().host
-
     def send_command(self, command, headers):
         log.debug('Issuing "%s" command to relay at %s' % (command, self.ip))
         self.defer = Deferred()
@@ -151,6 +148,7 @@ class RelayFactory(Factory):
     def buildProtocol(self, addr):
         log.debug("Relay at %s connected" % addr.host)
         prot = Factory.buildProtocol(self, addr)
+        prot.ip = addr.host
         self.protocols.append(prot)
         return prot
 
