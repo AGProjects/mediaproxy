@@ -195,7 +195,7 @@ class MediaRelay(MediaRelayBase):
         self.cred.verify_peer = True
         self.dispatchers = set()
         self.dispatcher_session_count = {}
-        self.connectors = {}
+        self.dispatcher_connectors = {}
         self.old_connectors = {}
         self.shutting_down = False
         MediaRelayBase.__init__(self)
@@ -207,10 +207,10 @@ class MediaRelay(MediaRelayBase):
         for new_dispatcher in dispatchers.difference(self.dispatchers):
             log.debug('Adding new dispatcher "%s"' % new_dispatcher)
             factory = DispatcherConnectingFactory(self, new_dispatcher)
-            self.connectors[new_dispatcher] = reactor.connectTLS(new_dispatcher, Config.dispatcher_port, factory, self.cred)
+            self.dispatcher_connectors[new_dispatcher] = reactor.connectTLS(new_dispatcher, Config.dispatcher_port, factory, self.cred)
         for old_dispatcher in self.dispatchers.difference(dispatchers):
             log.debug('Removing old dispatcher "%s"' % old_dispatcher)
-            self.old_connectors[old_dispatcher] = self.connectors.pop(old_dispatcher)
+            self.old_connectors[old_dispatcher] = self.dispatcher_connectors.pop(old_dispatcher)
             self._check_disconnect(old_dispatcher)
         self.dispatchers = dispatchers
 
@@ -226,7 +226,7 @@ class MediaRelay(MediaRelayBase):
             return seq + " " + cjson.encode(session.statistics) + "\r\n"
 
     def session_expired(self, session):
-        connector = self.connectors.get(session.dispatcher)
+        connector = self.dispatcher_connectors.get(session.dispatcher)
         if connector is None:
             connector = self.old_connectors.get(session.dispatcher)
         if connector and connector.state == "connected":
