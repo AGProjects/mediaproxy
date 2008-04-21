@@ -85,6 +85,7 @@ class RelayServerProtocol(LineOnlyReceiver):
         self.command_sent = None
         self.defer = None
         self.timer = None
+        self.ready = True
     
     def send_command(self, command, headers):
         log.debug('Issuing "%s" command to relay at %s' % (command, self.ip))
@@ -118,6 +119,9 @@ class RelayServerProtocol(LineOnlyReceiver):
             return
         if line_split[0] == "error":
             self.defer.errback(RelayError('Received error from relay at %s in response to "%s" command' % (self.ip, self.command_sent)))
+        elif line_split[0] == "halting":
+            self.ready = False
+            self.defer.errback(RelayError("Relay at %s is shutting down" % self.ip))
         elif self.command_sent == "remove":
             try:
                 stats = cjson.decode(line)
@@ -166,7 +170,7 @@ class RelayFactory(Factory):
                 raise RelayError("Relay for this session is no longer connected")
             return self.sessions[call_id].send_command(command, headers)
         else:
-            try_relays = self.protocols[:]
+            try_relays = [protocol for protocol in self.protocols if protocol.ready]
             random.shuffle(try_relays)
             defer = self._try_next(try_relays, command, headers)
             defer.addCallback(self._add_session, try_relays, call_id)
