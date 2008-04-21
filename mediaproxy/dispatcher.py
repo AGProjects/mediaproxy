@@ -82,63 +82,68 @@ class RelayError(Exception):
 class RelayServerProtocol(LineOnlyReceiver):
 
     def __init__(self):
-        self.command_sent = None
-        self.defer = None
-        self.timer = None
+        self.commands = {}
         self.ready = True
+        self.sequence_number = 0
     
     def send_command(self, command, headers):
         log.debug('Issuing "%s" command to relay at %s' % (command, self.ip))
-        self.defer = Deferred()
-        self.timer = reactor.callLater(Config.relay_timeout, self.defer.errback, RelayError("Relay at %s timed out" % self.ip))
-        self.defer.addBoth(self._defer_cleanup)
-        self.command_sent = command
-        self.transport.write("\r\n".join([command] + headers + ["", ""]))
-        return self.defer
+        seq = str(self.sequence_number)
+        self.sequence_number += 1
+        defer = Deferred()
+        timer = reactor.callLater(Config.relay_timeout, self._timeout, seq, defer)
+        self.commands[seq] = (command, defer, timer)
+        self.transport.write("\r\n".join([" ".join([command, seq])] + headers + ["", ""]))
+        return defer
 
-    def _defer_cleanup(self, result):
-        if self.timer.active():
-            self.timer.cancel()
-        self.timer = None
-        self.defer = None
-        return result
+    def _timeout(self, seq, defer):
+        del self.commands[seq]
+        defer.errback(RelayError("Relay at %s timed out" % self.ip))
 
     def lineReceived(self, line):
-        line_split = line.split(" ", 1)
-        if line_split[0] == "expired":
+        try:
+            first, rest = line.split(" ", 1)
+        except ValueError:
+            error.log("Could not decode reply from relay: %s" % line)
+            return
+        if first == "expired":
             try:
-                stats = cjson.decode(line_split[1])
+                stats = cjson.decode(rest)
             except cjson.DecodeError:
                 log.error("Error decoding JSON from relay at %s" % self.ip)
             else:
                 self.factory.dispatcher.update_statistics(stats)
                 del self.factory.sessions[stats["call_id"]]
             return
-        if self.defer is None:
+        try:
+            command, defer, timer = self.commands.pop(first)
+        except KeyError:
             log.error("Got unexpected response from relay at %s: %s" % (self.ip, line))
             return
-        if line_split[0] == "error":
-            self.defer.errback(RelayError('Received error from relay at %s in response to "%s" command' % (self.ip, self.command_sent)))
-        elif line_split[0] == "halting":
+        timer.cancel()
+        if rest == "error":
+            defer.errback(RelayError('Received error from relay at %s in response to "%s" command' % (self.ip, command)))
+        elif rest == "halting":
             self.ready = False
-            self.defer.errback(RelayError("Relay at %s is shutting down" % self.ip))
-        elif self.command_sent == "remove":
+            defer.errback(RelayError("Relay at %s is shutting down" % self.ip))
+        elif command == "remove":
             try:
-                stats = cjson.decode(line)
+                stats = cjson.decode(rest)
             except cjson.DecodeError:
                 log.error("Error decoding JSON from relay at %s" % self.ip)
             else:
                 self.factory.dispatcher.update_statistics(stats)
                 del self.factory.sessions[stats["call_id"]]
-            self.defer.callback("removed")
+            defer.callback("removed")
         else: # update command
-            self.defer.callback(line)
+            defer.callback(rest)
 
     def connectionLost(self, reason):
         log.debug("Relay at %s disconnected" % self.ip)
         self.factory.protocols.remove(self)
-        if self.defer is not None:
-            self.defer.errback(RelayError("Relay at %s disconnected" % self.ip))
+        for command, defer, timer in self.commands.itervalues():
+            timer.cancel()
+            defer.errback(RelayError("Relay at %s disconnected" % self.ip))
 
 
 class RelayFactory(Factory):
@@ -200,9 +205,8 @@ class Dispatcher(object):
         self.cred.verify_peer = True
         self.relay_factory = RelayFactory(self)
         reactor.listenTLS(Config.port, self.relay_factory, self.cred)
-        self.openser = OpenSERControlFactory(self)
-        reactor.listenUNIX(Config.socket, self.openser)
-        self.defer = None
+        self.openser_factory = OpenSERControlFactory(self)
+        reactor.listenUNIX(Config.socket, self.openser_factory)
 
     def run(self):
         reactor.run()
