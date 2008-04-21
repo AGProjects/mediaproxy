@@ -55,14 +55,21 @@ class RelayClientProtocol(LineOnlyReceiver):
 
     def __init__(self):
         self.command = None
+        self.seq = None
 
     def lineReceived(self, line):
         if self.command is None:
-            if line and line.split()[0] == line and line in self.required_headers:
-                self.command = line
+            try:
+                command, seq = line.split()
+            except ValueError:
+                log.error("Could not decode command/sequence number pair from dispatcher: %s" % line)
+                return
+            if command in self.required_headers:
+                self.command = command
+                self.seq = seq
                 self.headers = DecodingDict()
             else:
-                log.error("Unknown command: %s" % line)
+                log.error("Unknown command: %s" % command)
         elif line.strip() == "":
             for header in self.required_headers[self.command]:
                 if header not in self.headers:
@@ -70,10 +77,10 @@ class RelayClientProtocol(LineOnlyReceiver):
                     return
             try:
                 try:
-                    response = self.factory.parent.got_command(self.factory.host, self.command, self.headers)
+                    response = self.factory.parent.got_command(self.factory.host, self.command, self.seq, self.headers)
                 except:
                     traceback.print_exc()
-                    response = "error\r\n"
+                    response = "%s error\r\n" % self.seq
             finally:
                 if response:
                     self.transport.write(response)
@@ -207,16 +214,16 @@ class MediaRelay(MediaRelayBase):
             self._check_disconnect(old_dispatcher)
         self.dispatchers = dispatchers
 
-    def got_command(self, dispatcher, command, headers):
+    def got_command(self, dispatcher, command, seq, headers):
         if command == "update":
             local_media = self.session_manager.update_session(dispatcher, **headers)
             if local_media is None:
-                return "halting\r\n"
+                return "%s halting\r\n" % seq
             else:
-                return " ".join([local_media[0][0]] + [str(media[1]) for media in local_media]) + "\r\n"
+                return " ".join([seq] + [local_media[0][0]] + [str(media[1]) for media in local_media]) + "\r\n"
         else: # remove
             session = self.session_manager.remove_session(**headers)
-            return cjson.encode(session.statistics) + "\r\n"
+            return seq + " " + cjson.encode(session.statistics) + "\r\n"
 
     def session_expired(self, session):
         connector = self.connectors.get(session.dispatcher)
