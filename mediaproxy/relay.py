@@ -106,7 +106,8 @@ class DispatcherConnectingFactory(ClientFactory):
 
     def clientConnectionLost(self, connector, reason):
         log.error('Connection lost to dispatcher "%s": %s' % (self.host, reason.getErrorMessage()))
-        connector.connect()
+        if not self.parent.shutting_down:
+            connector.connect()
 
     def cancel_delayed(self):
         if self.delayed and self.delayed.active():
@@ -148,21 +149,27 @@ class SRVMediaRelayBase(object):
         reactor.run()
 
     def _handle_SIGHUP(self, *args):
-        log.msg("Received SIGHUP, shutting down.")
-        self.stop()
+        log.msg("Received SIGHUP, shutting down after all sessions have expired.")
+        reactor.callFromThread(self.shutdown, False)
 
     def _handle_SIGINT(self, *args):
         if process._daemon:
             log.msg("Received SIGINT, shutting down.")
         else:
             log.msg("Received KeyboardInterrupt, exiting.")
-        self.stop()
+        reactor.callFromThread(self.shutdown, True)
 
     def _handle_SIGTERM(self, *args):
         log.msg("Received SIGTERM, shutting down.")
-        self.stop()
+        reactor.callFromThread(self.shutdown, True)
 
-    def stop(self):
+    def shutdown(self, kill_sessions):
+        pass
+
+    def on_shutdown(self):
+        pass
+
+    def _shutdown(self):
         reactor.stop()
         self.on_shutdown()
 
@@ -183,9 +190,12 @@ class MediaRelay(MediaRelayBase):
         self.dispatcher_session_count = {}
         self.connectors = {}
         self.old_connectors = {}
+        self.shutting_down = False
         MediaRelayBase.__init__(self)
 
     def update_dispatchers(self, dispatchers):
+        if self.shutting_down:
+            return
         dispatchers = set(dispatchers)
         for new_dispatcher in dispatchers.difference(self.dispatchers):
             log.debug('Adding new dispatcher "%s"' % new_dispatcher)
@@ -200,30 +210,53 @@ class MediaRelay(MediaRelayBase):
     def got_command(self, dispatcher, command, headers):
         if command == "update":
             local_media = self.session_manager.update_session(dispatcher, **headers)
-            return " ".join([local_media[0][0]] + [str(media[1]) for media in local_media]) + "\r\n"
+            if local_media is None:
+                return "halting\r\n"
+            else:
+                return " ".join([local_media[0][0]] + [str(media[1]) for media in local_media]) + "\r\n"
         else: # remove
             session = self.session_manager.remove_session(**headers)
             return cjson.encode(session.statistics) + "\r\n"
 
     def session_expired(self, session):
         connector = self.connectors.get(session.dispatcher)
+        if connector is None:
+            connector = self.old_connectors.get(session.dispatcher)
         if connector and connector.state == "connected":
             connector.transport.write(" ".join(["expired", cjson.encode(session.statistics)]) + "\r\n")
+        else:
+            log.warn("dispatcher for expired session is no longer online, statistics are lost!")
 
-    def added_session(self, dispatcher):
-        self.dispatcher_session_count[dispatcher] = self.dispatcher_session_count.setdefault(dispatcher, 0) + 1
+    def add_session(self, dispatcher):
+        if self.shutting_down:
+            return False
+        else:
+            self.dispatcher_session_count[dispatcher] = self.dispatcher_session_count.get(dispatcher, 0) + 1
+            return True
 
-    def removed_session(self, dispatcher):
+    def remove_session(self, dispatcher):
         self.dispatcher_session_count[dispatcher] -= 1
         if dispatcher in self.old_connectors:
             self._check_disconnect(dispatcher)
 
     def _check_disconnect(self, dispatcher):
         connector = self.old_connectors[dispatcher]
-        if self.dispatcher_session_count[dispatcher] == 0:
+        if self.dispatcher_session_count.get(dispatcher, 0) == 0:
             connector.factory.cancel_delayed()
             connector.disconnect()
             del self.old_connectors[dispatcher]
+            if self.shutting_down and len(self.old_connectors) == 0:
+                reactor.callLater(0, self._shutdown)
+
+    def shutdown(self, kill_sessions):
+        if not self.shutting_down:
+            if sum(count for count in self.dispatcher_session_count.itervalues()) == 0:
+                MediaRelayBase._shutdown(self)
+            else:
+                self.update_dispatchers([])
+            self.shutting_down = True
+        if kill_sessions:
+            self.session_manager.cleanup()
 
     def on_shutdown(self):
         self.session_manager.cleanup()

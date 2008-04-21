@@ -413,10 +413,12 @@ class SessionManager(Logger):
             is_downstream = (session.from_tag != from_tag) ^ (type == "request")
             session.update_media(cseq, user_agent, media, is_downstream)
         else:
+            if not self.relay.add_session(dispatcher):
+                log.debug("cannot add new session, MediaProxy relay is shutting down")
+                return None
             is_downstream = type == "request"
             session = self.sessions[(call_id, from_tag)] = Session(self, dispatcher, call_id, from_tag, from_header, to_header, cseq, user_agent, media, is_downstream)
             log.debug("created new session %s" % session)
-            self.relay.added_session(dispatcher)
         retval = session.get_local_media(is_downstream, cseq)
         for index, (media_type, media_ip, media_port, media_direction) in enumerate(media):
             if media_ip == "0.0.0.0":
@@ -430,7 +432,7 @@ class SessionManager(Logger):
         session.cleanup()
         dispatcher = session.dispatcher
         del self.sessions[key]
-        reactor.callLater(0, self.relay.removed_session, dispatcher)
+        reactor.callLater(0, self.relay.remove_session, dispatcher)
         return session
 
     def session_expired(self, call_id, from_tag):
@@ -438,10 +440,11 @@ class SessionManager(Logger):
         session = self.sessions[key]
         log.debug("expired session %s" % session)
         dispatcher = session.dispatcher
+        session.cleanup()
         del self.sessions[key]
         self.relay.session_expired(session)
-        self.relay.removed_session(dispatcher)
+        self.relay.remove_session(dispatcher)
 
     def cleanup(self):
         for key in self.sessions.keys():
-            self.remove_session(*key)
+            self.session_expired(*key)
