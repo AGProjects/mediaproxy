@@ -187,7 +187,8 @@ class RelayFactory(Factory):
 
     def _relay_error(self, failure, try_relays, command, headers):
         failure.trap(RelayError)
-        log.warn("Relay from %s returned error: %s" % (try_relays.pop().ip, failure.value))
+        failed_relay = try_relays.pop()
+        log.warn("Relay from %s returned error: %s" % (failed_relay.ip, failure.value))
         return self._try_next(try_relays, command, headers)
 
     def _try_next(self, try_relays, command, headers):
