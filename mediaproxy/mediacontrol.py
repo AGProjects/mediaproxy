@@ -238,14 +238,14 @@ class MediaStream(object):
 
 class Session(object):
 
-    def __init__(self, manager, dispatcher, call_id, from_tag, from_header, to_header, cseq, user_agent, media_list, is_downstream, mark = 0):
+    def __init__(self, manager, dispatcher, call_id, from_tag, from_uri, to_uri, cseq, user_agent, media_list, is_downstream, mark = 0):
         self.manager = manager
         self.dispatcher = dispatcher
         self.call_id = call_id
         self.from_tag = from_tag
         self.mark = mark
-        self.from_header = from_header
-        self.to_header = to_header
+        self.from_uri = from_uri
+        self.to_uri = to_uri
         self.caller_ua = None
         self.callee_ua = None
         self.cseq = None
@@ -254,7 +254,7 @@ class Session(object):
         self.update_media(cseq, user_agent, media_list, is_downstream)
 
     def __str__(self):
-        return "%s: %s (%s) --> %s" % (self.call_id, self.from_header, self.from_tag, self.to_header)
+        return "%s: %s (%s) --> %s" % (self.call_id, self.from_uri, self.from_tag, self.to_uri)
 
     def update_media(self, cseq, user_agent, media_list, is_downstream):
         if is_downstream:
@@ -356,7 +356,7 @@ class Session(object):
             for media_type in ["audio", "video"]:
                 stats["%s_%s_packets" % (party, media_type)] = self.get_packet_count(media_type, party)
                 stats["%s_%s_bytes" % (party, media_type)] = self.get_byte_count(media_type, party)
-        for attr in ["call_id", "caller_ua", "callee_ua", "from_tag", "from_header", "to_header"]:
+        for attr in ["call_id", "caller_ua", "callee_ua", "from_tag", "from_uri", "to_uri"]:
             stats[attr] = getattr(self, attr)
         return stats
 
@@ -405,7 +405,7 @@ class SessionManager(Logger):
             if key_to in self.sessions:
                 return key_to
 
-    def update_session(self, dispatcher, call_id, from_tag, from_header, to_header, cseq, user_agent, media, type, **kw_rest):
+    def update_session(self, dispatcher, call_id, from_tag, from_uri, to_uri, cseq, user_agent, media, type, **kw_rest):
         key = self._find_session_key(call_id, from_tag, kw_rest)
         if key:
             session = self.sessions[key]
@@ -417,7 +417,7 @@ class SessionManager(Logger):
                 log.debug("cannot add new session, MediaProxy relay is shutting down")
                 return None
             is_downstream = type == "request"
-            session = self.sessions[(call_id, from_tag)] = Session(self, dispatcher, call_id, from_tag, from_header, to_header, cseq, user_agent, media, is_downstream)
+            session = self.sessions[(call_id, from_tag)] = Session(self, dispatcher, call_id, from_tag, from_uri, to_uri, cseq, user_agent, media, is_downstream)
             log.debug("created new session %s" % session)
         retval = session.get_local_media(is_downstream, cseq)
         for index, (media_type, media_ip, media_port, media_direction) in enumerate(media):
