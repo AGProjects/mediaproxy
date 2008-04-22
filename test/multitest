@@ -1,0 +1,5 @@
+#!/bin/bash
+PYTHONPATH=.. ./multitest1.py &
+PYTHONPATH=.. ./multitest2.py &
+PYTHONPATH=.. ./multitest3.py &
+PYTHONPATH=.. ./multitest4.py &
