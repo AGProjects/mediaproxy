@@ -171,7 +171,7 @@ class SRVMediaRelayBase(object):
         reactor.callFromThread(self.shutdown, True)
 
     def shutdown(self, kill_sessions):
-        pass
+        raise NotImplementedError()
 
     def on_shutdown(self):
         pass

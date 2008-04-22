@@ -60,4 +60,4 @@ class SIPThorMediaRelayBase(EventServiceClient):
         reactor.callFromThread(self.shutdown, True)
 
     def shutdown(self, kill_sessions):
-        pass
+        raise NotImplementedError()
