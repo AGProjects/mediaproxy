@@ -18,6 +18,7 @@ from application.system import default_host_ip
 from mediaproxy.interfaces.system import _conntrack
 
 class StreamListenerProtocol(DatagramProtocol):
+    noisy = False
 
     def __init__(self):
         self.cb_func = None

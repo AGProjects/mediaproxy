@@ -50,12 +50,16 @@ configuration = ConfigFile(configuration_filename)
 configuration.read_settings("Relay", Config)
 
 class RelayClientProtocol(LineOnlyReceiver):
+    noisy = False
     required_headers = { "update": ["call_id", "from_tag", "from_uri", "to_uri", "cseq", "user_agent", "media", "type"],
                          "remove": ["call_id", "from_tag"] }
 
     def __init__(self):
         self.command = None
         self.seq = None
+
+    def connectionMade(self):
+        log.debug("Connected to dispatcher %s" % self.transport.getPeer().host)
 
     def lineReceived(self, line):
         if self.command is None:
@@ -97,6 +101,7 @@ class RelayClientProtocol(LineOnlyReceiver):
 
 
 class DispatcherConnectingFactory(ClientFactory):
+    noisy = False
     protocol = RelayClientProtocol
 
     def __init__(self, parent, host):
