@@ -21,7 +21,7 @@ from gnutls.interfaces.twisted import X509Credentials
 from application import log
 from application.configuration import *
 
-from mediaproxy import configuration_filename
+from mediaproxy import configuration_filename, default_dispatcher_port
 from mediaproxy.tls import Certificate, PrivateKey
 
 class Config(ConfigSection):
@@ -30,7 +30,7 @@ class Config(ConfigSection):
     certificate = None
     private_key = None
     ca = None
-    port = 12345
+    port = default_dispatcher_port
     relay_timeout = 5
 
 

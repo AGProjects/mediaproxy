@@ -5,5 +5,5 @@
 
 __version__ = "1.99.0"
 
-configuration_filename = 'config.ini'
-
+configuration_filename = "config.ini"
+default_dispatcher_port = 12345

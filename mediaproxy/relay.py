@@ -29,12 +29,12 @@ from application.process import process
 from mediaproxy.tls import Certificate, PrivateKey
 from mediaproxy.headers import DecodingDict, DecodingError
 from mediaproxy.mediacontrol import SessionManager
-from mediaproxy import configuration_filename
+from mediaproxy import configuration_filename, default_dispatcher_port
 
 class Config(ConfigSection):
     _datatypes = {"dispatcher_address": IPAddress, "certificate": Certificate, "private_key": PrivateKey, "ca": Certificate}
     dispatcher_address = None
-    dispatcher_port = 12345
+    dispatcher_port = default_dispatcher_port
     start_port = 40000
     end_port = 50000
     certificate = None
