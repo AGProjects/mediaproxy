@@ -93,7 +93,7 @@ class RelayClientProtocol(LineOnlyReceiver):
             try:
                 self.headers[name] = value
             except DecodingError, e:
-                log.error("Could not decode header: %s" % e.message)
+                log.error("Could not decode header: %s" % e)
 
 
 class DispatcherConnectingFactory(ClientFactory):
