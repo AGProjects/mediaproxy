@@ -31,11 +31,10 @@ class SIPThorMediaRelayBase(EventServiceClient):
     topics = ["Thor.Members"]
     
     def __init__(self):
-        self.node = ThorEntity(ThorNetworkConfig.nodeIP, ["mprelay_server"])
-        self.networks = {}
+        self.node = GenericThorEntity(ThorNetworkConfig.nodeIP, ["media_relay"])
         self.presence_message = ThorEvent('Thor.Presence', self.node.id)
         self.shutdown_message = ThorEvent('Thor.Leave', self.node.id)
-        credentials = X509Credentials(cert_name='mprelay')
+        credentials = X509Credentials(cert_name='node')
         credentials.session_params.compressions = (COMP_LZO, COMP_DEFLATE, COMP_NULL)
         self.control = ControlLink(credentials)
         EventServiceClient.__init__(self, ThorNetworkConfig.domain, credentials)
