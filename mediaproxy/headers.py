@@ -14,29 +14,22 @@ class DecodingError(Exception):
 
 
 class MediaProxyHeaders(object):
-    allowed_headers = ["call_id", "cseq", "type", "from_tag", "to_tag", "from_header", "to_header", "user_agent", "media"]
 
     @classmethod
     def encode(cls, name, value):
-        if name in cls.allowed_headers:
-            func_name = "encode_%s" % name
-            if hasattr(cls, func_name):
-                return getattr(cls, func_name)(value)
-            else:
-                return value
+        func_name = "encode_%s" % name
+        if hasattr(cls, func_name):
+            return getattr(cls, func_name)(value)
         else:
-            raise EncodingError('Header "%s" is unknown' % name)
+            return value
 
     @classmethod
     def decode(cls, name, value):
-        if name in cls.allowed_headers:
-            func_name = "decode_%s" % name
-            if hasattr(cls, func_name):
-                return getattr(cls, func_name)(value)
-            else:
-                return value
+        func_name = "decode_%s" % name
+        if hasattr(cls, func_name):
+            return getattr(cls, func_name)(value)
         else:
-            raise DecodingError('Header "%s" is unknown' % name)
+            return value
 
     @staticmethod
     def encode_cseq(value):
