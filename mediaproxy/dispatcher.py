@@ -38,6 +38,7 @@ configuration = ConfigFile(configuration_filename)
 configuration.read_settings("Dispatcher", Config)
 
 class OpenSERControlProtocol(LineOnlyReceiver):
+    noisy = False
 
     def __init__(self):
         self.line_buf = []
@@ -69,6 +70,7 @@ class OpenSERControlProtocol(LineOnlyReceiver):
 
 
 class OpenSERControlFactory(Factory):
+    noisy = False
     protocol = OpenSERControlProtocol
 
     def __init__(self, dispatcher):
@@ -80,6 +82,7 @@ class RelayError(Exception):
 
 
 class RelayServerProtocol(LineOnlyReceiver):
+    noisy = False
 
     def __init__(self):
         self.commands = {}
@@ -147,6 +150,7 @@ class RelayServerProtocol(LineOnlyReceiver):
 
 
 class RelayFactory(Factory):
+    noisy = False
     protocol = RelayServerProtocol
 
     def __init__(self, dispatcher):
