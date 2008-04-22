@@ -3,6 +3,8 @@
 # Author: Ruud Klaver <ruud@ag-projects.com>
 #
 
+from time import time
+
 from zope.interface import implements
 from twisted.internet import reactor
 from twisted.internet.interfaces import IReadDescriptor
@@ -251,6 +253,8 @@ class Session(object):
         self.cseq = None
         self.previous_cseq = None
         self.streams = {}
+        self.start_time = None
+        self.end_time = None
         self.update_media(cseq, user_agent, media_list, is_downstream)
 
     def __str__(self):
@@ -293,6 +297,8 @@ class Session(object):
             self.cseq = cseq
         elif self.cseq == cseq:
             log.debug("Received updated SDP answer")
+            if self.start_time is None:
+                self.start_time = time()
             current_streams = self.streams[cseq]
             if len(media_list) != len(current_streams):
                 raise Exception # TODO: elaborate
@@ -329,6 +335,7 @@ class Session(object):
         return retval
 
     def cleanup(self):
+        self.end_time = time()
         for cseq in [self.previous_cseq, self.cseq]:
             if cseq is not None:
                 for stream in self.streams[cseq]:
@@ -350,13 +357,20 @@ class Session(object):
             self.manager.session_expired(self.call_id, self.from_tag)
 
     @property
+    def duration(self):
+        if self.start_time is not None and self.end_time is not None:
+            return int(self.end_time - self.start_time)
+        else:
+            return 0
+
+    @property
     def statistics(self):
         stats = {}
         for party in ["caller", "callee"]:
             for media_type in ["audio", "video"]:
                 stats["%s_%s_packets" % (party, media_type)] = self.get_packet_count(media_type, party)
                 stats["%s_%s_bytes" % (party, media_type)] = self.get_byte_count(media_type, party)
-        for attr in ["call_id", "caller_ua", "callee_ua", "from_tag", "from_uri", "to_uri"]:
+        for attr in ["call_id", "caller_ua", "callee_ua", "from_tag", "from_uri", "to_uri", "duration"]:
             stats[attr] = getattr(self, attr)
         return stats
 
