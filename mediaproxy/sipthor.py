@@ -12,8 +12,7 @@ from application.process import process
 
 from gnutls.constants import *
 
-from thor.control import ControlLink
-from thor.entities import ThorEntitiesRoleMap, GenericThorEntity as ThorEntity
+from thor.entities import ThorEntities, GenericThorEntity
 from thor.eventservice import EventServiceClient, ThorEvent
 from thor.tls import X509Credentials
 
@@ -36,49 +35,11 @@ class SIPThorMediaRelayBase(EventServiceClient):
         self.shutdown_message = ThorEvent('Thor.Leave', self.node.id)
         credentials = X509Credentials(cert_name='node')
         credentials.session_params.compressions = (COMP_LZO, COMP_DEFLATE, COMP_NULL)
-        self.control = ControlLink(credentials)
         EventServiceClient.__init__(self, ThorNetworkConfig.domain, credentials)
 
-    def _disconnect_all(self, result):
-        self.control.disconnect_all()
-        EventServiceClient._disconnect_all(self, result)
-
     def handle_event(self, event):
-        networks = self.networks
-        role_map = ThorEntitiesRoleMap(event.message) ## mapping between role names and lists of nodes with that role
-        all_roles = role_map.keys() + networks.keys()
-        for role in all_roles:
-            try:
-                network = networks[role] ## avoid setdefault here because it always evaluates the 2nd argument
-            except KeyError:
-                from thor import network as thor_network
-                if role in ["thor_manager", "thor_monitor", "provisioning_server", "media_relay"]:
-                    continue
-                else:
-                    network = thor_network.new(ThorNetworkConfig.multiply)
-                networks[role] = network
-            new_nodes = set([node.ip for node in role_map.get(role, [])])
-            old_nodes = set(network.nodes)
-            ## compute set differences
-            added_nodes = new_nodes - old_nodes
-            removed_nodes = old_nodes - new_nodes
-            if removed_nodes:
-                for node in removed_nodes:
-                    network.remove_node(node)
-                    self.control.discard_node(node)
-                plural = len(removed_nodes) != 1 and 's' or ''
-                log.msg("removed %s node%s: %s" % (role, plural, ', '.join(removed_nodes)))
-            if added_nodes:
-                for node in added_nodes:
-                    network.add_node(node)
-                plural = len(added_nodes) != 1 and 's' or ''
-                log.msg("added %s node%s: %s" % (role, plural, ', '.join(added_nodes)))
-        network = self.networks.get("sip_proxy", None)
-        if network is None:
-            self.update_dispatchers([])
-        else:
-            print network.nodes
-            self.update_dispatchers(network.nodes)
+        sip_proxy_ips = [node.ip for node in ThorEntities(event.message, role="sip_proxy")]
+        self.update_dispatchers(sip_proxy_ips)
 
     def update_dispatchers(self, dispatchers):
         raise NotImplementedError()
