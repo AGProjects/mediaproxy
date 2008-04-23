@@ -57,6 +57,8 @@ class MediaSubParty(object):
             self.remote = None
 
     def after_hold(self):
+        if self.timer and self.timer.active():
+            self.timer.cancel()
         if not self.got_remote:
             self.timer = reactor.callLater(10, self.substream.conntrack_expired)
 
@@ -127,8 +129,7 @@ class MediaSubStream(object):
             self.callee.stop_block()
 
     def conntrack_expired(self):
-        if self.forwarding_rule:
-            self._update_counters()
+        self._stop_relaying()
         self.stream.substream_expired(self)
 
     def cleanup(self):
