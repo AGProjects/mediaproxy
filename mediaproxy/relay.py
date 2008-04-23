@@ -118,7 +118,7 @@ class DispatcherConnectingFactory(ClientFactory):
 
     def clientConnectionLost(self, connector, reason):
         log.error('Connection lost to dispatcher "%s": %s' % (self.host, reason.getErrorMessage()))
-        if not self.parent.shutting_down:
+        if self.parent.connector_needs_reconnect(connector):
             connector.connect()
 
     def cancel_delayed(self):
@@ -256,9 +256,21 @@ class MediaRelay(MediaRelayBase):
         if self.dispatcher_session_count.get(dispatcher, 0) == 0:
             connector.factory.cancel_delayed()
             connector.disconnect()
-            del self.old_connectors[dispatcher]
-            if self.shutting_down and len(self.old_connectors) == 0:
-                reactor.callLater(0, self._shutdown)
+
+    def connector_needs_reconnect(self, connector):
+        if self.shutting_down:
+            for dispatcher, old_connector in self.old_connectors.items():
+                if old_connector is connector:
+                    del self.old_connectors[dispatcher]
+                    break
+            if len(self.old_connectors) == 0:
+                self._shutdown()
+            return False
+        else:
+            for present_connector in self.connectors.values() + self.old_connectors.values():
+                if present_connector is connector:
+                    return True
+            return False
 
     def shutdown(self, kill_sessions):
         if not self.shutting_down:
