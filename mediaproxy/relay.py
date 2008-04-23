@@ -267,7 +267,7 @@ class MediaRelay(MediaRelayBase):
                 self._shutdown()
             return False
         else:
-            for present_connector in self.connectors.values() + self.old_connectors.values():
+            for present_connector in self.dispatcher_connectors.values() + self.old_connectors.values():
                 if present_connector is connector:
                     return True
             return False
