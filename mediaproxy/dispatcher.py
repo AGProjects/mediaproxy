@@ -178,7 +178,7 @@ class RelayFactory(Factory):
             if relay not in self.protocols:
                 raise RelayError("Relay for this session is no longer connected")
             return self.sessions[call_id].send_command(command, headers)
-        else:
+        elif command == "update":
             preferred_relay = None
             for header in headers:
                 if header.startswith("media_relay: "):
@@ -192,6 +192,8 @@ class RelayFactory(Factory):
             defer = self._try_next(try_relays, command, headers)
             defer.addCallback(self._add_session, try_relays, call_id)
             return defer
+        else:
+            raise RelayError("Non-update command received from OpenSER for unknown session")
 
     def _add_session(self, result, try_relays, call_id):
         self.sessions[call_id] = try_relays[-1]
