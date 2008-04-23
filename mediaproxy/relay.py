@@ -254,8 +254,13 @@ class MediaRelay(MediaRelayBase):
     def _check_disconnect(self, dispatcher):
         connector = self.old_connectors[dispatcher]
         if self.dispatcher_session_count.get(dispatcher, 0) == 0:
+            old_state = connector.state
             connector.factory.cancel_delayed()
             connector.disconnect()
+            if old_state != "connected":
+                del self.old_connectors[dispatcher]
+                if len(self.old_connectors) == 0:
+                    self._shutdown()
 
     def connector_needs_reconnect(self, connector):
         if self.shutting_down:
@@ -274,8 +279,8 @@ class MediaRelay(MediaRelayBase):
 
     def shutdown(self, kill_sessions):
         if not self.shutting_down:
-            if sum(count for count in self.dispatcher_session_count.itervalues()) == 0:
-                MediaRelayBase._shutdown(self)
+            if len(self.dispatcher_connectors) + len(self.old_connectors) == 0:
+                self._shutdown()
             else:
                 self.update_dispatchers([])
             self.shutting_down = True
