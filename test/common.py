@@ -16,9 +16,9 @@ from mediaproxy import configuration_filename
 random_data = "".join(chr(random.randint(0, 255)) for i in range(512))
 
 class Config(ConfigSection):
-    socket = "/var/run/proxydispatcher.sock"
+    socket = "/var/run/mediaproxy/dispatcher.sock"
 
-process._system_config_directory = "../"
+process._system_config_directory = "/etc/mediaproxy"
 configuration = ConfigFile(configuration_filename)
 configuration.read_settings("Dispatcher", Config)
 
