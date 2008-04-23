@@ -26,7 +26,7 @@ from mediaproxy.tls import Certificate, PrivateKey
 
 class Config(ConfigSection):
     _datatypes = {"certificate": Certificate, "private_key": PrivateKey, "ca": Certificate}
-    socket = "/var/run/proxydispatcher.sock"
+    socket = "/var/run/mediaproxy/dispatcher.sock"
     certificate = None
     private_key = None
     ca = None
