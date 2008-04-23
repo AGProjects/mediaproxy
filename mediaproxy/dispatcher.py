@@ -50,7 +50,7 @@ class OpenSERControlProtocol(LineOnlyReceiver):
             defer.addErrback(self._relay_error)
             defer.addErrback(self._catch_all)
             self.line_buf = []
-        else:
+        elif not line.endswith(": "):
             self.line_buf.append(line)
 
     def connectionLost(self, reason):
