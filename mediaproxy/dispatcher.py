@@ -184,11 +184,14 @@ class RelayFactory(Factory):
                 if header.startswith("media_relay: "):
                     preferred_relay = header.split("media_relay: ", 1)[1]
                     break
-            if preferred_relay is None:
+            if preferred_relay is not None:
+                try_relays = [protocol for protocol in self.protocols if protocol.ip == preferred_relay]
+                other_relays = [protocol for protocol in self.protocols if protocol.ready and protocol.ip != preferred_relay]
+                random.shuffle(other_relays)
+                try_relays.extend(other_relays)
+            else:
                 try_relays = [protocol for protocol in self.protocols if protocol.ready]
                 random.shuffle(try_relays)
-            else:
-                try_relays = [protocol for protocol in self.protocols if protocol.ip == preferred_relay]
             defer = self._try_next(try_relays, command, headers)
             defer.addCallback(self._add_session, try_relays, call_id)
             return defer
