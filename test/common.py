@@ -100,6 +100,7 @@ class Endpoint(object):
         self.tag = "".join(chr(random.randint(97, 122)) for i in range(8))
         self.connectors = []
         self.media = []
+        self.cseq = 1
 
     def set_media(self, media):
         assert(len(self.connectors) == 0)
@@ -151,7 +152,6 @@ class Session(object):
         self.caller = caller
         self.callee = callee
         self.call_id = "".join(chr(random.randint(97, 122)) for i in range(16))
-        self.cseq = 1
 
     def _get_parties(self, party):
         party = getattr(self, party)
@@ -168,14 +168,19 @@ class Session(object):
             to_tag = other.tag
             from_uri = party.sip_uri
             to_uri = other.sip_uri
+            cseq = party.cseq
         else:
             from_tag = other.tag
             to_tag = party.tag
             from_uri = other.sip_uri
             to_uri = party.sip_uri
-        defer = openser.update(call_id = self.call_id, from_tag = from_tag, to_tag = to_tag, from_uri = from_uri, to_uri = to_uri, cseq = self.cseq,  user_agent = party.user_agent, media = party.get_media(use_old_hold), type = type)
+            cseq = other.cseq
+        defer = openser.update(call_id = self.call_id, from_tag = from_tag, to_tag = to_tag, from_uri = from_uri, to_uri = to_uri, cseq = cseq,  user_agent = party.user_agent, media = party.get_media(use_old_hold), type = type)
         if is_final:
-            self.cseq += 1
+            if type == "request":
+                party.cseq += 1
+            else:
+                other.cseq += 1
         return defer
 
     def do_remove(self, openser, party):
