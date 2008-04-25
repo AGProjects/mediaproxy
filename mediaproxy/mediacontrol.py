@@ -242,7 +242,7 @@ class MediaStream(object):
 
 class Session(object):
 
-    def __init__(self, manager, dispatcher, call_id, from_tag, from_uri, to_uri, cseq, user_agent, media_list, is_downstream, cseq_downstream, mark = 0):
+    def __init__(self, manager, dispatcher, call_id, from_tag, from_uri, to_uri, cseq, user_agent, media_list, is_downstream, is_caller_cseq, mark = 0):
         self.manager = manager
         self.dispatcher = dispatcher
         self.call_id = call_id
@@ -257,17 +257,17 @@ class Session(object):
         self.streams = {}
         self.start_time = None
         self.end_time = None
-        self.update_media(cseq, user_agent, media_list, is_downstream, cseq_downstream)
+        self.update_media(cseq, user_agent, media_list, is_downstream, is_caller_cseq)
 
     def __str__(self):
         return "%s: %s (%s) --> %s" % (self.call_id, self.from_uri, self.from_tag, self.to_uri)
 
-    def update_media(self, cseq, user_agent, media_list, is_downstream, cseq_downstream):
+    def update_media(self, cseq, user_agent, media_list, is_downstream, is_caller_cseq):
         if self.cseq is None:
             old_cseq = (0,0)
         else:
             old_cseq = self.cseq
-        if cseq_downstream:
+        if is_caller_cseq:
             cseq = (cseq, old_cseq[1])
         else:
             cseq = (old_cseq[0], cseq)
@@ -337,8 +337,8 @@ class Session(object):
         else:
             log.debug("Received old CSeq %d, ignoring" % cseq)
 
-    def get_local_media(self, is_downstream, cseq, cseq_downstream):
-        if cseq_downstream:
+    def get_local_media(self, is_downstream, cseq, is_caller_cseq):
+        if is_caller_cseq:
             pos = 0
         else:
             pos = 1
@@ -440,17 +440,17 @@ class SessionManager(Logger):
             session = self.sessions[key]
             log.debug("updating existing session %s" % session)
             is_downstream = (session.from_tag != from_tag) ^ (type == "request")
-            cseq_downstream = (session.from_tag == from_tag)
-            session.update_media(cseq, user_agent, media, is_downstream, cseq_downstream)
+            is_caller_cseq = (session.from_tag == from_tag)
+            session.update_media(cseq, user_agent, media, is_downstream, is_caller_cseq)
         else:
             if not self.relay.add_session(dispatcher):
                 log.debug("cannot add new session, MediaProxy relay is shutting down")
                 return None
             is_downstream = type == "request"
-            cseq_downstream = True
-            session = self.sessions[(call_id, from_tag)] = Session(self, dispatcher, call_id, from_tag, from_uri, to_uri, cseq, user_agent, media, is_downstream, cseq_downstream)
+            is_caller_cseq = True
+            session = self.sessions[(call_id, from_tag)] = Session(self, dispatcher, call_id, from_tag, from_uri, to_uri, cseq, user_agent, media, is_downstream, is_caller_cseq)
             log.debug("created new session %s" % session)
-        retval = session.get_local_media(is_downstream, cseq, cseq_downstream)
+        retval = session.get_local_media(is_downstream, cseq, is_caller_cseq)
         for index, (media_type, media_ip, media_port, media_direction) in enumerate(media):
             if media_ip == "0.0.0.0":
                 retval[index] = ("0.0.0.0", retval[index][1])
