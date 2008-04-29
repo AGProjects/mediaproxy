@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-This test simulates a session with audio and video media flowing, after which
+This test simulates a session with audio media flowing, after which
 the callee changes the port of the media, e.g. through an UPDATE:
   - caller sends INVITE, callee sends 200 ok
   - audio and video media flows for 5 seconds
