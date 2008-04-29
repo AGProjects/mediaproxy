@@ -371,11 +371,11 @@ class Session(object):
                 for stream in self.streams[cseq]:
                     stream.cleanup()
 
-    def get_byte_count(self, media_type, party):
-        return sum(getattr(stream.rtp, party).bytes + getattr(stream.rtcp, party).bytes for stream in set(sum(self.streams.values(), [])) if stream.media_type == media_type)
-
-    def get_packet_count(self, media_type, party):
-        return sum(getattr(stream.rtp, party).packets + getattr(stream.rtcp, party).packets for stream in set(sum(self.streams.values(), [])) if stream.media_type == media_type)
+    def get_totals(self, party, stat_type):
+        retval = {}
+        for stream in set(sum(self.streams.values(), [])):
+            retval[stream.media_type] = retval.get(stream.media_type, 0) + getattr(getattr(stream.rtp, party), stat_type) + getattr(getattr(stream.rtcp, party), stat_type)
+        return retval
 
     def stream_expired(self, stream):
         stream.cleanup()
@@ -397,9 +397,8 @@ class Session(object):
     def statistics(self):
         stats = {}
         for party in ["caller", "callee"]:
-            for media_type in ["audio", "video"]:
-                stats["%s_%s_packets" % (party, media_type)] = self.get_packet_count(media_type, party)
-                stats["%s_%s_bytes" % (party, media_type)] = self.get_byte_count(media_type, party)
+            for stat_type in ["bytes", "packets"]:
+                stats["%s_%s" % (party, stat_type)] = self.get_totals(party, stat_type)
         for attr in ["call_id", "caller_ua", "callee_ua", "from_tag", "from_uri", "to_uri", "duration"]:
             stats[attr] = getattr(self, attr)
         return stats
