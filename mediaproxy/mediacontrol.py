@@ -17,6 +17,13 @@ from application.system import default_host_ip
 
 from mediaproxy.interfaces.system import _conntrack
 
+rtp_payloads = {
+     0: "G711u", 1: "1016",  2: "G721",  3: "GSM",  4: "G723",  5: "DVI4", 6: "DVI4",
+     7: "LPC",   8: "G711a", 9: "G722", 10: "L16", 11: "L16",  14: "MPA", 15: "G728",
+    18: "G729", 25: "CelB", 26: "JPEG", 28: "nv",  31: "H261", 32: "MPV", 33: "MP2T",
+    34: "H263"
+}
+
 class StreamListenerProtocol(DatagramProtocol):
     noisy = False
 
@@ -43,6 +50,7 @@ class MediaSubParty(object):
         self.packets = 0
         self.packets_rtcp = 0
         self.timer = None
+        self.codec = "Unknown"
         self.reset(True)
 
     def reset(self, expire):
@@ -76,6 +84,13 @@ class MediaSubParty(object):
             if self.timer:
                 self.timer.cancel()
                 self.timer = None
+            if self.codec == "Unknown" and self.substream is self.substream.stream.rtp:
+                try:
+                    pt = ord(data[2]) & 127
+                except IndexError:
+                    pass
+                else:
+                    self.codec = rtp_payloads.get(pt, "Unknown")
             self.got_remote = True
             self.remote = (host, port)
             self.substream.check_create_conntrack()
