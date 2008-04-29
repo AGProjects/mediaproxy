@@ -191,6 +191,9 @@ class MediaStream(object):
         self.rtcp = MediaSubStream(self, self.caller.listener_rtcp, self.callee.listener_rtcp)
         getattr(self, initiating_party).remote_sdp = (media_ip, media_port)
         self.check_hold(initiating_party, direction, media_ip)
+        self.start_time = time()
+        self.end_time = None
+        self.timed_out = False
 
     def __str__(self):
         if self.caller.remote_sdp is None:
@@ -243,6 +246,7 @@ class MediaStream(object):
             substream.caller.reset(False)
             substream.callee.reset(False)
         else:
+            self.timed_out = True
             self.session.stream_expired(self)
 
     def cleanup(self):
@@ -253,6 +257,7 @@ class MediaStream(object):
             self.rtp.cleanup()
             self.rtcp.cleanup()
             self.session = None
+            self.end_time = time()
 
 
 class Session(object):
@@ -401,6 +406,19 @@ class Session(object):
                 stats["%s_%s" % (party, stat_type)] = self.get_totals(party, stat_type)
         for attr in ["call_id", "caller_ua", "callee_ua", "from_tag", "from_uri", "to_uri", "duration"]:
             stats[attr] = getattr(self, attr)
+        streams = stats["streams"] = []
+        for stream in sorted(set(sum(self.streams.values(), [])), key=lambda x: getattr(x, "start_time")):
+            stream_info = {}
+            if self.start_time is None:
+                stream_info["start_time"] = stream_info["end_time"] = 0
+            else:
+                stream_info["start_time"] = max(int(stream.start_time - self.start_time), 0)
+                stream_info["end_time"] = min(int(stream.end_time - self.start_time), stats["duration"])
+            stream_info["media_type"] = stream.media_type
+            stream_info["caller_codec"] = stream.rtp.caller.codec
+            stream_info["callee_codec"] = stream.rtp.callee.codec
+            stream_info["timed_out"] = stream.timed_out
+            streams.append(stream_info)
         return stats
 
 
