@@ -90,7 +90,12 @@ class MediaSubParty(object):
                 except IndexError:
                     pass
                 else:
-                    self.codec = rtp_payloads.get(pt, "Unknown")
+                    if pt > 95:
+                        self.codec = "Dynamic(%d)" % pt
+                    elif pt in rtp_payloads:
+                        self.codec = rtp_payloads[pt]
+                    else:
+                        self.codec = "Unknown(%d)" % pt
             self.got_remote = True
             self.remote = (host, port)
             self.substream.check_create_conntrack()
