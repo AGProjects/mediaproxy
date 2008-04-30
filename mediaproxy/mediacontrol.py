@@ -422,7 +422,10 @@ class Session(object):
             stream_info["media_type"] = stream.media_type
             stream_info["caller_codec"] = stream.rtp.caller.codec
             stream_info["callee_codec"] = stream.rtp.callee.codec
-            stream_info["timed_out"] = stream.timed_out
+            if stream.timed_out:
+                stream_info["status"] = "timed out"
+            else:
+                stream_info["status"] = "closed"
             streams.append(stream_info)
         return stats
 
