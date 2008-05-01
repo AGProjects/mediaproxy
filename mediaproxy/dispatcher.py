@@ -21,7 +21,11 @@ from gnutls.interfaces.twisted import X509Credentials
 
 from application import log
 from application.process import process
+from application.python.queue import EventQueue
 from application.configuration import *
+
+import pyrad.client
+import pyrad.dictionary
 
 from mediaproxy import configuration_filename, default_dispatcher_port
 from mediaproxy.tls import Certificate, PrivateKey
@@ -29,6 +33,8 @@ from mediaproxy.tls import Certificate, PrivateKey
 class Config(ConfigSection):
     _datatypes = {"certificate": Certificate, "private_key": PrivateKey, "ca": Certificate}
     socket = "/var/run/mediaproxy/dispatcher.sock"
+    radius_config = "/etc/openser/radius/client.conf"
+    radius_dictionary = process._system_config_directory + "/dictionary"
     certificate = None
     private_key = None
     ca = None
@@ -269,9 +275,51 @@ class RelayFactory(Factory):
             return self.defer
 
 
+class RadiusAccounting(EventQueue, pyrad.client.Client):
+
+    def __init__(self):
+        try:
+            config = dict(line.rstrip("\n").split(None, 1) for line in open(Config.radius_config) if len(line.split(None, 1)) == 2 and not line.startswith("#"))
+            secrets = dict(line.rstrip("\n").split(None, 1) for line in open(config["servers"]) if len(line.split(None, 1)) == 2 and not line.startswith("#"))
+            server = config["acctserver"]
+            if ":" in server:
+                server, acctport = server.split(":")
+            else:
+                acctport = 1813
+            secret = secrets[server]
+            # pyrad does not support $INCLUDE in dictionary files!
+            dicts = [line.rstrip("\n").split(None, 1)[1] for line in open(config["dictionary"]) if line.startswith("$INCLUDE")] + [config["dictionary"], Config.radius_dictionary]
+            raddict = pyrad.dictionary.Dictionary(*dicts)
+            timeout = int(config["radius_timeout"])
+            retries = int(config["radius_retries"])
+        except Exception, e:
+            log.fatal("Error reading RADIUS configuration file")
+            raise
+        pyrad.client.Client.__init__(self, server, 1812, acctport, secret, raddict)
+        self.timeout = timeout
+        self.retries = retries
+        EventQueue.__init__(self, self.do_accounting)
+
+    def do_accounting(self, stats):
+        attrs = {}
+        attrs["Acct-Status-Type"] = "Update"
+        attrs["User-Name"] = "mediaproxy@default"
+        attrs["Acct-Session-Id"] = stats["call_id"]
+        attrs["Acct-Session-Time"] = stats["duration"]
+        attrs["Acct-Input-Octets"] = sum(bytes for bytes in stats["caller_bytes"].itervalues())
+        attrs["Acct-Output-Octets"] = sum(bytes for bytes in stats["callee_bytes"].itervalues())
+        attrs["Sip-From-Tag"] = stats["from_tag"]
+        attrs["Sip-To-Tag"] = stats["to_tag"]
+        attrs["Sip-User-Agents"] = stats["caller_ua"] + "+" + stats["callee_ua"]
+        attrs["Sip-Applications"] = " ".join(stream["media_type"] for stream in stats["streams"])
+        attrs["Media-Codecs"] = " ".join("/".join([stream["caller_codec"], stream["callee_codec"]]) for stream in stats["streams"])
+        attrs["Media-Info"] = cjson.encode(stats["streams"])
+        self.SendPacket(self.CreateAcctPacket(**attrs))
+
 class Dispatcher(object):
 
     def __init__(self):
+        self.radius = RadiusAccounting()
         self.cred = X509Credentials(Config.certificate, Config.private_key, [Config.ca])
         self.cred.verify_peer = True
         self.relay_factory = RelayFactory(self)
@@ -283,13 +331,14 @@ class Dispatcher(object):
         process.signals.add_handler(signal.SIGHUP, self._handle_SIGHUP)
         process.signals.add_handler(signal.SIGINT, self._handle_SIGINT)
         process.signals.add_handler(signal.SIGTERM, self._handle_SIGTERM)
+        self.radius.start()
         reactor.run(installSignalHandlers=False)
 
     def send_command(self, command, headers):
         return maybeDeferred(self.relay_factory.send_command, command, headers)
 
     def update_statistics(self, stats):
-        log.debug("Got the following statistics: %s" % stats)
+        self.radius.put(stats)
 
     def _handle_SIGHUP(self, *args):
         log.msg("Received SIGHUP, shutting down.")
@@ -314,3 +363,5 @@ class Dispatcher(object):
 
     def _stop(self):
         reactor.stop()
+        self.radius.stop()
+        self.radius.join()
