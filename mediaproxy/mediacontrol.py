@@ -267,11 +267,12 @@ class MediaStream(object):
 
 class Session(object):
 
-    def __init__(self, manager, dispatcher, call_id, from_tag, from_uri, to_uri, cseq, user_agent, media_list, is_downstream, is_caller_cseq, mark = 0):
+    def __init__(self, manager, dispatcher, call_id, from_tag, from_uri, to_tag, to_uri, cseq, user_agent, media_list, is_downstream, is_caller_cseq, mark = 0):
         self.manager = manager
         self.dispatcher = dispatcher
         self.call_id = call_id
         self.from_tag = from_tag
+        self.to_tag = None
         self.mark = mark
         self.from_uri = from_uri
         self.to_uri = to_uri
@@ -282,18 +283,20 @@ class Session(object):
         self.streams = {}
         self.start_time = None
         self.end_time = None
-        self.update_media(cseq, user_agent, media_list, is_downstream, is_caller_cseq)
+        self.update_media(cseq, to_tag, user_agent, media_list, is_downstream, is_caller_cseq)
 
     def __str__(self):
         return "%s: %s (%s) --> %s" % (self.call_id, self.from_uri, self.from_tag, self.to_uri)
 
-    def update_media(self, cseq, user_agent, media_list, is_downstream, is_caller_cseq):
+    def update_media(self, cseq, to_tag, user_agent, media_list, is_downstream, is_caller_cseq):
         if self.cseq is None:
             old_cseq = (0,0)
         else:
             old_cseq = self.cseq
         if is_caller_cseq:
             cseq = (cseq, old_cseq[1])
+            if self.to_tag is None and to_tag is not None:
+                self.to_tag = to_tag
         else:
             cseq = (old_cseq[0], cseq)
         if is_downstream:
@@ -409,7 +412,7 @@ class Session(object):
         for party in ["caller", "callee"]:
             for stat_type in ["bytes", "packets"]:
                 stats["%s_%s" % (party, stat_type)] = self.get_totals(party, stat_type)
-        for attr in ["call_id", "caller_ua", "callee_ua", "from_tag", "from_uri", "to_uri", "duration"]:
+        for attr in ["call_id", "caller_ua", "callee_ua", "from_tag", "from_uri", "to_tag", "to_uri", "duration"]:
             stats[attr] = getattr(self, attr)
         streams = stats["streams"] = []
         for stream in sorted(set(sum(self.streams.values(), [])), key=lambda x: getattr(x, "start_time")):
@@ -475,20 +478,21 @@ class SessionManager(Logger):
                 return key_to
 
     def update_session(self, dispatcher, call_id, from_tag, from_uri, to_uri, cseq, user_agent, media, type, **kw_rest):
+        to_tag = kw_rest.get("to_tag")
         key = self._find_session_key(call_id, from_tag, kw_rest)
         if key:
             session = self.sessions[key]
             log.debug("updating existing session %s" % session)
             is_downstream = (session.from_tag != from_tag) ^ (type == "request")
             is_caller_cseq = (session.from_tag == from_tag)
-            session.update_media(cseq, user_agent, media, is_downstream, is_caller_cseq)
+            session.update_media(cseq, to_tag, user_agent, media, is_downstream, is_caller_cseq)
         else:
             if not self.relay.add_session(dispatcher):
                 log.debug("cannot add new session, MediaProxy relay is shutting down")
                 return None
             is_downstream = type == "request"
             is_caller_cseq = True
-            session = self.sessions[(call_id, from_tag)] = Session(self, dispatcher, call_id, from_tag, from_uri, to_uri, cseq, user_agent, media, is_downstream, is_caller_cseq)
+            session = self.sessions[(call_id, from_tag)] = Session(self, dispatcher, call_id, from_tag, from_uri, to_tag, to_uri, cseq, user_agent, media, is_downstream, is_caller_cseq)
             log.debug("created new session %s" % session)
         retval = session.get_local_media(is_downstream, cseq, is_caller_cseq)
         for index, (media_type, media_ip, media_port, media_direction) in enumerate(media):
