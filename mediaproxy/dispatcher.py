@@ -7,11 +7,12 @@
 
 
 import random
+import signal
 import cjson
 
 from twisted.protocols.basic import LineOnlyReceiver
 from twisted.internet.protocol import Factory
-from twisted.internet.defer import Deferred, maybeDeferred
+from twisted.internet.defer import Deferred, DeferredList, maybeDeferred, succeed
 from twisted.internet import epollreactor
 epollreactor.install()
 from twisted.internet import reactor
@@ -19,6 +20,7 @@ from twisted.internet import reactor
 from gnutls.interfaces.twisted import X509Credentials
 
 from application import log
+from application.process import process
 from application.configuration import *
 
 from mediaproxy import configuration_filename, default_dispatcher_port
@@ -42,19 +44,23 @@ class OpenSERControlProtocol(LineOnlyReceiver):
 
     def __init__(self):
         self.line_buf = []
+        self.in_progress = 0
 
     def lineReceived(self, line):
         if line.strip() == "" and self.line_buf:
+            self.in_progress += 1
             defer = self.factory.dispatcher.send_command(self.line_buf[0], self.line_buf[1:])
             defer.addCallback(self.reply)
             defer.addErrback(self._relay_error)
             defer.addErrback(self._catch_all)
+            defer.addBoth(self._decrement)
             self.line_buf = []
         elif not line.endswith(": "):
             self.line_buf.append(line)
 
     def connectionLost(self, reason):
         log.debug("Connection to OpenSER lost: %s" % reason.value)
+        self.factory.connection_lost(self)
 
     def reply(self, reply):
         self.transport.write(reply + "\r\n")
@@ -68,6 +74,11 @@ class OpenSERControlProtocol(LineOnlyReceiver):
         log.error(failure.getBriefTraceback())
         self.transport.write("error\r\n")
 
+    def _decrement(self, result):
+        self.in_progress = 0
+        if self.factory.shutting_down:
+            self.transport.loseConnection()
+
 
 class OpenSERControlFactory(Factory):
     noisy = False
@@ -75,7 +86,31 @@ class OpenSERControlFactory(Factory):
 
     def __init__(self, dispatcher):
         self.dispatcher = dispatcher
+        self.protocols = []
+        self.shutting_down = False
 
+    def buildProtocol(self, addr):
+        prot = Factory.buildProtocol(self, addr)
+        self.protocols.append(prot)
+        return prot
+
+    def connection_lost(self, prot):
+        self.protocols.remove(prot)
+        if self.shutting_down and len(self.protocols) == 0:
+            self.defer.callback(None)
+
+    def shutdown(self):
+        if self.shutting_down:
+            return
+        self.shutting_down = True
+        if len(self.protocols) == 0:
+            return succeed(None)
+        else:
+            for prot in self.protocols:
+                if prot.in_progress == 0:
+                    prot.transport.loseConnection()
+            self.defer = Deferred()
+            return self.defer
 
 class RelayError(Exception):
     pass
@@ -143,10 +178,10 @@ class RelayServerProtocol(LineOnlyReceiver):
 
     def connectionLost(self, reason):
         log.debug("Relay at %s disconnected" % self.ip)
-        self.factory.protocols.remove(self)
         for command, defer, timer in self.commands.itervalues():
             timer.cancel()
             defer.errback(RelayError("Relay at %s disconnected" % self.ip))
+        self.factory.connection_lost(self)
 
 
 class RelayFactory(Factory):
@@ -157,6 +192,7 @@ class RelayFactory(Factory):
         self.dispatcher = dispatcher
         self.protocols = []
         self.sessions = {}
+        self.shutting_down = False
 
     def buildProtocol(self, addr):
         log.debug("Relay at %s connected" % addr.host)
@@ -215,6 +251,23 @@ class RelayFactory(Factory):
         defer.addErrback(self._relay_error, try_relays, command, headers)
         return defer
 
+    def connection_lost(self, prot):
+        self.protocols.remove(prot)
+        if self.shutting_down and len(self.protocols) == 0:
+            self.defer.callback(None)
+
+    def shutdown(self):
+        if self.shutting_down:
+            return
+        self.shutting_down = True
+        if len(self.protocols) == 0:
+            return succeed(None)
+        else:
+            for prot in self.protocols:
+                prot.transport.loseConnection()
+            self.defer = Deferred()
+            return self.defer
+
 
 class Dispatcher(object):
 
@@ -222,15 +275,42 @@ class Dispatcher(object):
         self.cred = X509Credentials(Config.certificate, Config.private_key, [Config.ca])
         self.cred.verify_peer = True
         self.relay_factory = RelayFactory(self)
-        reactor.listenTLS(Config.port, self.relay_factory, self.cred)
+        self.relay_listener = reactor.listenTLS(Config.port, self.relay_factory, self.cred)
         self.openser_factory = OpenSERControlFactory(self)
-        reactor.listenUNIX(Config.socket, self.openser_factory)
+        self.openser_listener = reactor.listenUNIX(Config.socket, self.openser_factory)
 
     def run(self):
-        reactor.run()
+        process.signals.add_handler(signal.SIGHUP, self._handle_SIGHUP)
+        process.signals.add_handler(signal.SIGINT, self._handle_SIGINT)
+        process.signals.add_handler(signal.SIGTERM, self._handle_SIGTERM)
+        reactor.run(installSignalHandlers=False)
 
     def send_command(self, command, headers):
         return maybeDeferred(self.relay_factory.send_command, command, headers)
 
     def update_statistics(self, stats):
         log.debug("Got the following statistics: %s" % stats)
+
+    def _handle_SIGHUP(self, *args):
+        log.msg("Received SIGHUP, shutting down.")
+        reactor.callFromThread(self._shutdown)
+
+    def _handle_SIGINT(self, *args):
+        if process._daemon:
+            log.msg("Received SIGINT, shutting down.")
+        else:
+            log.msg("Received KeyboardInterrupt, exiting.")
+        reactor.callFromThread(self._shutdown)
+
+    def _handle_SIGTERM(self, *args):
+        log.msg("Received SIGTERM, shutting down.")
+        reactor.callFromThread(self._shutdown)
+
+    def _shutdown(self):
+        defer = DeferredList([result for result in [self.openser_listener.stopListening(), self.relay_listener.stopListening()] if result is not None])
+        defer.addCallback(lambda x: self.openser_factory.shutdown())
+        defer.addCallback(lambda x: self.relay_factory.shutdown())
+        defer.addCallback(lambda x: self._stop())
+
+    def _stop(self):
+        reactor.stop()
