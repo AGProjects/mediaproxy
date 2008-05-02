@@ -30,15 +30,19 @@ import pyrad.dictionary
 from mediaproxy import configuration_filename, default_dispatcher_port
 from mediaproxy.tls import Certificate, PrivateKey
 
+class DispatcherAddress(datatypes.NetworkAddress):
+    _defaultPort = default_dispatcher_port
+
+
 class Config(ConfigSection):
-    _datatypes = {"certificate": Certificate, "private_key": PrivateKey, "ca": Certificate}
+    _datatypes = {"certificate": Certificate, "private_key": PrivateKey, "ca": Certificate, "listen": DispatcherAddress}
     socket = "/var/run/mediaproxy/dispatcher.sock"
     radius_config = "/etc/openser/radius/client.conf"
     radius_dictionary = process._system_config_directory + "/radius/dictionary"
     certificate = None
     private_key = None
     ca = None
-    port = default_dispatcher_port
+    listen = DispatcherAddress("any")
     relay_timeout = 5
 
 
@@ -326,7 +330,8 @@ class Dispatcher(object):
         self.radius = RadiusAccounting()
         self.cred.verify_peer = True
         self.relay_factory = RelayFactory(self)
-        self.relay_listener = reactor.listenTLS(Config.port, self.relay_factory, self.cred)
+        dispatcher_addr, dispatcher_port = Config.listen
+        self.relay_listener = reactor.listenTLS(dispatcher_port, self.relay_factory, self.cred, interface=dispatcher_addr)
         self.openser_factory = OpenSERControlFactory(self)
         self.openser_listener = reactor.listenUNIX(Config.socket, self.openser_factory)
 
