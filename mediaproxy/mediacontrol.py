@@ -422,7 +422,7 @@ class Session(object):
                 stats["%s_%s" % (party, stat_type)] = self.get_totals(party, stat_type)
         for attr in ["call_id", "from_tag", "from_uri", "to_tag", "to_uri", "duration"]:
             stats[attr] = getattr(self, attr)
-        for attr in ["caller_ua", "callee_ua"]
+        for attr in ["caller_ua", "callee_ua"]:
             ua = getattr(self, attr)
             if ua is None:
                 stats[attr] = "Unknown"
