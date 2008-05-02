@@ -28,7 +28,7 @@ configuration.read_settings("ThorNetwork", ThorNetworkConfig)
 
 class SIPThorMediaRelayBase(EventServiceClient):
     topics = ["Thor.Members"]
-    
+
     def __init__(self):
         self.node = GenericThorEntity(ThorNetworkConfig.nodeIP, ["media_relay"])
         self.presence_message = ThorEvent('Thor.Presence', self.node.id)
