@@ -1,0 +1,12 @@
+#
+# Radius dictionary for mediaproxy.
+#
+
+### Acct-Status-Type Values ###
+VALUE           Acct-Status-Type       Update   3          # RFC2866, acc
+
+### Attributes added by AG Projects ###
+ATTRIBUTE       Sip-User-Agents        235      string     # AG Projects
+ATTRIBUTE       Sip-Applications       236      string     # AG Projects
+ATTRIBUTE       Media-Codecs           233      string     # AG Projects
+ATTRIBUTE       Media-Info             234      string     # AG Projects
