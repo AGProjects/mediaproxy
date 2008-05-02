@@ -418,8 +418,14 @@ class Session(object):
         for party in ["caller", "callee"]:
             for stat_type in ["bytes", "packets"]:
                 stats["%s_%s" % (party, stat_type)] = self.get_totals(party, stat_type)
-        for attr in ["call_id", "caller_ua", "callee_ua", "from_tag", "from_uri", "to_tag", "to_uri", "duration"]:
+        for attr in ["call_id", "from_tag", "from_uri", "to_tag", "to_uri", "duration"]:
             stats[attr] = getattr(self, attr)
+        for attr in ["caller_ua", "callee_ua"]
+            ua = getattr(self, attr)
+            if ua is None:
+                stats[attr] = "Unknown"
+            else:
+                stats[attr] = ua
         streams = stats["streams"] = []
         for stream in sorted(set(sum(self.streams.values(), [])), key=lambda x: getattr(x, "start_time")):
             stream_info = {}
