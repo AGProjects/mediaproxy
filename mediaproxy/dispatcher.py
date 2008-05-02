@@ -34,7 +34,7 @@ class Config(ConfigSection):
     _datatypes = {"certificate": Certificate, "private_key": PrivateKey, "ca": Certificate}
     socket = "/var/run/mediaproxy/dispatcher.sock"
     radius_config = "/etc/openser/radius/client.conf"
-    radius_dictionary = process._system_config_directory + "/dictionary"
+    radius_dictionary = process._system_config_directory + "/radius/dictionary"
     certificate = None
     private_key = None
     ca = None
