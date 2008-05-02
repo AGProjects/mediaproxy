@@ -24,6 +24,12 @@ rtp_payloads = {
     34: "H263"
 }
 
+class Config(ConfigSection):
+    stream_timeout = 10
+
+configuration = ConfigFile(configuration_filename)
+configuration.read_settings("Relay", Config)
+
 class StreamListenerProtocol(DatagramProtocol):
     noisy = False
 
@@ -59,7 +65,7 @@ class MediaSubParty(object):
         if self.timer and self.timer.active():
             self.timer.cancel()
         if expire:
-            self.timer = reactor.callLater(10, self.substream.conntrack_expired)
+            self.timer = reactor.callLater(Config.stream_timeout, self.substream.conntrack_expired)
         else:
             self.timer = None
             self.remote = None
@@ -68,7 +74,7 @@ class MediaSubParty(object):
         if self.timer and self.timer.active():
             self.timer.cancel()
         if not self.got_remote:
-            self.timer = reactor.callLater(10, self.substream.conntrack_expired)
+            self.timer = reactor.callLater(Config.stream_timeout, self.substream.conntrack_expired)
 
     def start_block(self):
         if self.inhibitor is None:
