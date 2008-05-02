@@ -9,6 +9,7 @@
 import cjson
 import signal
 import traceback
+import re
 
 from twisted.protocols.basic import LineOnlyReceiver
 from twisted.internet.protocol import ClientFactory
@@ -17,7 +18,8 @@ epollreactor.install()
 from twisted.internet import reactor
 from twisted.names import dns
 from twisted.names.client import lookupService
-from twisted.names.error import DNSNameError
+from twisted.names.error import DNSNameError, DNSQueryRefusedError
+from twisted.internet.defer import DeferredList, succeed
 
 from gnutls.interfaces.twisted import X509Credentials
 
@@ -31,17 +33,38 @@ from mediaproxy.headers import DecodingDict, DecodingError
 from mediaproxy.mediacontrol import SessionManager
 from mediaproxy import configuration_filename, default_dispatcher_port
 
+class DispatcherAddress(tuple):
+
+    def __new__(typ, value):
+        match = re.search(r"^(?P<address>.+?):(?P<port>\d+)$", value)
+        if match:
+            address = str(match.group("address"))
+            port = int(match.group("port"))
+        else:
+            address = value
+            port = default_dispatcher_port
+        try:
+            address = datatypes.IPAddress(address)
+            is_domain = False
+        except ValueError:
+            is_domain = True
+        return (address, port, is_domain)
+
+
+class DispatcherAddressList(list):
+
+    def __new__(typ, value):
+        return [DispatcherAddress(dispatcher) for dispatcher in value.split()]
+
+
 class Config(ConfigSection):
-    _datatypes = {"dispatcher_address": IPAddress, "certificate": Certificate, "private_key": PrivateKey, "ca": Certificate}
-    dispatcher_address = None
-    dispatcher_port = default_dispatcher_port
+    _datatypes = {"dispatcher_address": IPAddress, "certificate": Certificate, "private_key": PrivateKey, "ca": Certificate, "dispatchers": DispatcherAddressList}
+    dispatchers = DispatcherAddressList("")
     start_port = 40000
     end_port = 50000
     certificate = None
     private_key = None
     ca = None
-    domain = "example.com"
-    srv_retry = 10
     srv_refresh = 60
     reconnect_delay = 30
 
@@ -132,24 +155,34 @@ class SRVMediaRelayBase(object):
         self._do_lookup()
 
     def _do_lookup(self):
-        if Config.dispatcher_address is not None:
-            self.update_dispatchers([Config.dispatcher_address])
-        else:
-            result = lookupService("_sip._udp.%s" % Config.domain)
-            result.addCallback(self._cb_got_srv)
-            result.addCallbacks(self.update_dispatchers, self._eb_no_srv)
+        defers = []
+        for addr, port, is_domain in Config.dispatchers:
+            if is_domain:
+                defer = lookupService("_sip._udp.%s" % addr)
+                defer.addCallback(self._cb_got_srv, port)
+                defer.addErrback(self._eb_no_srv, addr)
+                defers.append(defer)
+            else:
+                defers.append(succeed((addr, port)))
+        defer = DeferredList(defers)
+        defer.addCallback(self._cb_got_all)
 
-    def _cb_got_srv(self, (answers, auth, add)):
+    def _cb_got_srv(self, (answers, auth, add), port):
         for answer in answers:
             if answer.type == dns.SRV and answer.payload and answer.payload.target != dns.Name("."):
-                reactor.callLater(Config.srv_refresh, self._do_lookup)
-                return [str(answer.payload.target)]
+                return str(answer.payload.target), port
         raise DNSNameError
 
-    def _eb_no_srv(self, failure):
-        failure.trap(DNSNameError)
-        log.error('Could not resolve SIP SRV record for domain "%s", retrying in %d seconds' % (Config.domain, Config.srv_retry))
-        reactor.callLater(Config.srv_retry, self._do_lookup)
+    def _eb_no_srv(self, failure, addr):
+        failure.trap(DNSNameError, DNSQueryRefusedError)
+        log.error('Could not resolve SIP SRV record for domain "%s"' % addr)
+
+    def _cb_got_all(self, results):
+        self._do_update([result[1] for result in results if result[0] and result[1] is not None])
+        reactor.callLater(Config.srv_refresh, self._do_lookup)
+
+    def _do_update(self, dispatchers):
+        self.update_dispatchers(dispatchers)
 
     def update_dispatchers(self, dispatchers):
         raise NotImplementedError()
@@ -213,11 +246,12 @@ class MediaRelay(MediaRelayBase):
             return
         dispatchers = set(dispatchers)
         for new_dispatcher in dispatchers.difference(self.dispatchers):
-            log.debug('Adding new dispatcher "%s"' % new_dispatcher)
-            factory = DispatcherConnectingFactory(self, new_dispatcher)
-            self.dispatcher_connectors[new_dispatcher] = reactor.connectTLS(new_dispatcher, Config.dispatcher_port, factory, self.cred)
+            log.debug('Adding new dispatcher "%s:%d"' % new_dispatcher)
+            dispatcher_addr, dispatcher_port = new_dispatcher
+            factory = DispatcherConnectingFactory(self, dispatcher_addr)
+            self.dispatcher_connectors[new_dispatcher] = reactor.connectTLS(dispatcher_addr, dispatcher_port, factory, self.cred)
         for old_dispatcher in self.dispatchers.difference(dispatchers):
-            log.debug('Removing old dispatcher "%s"' % old_dispatcher)
+            log.debug('Removing old dispatcher "%s:%d"' % old_dispatcher)
             self.old_connectors[old_dispatcher] = self.dispatcher_connectors.pop(old_dispatcher)
             self._check_disconnect(old_dispatcher)
         self.dispatchers = dispatchers
