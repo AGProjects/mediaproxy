@@ -195,8 +195,11 @@ except ImportError:
 class MediaRelay(MediaRelayBase):
 
     def __init__(self):
-        self.session_manager = SessionManager(self, Config.start_port, Config.end_port)
+        for value in [Config.certificate, Config.private_key, Config.ca]:
+            if value is None:
+                raise ValueError("TLS certificate/key pair and CA have not been set.")
         self.cred = X509Credentials(Config.certificate, Config.private_key, [Config.ca])
+        self.session_manager = SessionManager(self, Config.start_port, Config.end_port)
         self.cred.verify_peer = True
         self.dispatchers = set()
         self.dispatcher_session_count = {}

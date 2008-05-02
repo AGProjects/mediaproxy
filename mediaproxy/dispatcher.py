@@ -319,8 +319,11 @@ class RadiusAccounting(EventQueue, pyrad.client.Client):
 class Dispatcher(object):
 
     def __init__(self):
-        self.radius = RadiusAccounting()
+        for value in [Config.certificate, Config.private_key, Config.ca]:
+            if value is None:
+                raise ValueError("TLS certificate/key pair and CA have not been set.")
         self.cred = X509Credentials(Config.certificate, Config.private_key, [Config.ca])
+        self.radius = RadiusAccounting()
         self.cred.verify_peer = True
         self.relay_factory = RelayFactory(self)
         self.relay_listener = reactor.listenTLS(Config.port, self.relay_factory, self.cred)
