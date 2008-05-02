@@ -14,8 +14,10 @@ from twisted.python.log import Logger
 
 from application import log
 from application.system import default_host_ip
+from application.configuration import *
 
 from mediaproxy.interfaces.system import _conntrack
+from mediaproxy import configuration_filename
 
 rtp_payloads = {
      0: "G711u", 1: "1016",  2: "G721",  3: "GSM",  4: "G723",  5: "DVI4", 6: "DVI4",
