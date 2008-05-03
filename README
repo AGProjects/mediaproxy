@@ -8,15 +8,6 @@ http://ag-projects.com
 Authors: Ruud Klaver, Dan Pascu
 
 
-License
--------
-
-This software is licensed according to the GNU General Public License
-version 2.
-
-See LICENSE file for more details.
-
-
 Description
 -----------
 
@@ -28,22 +19,13 @@ When using MediaProxy-NG, NAT traversal for RTP media will work without any
 settings in the SIP User Agents or the NAT router.
 
 
-Features
---------
+License
+-------
 
- - Scalability of thousands of calls per server limited only by the Linux
-   kernel networking layer
- - TLS encryption between the relays and dispatcher
- - T.38 fax support
- - Lawful intercept for RTP media
- - Modular design for custom selection algorithms of the relay location
- - Automatic load balancing and redundancy among all servers
- - Real-time sessions statistics
- - Configurable IP and UDP port range
- - Support for any combination of audio and video streams
- - Accounting of IP network traffic
- - Logging in Radius of all media information history (like
-   addition/subtraction of streams, their type and duration).
+This software is licensed according to the GNU General Public License
+version 2.
+
+See LICENSE file for more details.
 
 
 Background
@@ -52,16 +34,29 @@ Background
 MediaProxy-NG is the successor of MediaProxy. It is based on a complete new
 design that allowed for major improvements in areas like scalability (an
 order of magnitude more scalable than previous version) and security
-(communication between relay and dispatcher is encrypted). New features have
-been added to support call flows related to user mobility and fax
-transmission.
+(communication between relay and dispatcher is encrypted). 
 
-Some features have been removed in comparison to the previous version:
+New features have been added to support call flows related to user mobility
+and fax transmission.
 
-- Support for multiple domains have been discontinued
-- Support for DNS records have been removed
-- Support for asymmetric clients have been discontinued
-- Support for other operating systems than Linux have been discontinued
+
+Features
+--------
+
+ - Scalability of thousands of calls per server limited only by the Linux
+   kernel networking layer
+ - TLS encryption between the relays and dispatcher
+ - T.38 fax support
+ - Lawful intercept for RTP media
+ - Graceful shutdown capability
+ - Modular design for custom selection algorithms of the relay location
+ - Automatic load balancing and redundancy among all servers
+ - Real-time sessions statistics
+ - Configurable IP and UDP port range
+ - Support for any combination of audio and video streams
+ - Accounting of IP network traffic
+ - Logging in Radius of all media information history (like
+   addition/subtraction of streams, their type and duration).
 
 
 Compatibility and pre-requisites
@@ -88,3 +83,11 @@ each stream), which nowadays is de facto standard.
 
 To display the history of the media streams from the Radius accounting
 CDRTool 6.5 or higher is required.
+
+Some features have been removed in comparison to the previous version:
+
+- Support for multiple domains have been discontinued
+- Support for DNS records have been removed
+- Support for asymmetric clients have been discontinued
+- Support for other operating systems than Linux have been discontinued
+
