@@ -20,12 +20,12 @@ See LICENSE file for more details.
 Description
 -----------
 
-MediapProxy-NG is a media relay for RTP and RTCP streams.
+MediapProxy-NG is a media relay for RTP and RTCP streams that works in
+tandem with OpenSER to provide NAT traversal capability for media streams
+from user agents located behind NAT. 
 
-Mediaproxy-NG is a media relay server that works in tandem with OpenSER SIP
-proxy to provide NAT traversal capability for media streams from user agents
-located behind NAT. When using MediaProxy-NG, NAT traversal will work
-without any settings in the SIP User Agents or the NAT router.
+When using MediaProxy-NG, NAT traversal for RTP media will work without any
+settings in the SIP User Agents or the NAT router.
 
 
 Features
