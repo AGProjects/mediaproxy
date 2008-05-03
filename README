@@ -67,7 +67,7 @@ Some features have been removed in comparison to the previous version:
 Compatibility and pre-requisites
 --------------------------------
 
-To run the software you need a computer running Linux Operating System that
+To run the software, you need a computer running Linux Operating System that
 has been compiled with connection tracking support (conntrack). Because of
 this dependency to the Linux kernel, other operating systems are not
 supported.
@@ -86,4 +86,5 @@ No STUN or TURN support are required in the clients. The SIP User Agents
 must work symmetric (that is to send and receive data on the same port for
 each stream), which nowadays is de facto standard.
 
-
+To display the history of the media streams from the Radius accounting
+CDRTool 6.5 or higher is required.
