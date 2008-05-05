@@ -31,10 +31,11 @@ See LICENSE file for more details.
 Background
 -----------
 
-MediaProxy is the successor of MediaProxy. It is based on a complete new
-design that allowed for major improvements in areas like scalability (an
-order of magnitude more scalable than previous version) and security
-(communication between relay and dispatcher is encrypted). 
+This version of MediaProxy is the successor of MediaProxy originally written
+by Dan Pascu in 2004. It is based on a complete new design that allowed for
+major improvements in areas like scalability (an order of magnitude more
+scalable than previous version) and security (communication between relay
+and dispatcher is encrypted).
 
 New features have been added to support call flows related to user mobility
 and fax transmission.
@@ -62,18 +63,17 @@ Features
 Compatibility and pre-requisites
 --------------------------------
 
-To run the software, you need a computer running Linux Operating System that
-has been compiled with connection tracking support (conntrack). Because of
-this dependency to the Linux kernel, other operating systems are not
-supported.
+To run the software, you need a computer running Linux Operating System
+using kernel family 2.6 or higher that has been compiled with connection
+tracking support (conntrack). Because of this dependency to the Linux
+kernel, other operating systems are not supported.
 
-MediaProxy components are not compatible with any previous versions of
-MediaProxy.
+MediaProxy is meant to be used together with OpenSER's mediaproxy module.
 
-MediaProxy is meant to be used together with OpenSER's mediaproxy-ng
-module. 
-
-OpenSER 1.4 or higher is required.
+This version of MediaProxy (2.0 or higher) cannot be used in combination
+with any version of OpenSER older than 1.4 or any components of MediaProxy
+older than 2.0.0. You must completely upgrade any previous installation of
+OpenSER and MediaProxy to these new versions.
 
 MediaProxy does not affect the use of ICE between clients.
 
