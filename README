@@ -1,6 +1,6 @@
 
-MediaProxy-NG
--------------
+MediaProxy
+----------
 
 Copyright (c) 2008 AG Projects
 http://ag-projects.com
@@ -11,11 +11,11 @@ Authors: Ruud Klaver, Dan Pascu
 Description
 -----------
 
-MediapProxy-NG is a media relay for RTP and RTCP streams that works in
+MediapProxy is a media relay for RTP and RTCP streams that works in
 tandem with OpenSER to provide NAT traversal capability for media streams
 from user agents located behind NAT. 
 
-When using MediaProxy-NG, NAT traversal for RTP media will work without any
+When using MediaProxy, NAT traversal for RTP media will work without any
 settings in the SIP User Agents or the NAT router.
 
 
@@ -31,7 +31,7 @@ See LICENSE file for more details.
 Background
 -----------
 
-MediaProxy-NG is the successor of MediaProxy. It is based on a complete new
+MediaProxy is the successor of MediaProxy. It is based on a complete new
 design that allowed for major improvements in areas like scalability (an
 order of magnitude more scalable than previous version) and security
 (communication between relay and dispatcher is encrypted). 
@@ -67,15 +67,15 @@ has been compiled with connection tracking support (conntrack). Because of
 this dependency to the Linux kernel, other operating systems are not
 supported.
 
-MediaProxy-NG components are not compatible with any previous versions of
+MediaProxy components are not compatible with any previous versions of
 MediaProxy.
 
-MediaProxy-NG is meant to be used together with OpenSER's mediaproxy-ng
+MediaProxy is meant to be used together with OpenSER's mediaproxy-ng
 module. 
 
 OpenSER 1.4 or higher is required.
 
-MediaProxy-NG does not affect the use of ICE between clients.
+MediaProxy does not affect the use of ICE between clients.
 
 No STUN or TURN support are required in the clients.
 
