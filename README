@@ -77,9 +77,10 @@ OpenSER 1.4 or higher is required.
 
 MediaProxy-NG does not affect the use of ICE between clients.
 
-No STUN or TURN support are required in the clients. The SIP User Agents
-must work symmetric (that is to send and receive data on the same port for
-each stream), which nowadays is de facto standard.
+No STUN or TURN support are required in the clients.
+
+The SIP User Agents must work symmetric (that is to send and receive data on
+the same port for each stream), which is documented in RFC 4961.
 
 To display the history of the media streams from the Radius accounting
 CDRTool 6.5 or higher is required.
