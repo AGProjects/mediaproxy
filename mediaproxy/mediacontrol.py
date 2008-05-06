@@ -4,6 +4,7 @@
 #
 
 from time import time
+from collections import deque
 
 from zope.interface import implements
 from twisted.internet import reactor
@@ -452,7 +453,7 @@ class SessionManager(Logger):
 
     def __init__(self, relay, start_port, end_port):
         self.relay = relay
-        self.ports = set((i, i+1) for i in xrange(start_port, end_port, 2))
+        self.ports = deque((i, i+1) for i in xrange(start_port, end_port, 2))
         self.bad_ports = set()
         self.sessions = {}
         self.watcher = _conntrack.ExpireWatcher()
@@ -472,13 +473,13 @@ class SessionManager(Logger):
 
     # port management
     def get_ports(self):
-        return self.ports.pop()
+        return self.ports.popleft()
 
     def set_bad_ports(self, ports):
         self.bad_ports.add(ports)
 
     def free_ports(self, ports):
-        self.ports.add(ports)
+        self.ports.append(ports)
 
     # called by higher level
     def _find_session_key(self, call_id, from_tag, kw_rest):
