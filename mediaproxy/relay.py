@@ -82,7 +82,8 @@ class RelayClientProtocol(LineOnlyReceiver):
         self.seq = None
 
     def connectionMade(self):
-        log.debug("Connected to dispatcher %s" % self.transport.getPeer().host)
+        peer = self.transport.getPeer()
+        log.debug("Connected to dispatcher %s:%d" % (peer.host, peer.port))
 
     def lineReceived(self, line):
         if self.command is None:
@@ -127,20 +128,20 @@ class DispatcherConnectingFactory(ClientFactory):
     noisy = False
     protocol = RelayClientProtocol
 
-    def __init__(self, parent, host):
+    def __init__(self, parent, host, port):
         self.parent = parent
-        self.host = host
+        self.host = (host, port)
         self.delayed = None
 
     def __eq__(self, other):
         return self.host == other.host
 
     def clientConnectionFailed(self, connector, reason):
-        log.error('Could not connect to dispatcher "%s" retrying in %d seconds: %s' % (self.host, Config.reconnect_delay, reason.getErrorMessage()))
+        log.error('Could not connect to dispatcher "%s:%d" retrying in %d seconds: %s' % (self.host[0], self.host[1], Config.reconnect_delay, reason.getErrorMessage()))
         self.delayed = reactor.callLater(Config.reconnect_delay, connector.connect)
 
     def clientConnectionLost(self, connector, reason):
-        log.error('Connection lost to dispatcher "%s": %s' % (self.host, reason.getErrorMessage()))
+        log.error('Connection lost to dispatcher "%s:%d": %s' % (self.host[0], self.host[1], reason.getErrorMessage()))
         if self.parent.connector_needs_reconnect(connector):
             connector.connect()
 
@@ -248,7 +249,7 @@ class MediaRelay(MediaRelayBase):
         for new_dispatcher in dispatchers.difference(self.dispatchers):
             log.debug('Adding new dispatcher "%s:%d"' % new_dispatcher)
             dispatcher_addr, dispatcher_port = new_dispatcher
-            factory = DispatcherConnectingFactory(self, dispatcher_addr)
+            factory = DispatcherConnectingFactory(self, dispatcher_addr, dispatcher_port)
             self.dispatcher_connectors[new_dispatcher] = reactor.connectTLS(dispatcher_addr, dispatcher_port, factory, self.cred)
         for old_dispatcher in self.dispatchers.difference(dispatchers):
             log.debug('Removing old dispatcher "%s:%d"' % old_dispatcher)
