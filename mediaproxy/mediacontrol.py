@@ -28,7 +28,7 @@ rtp_payloads = {
 }
 
 class Config(ConfigSection):
-    stream_timeout = 10
+    stream_timeout = 90
 
 configuration = ConfigFile(configuration_filename)
 configuration.read_settings("Relay", Config)
