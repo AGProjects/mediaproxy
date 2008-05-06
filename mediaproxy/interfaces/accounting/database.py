@@ -21,7 +21,7 @@ from mediaproxy import configuration_filename
 class Sessions(SQLObject):
     call_id = StringCol(notNone=True)
     from_tag = StringCol(notNone=True)
-    to_tag = StringCol(notNone=True)
+    to_tag = StringCol()
     statistics = BLOBCol()
 
 class Config(ConfigSection):
