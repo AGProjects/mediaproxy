@@ -39,6 +39,7 @@ class Config(ConfigSection):
     ca = None
     listen = DispatcherAddress("any")
     relay_timeout = 5
+    cleanup_timeout = 10
 
 
 configuration = ConfigFile(configuration_filename)
@@ -197,6 +198,7 @@ class RelayFactory(Factory):
         self.dispatcher = dispatcher
         self.protocols = []
         self.sessions = {}
+        self.cleanup_timers = {}
         self.shutting_down = False
 
     def buildProtocol(self, addr):
@@ -258,13 +260,23 @@ class RelayFactory(Factory):
 
     def connection_lost(self, prot):
         self.protocols.remove(prot)
-        if self.shutting_down and len(self.protocols) == 0:
-            self.defer.callback(None)
+        if self.shutting_down:
+            if len(self.protocols) == 0:
+                self.defer.callback(None)
+        else:
+            self.cleanup_timers[prot] = reactor.callLater(Config.cleanup_timeout, self._do_cleanup, prot)
+
+    def _do_cleanup(self, prot):
+        log.debug("Doing cleanup for old relay %s" % prot.ip)
+        del self.cleanup_timers[prot]
+        self.sessions = dict((call_id, relay) for call_id, relay in self.sessions.iteritems() if relay != prot)
 
     def shutdown(self):
         if self.shutting_down:
             return
         self.shutting_down = True
+        for timer in self.cleanup_timers.itervalues():
+            timer.cancel()
         if len(self.protocols) == 0:
             return succeed(None)
         else:
