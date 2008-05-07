@@ -20,6 +20,8 @@ from application.configuration import *
 from mediaproxy.interfaces.system import _conntrack
 from mediaproxy import configuration_filename
 
+UDP_TIMEOUT_FILE = "/proc/sys/net/ipv4/netfilter/ip_conntrack_udp_timeout_stream"
+
 rtp_payloads = {
      0: "G711u", 1: "1016",  2: "G721",  3: "GSM",  4: "G723",  5: "DVI4", 6: "DVI4",
      7: "LPC",   8: "G711a", 9: "G722", 10: "L16", 11: "L16",  14: "MPA", 15: "G728",
@@ -68,7 +70,7 @@ class MediaSubParty(object):
         if self.timer and self.timer.active():
             self.timer.cancel()
         if expire:
-            self.timer = reactor.callLater(Config.stream_timeout, self.substream.conntrack_expired)
+            self.timer = reactor.callLater(Config.stream_timeout, self.substream.expired, "no traffic timeout", Config.stream_timeout)
         else:
             self.timer = None
             self.remote = None
@@ -77,7 +79,7 @@ class MediaSubParty(object):
         if self.timer and self.timer.active():
             self.timer.cancel()
         if not self.got_remote:
-            self.timer = reactor.callLater(Config.stream_timeout, self.substream.conntrack_expired)
+            self.timer = reactor.callLater(Config.stream_timeout, self.substream.expired, "no traffic timeout", Config.stream_timeout)
 
     def start_block(self):
         if self.inhibitor is None:
@@ -158,8 +160,15 @@ class MediaSubStream(object):
             self.callee.stop_block()
 
     def conntrack_expired(self):
+        try:
+            timeout_wait = int(open(UDP_TIMEOUT_FILE).read())
+        except:
+            timeout_wait = 0
+        self.expired("conntrack timeout", timeout_wait)
+
+    def expired(self, reason, timeout_wait):
         self._stop_relaying()
-        self.stream.substream_expired(self)
+        self.stream.substream_expired(self, reason, timeout_wait)
 
     def cleanup(self):
         self.caller.cleanup()
@@ -197,7 +206,7 @@ class MediaParty(object):
 class MediaStream(object):
 
     def __init__(self, session, media_type, media_ip, media_port, initiating_party, direction = None):
-        self.is_active = True
+        self.is_alive = True
         self.session = session
         self.media_type = media_type
         self.caller = MediaParty(self)
@@ -208,7 +217,8 @@ class MediaStream(object):
         self.check_hold(initiating_party, direction, media_ip)
         self.start_time = time()
         self.end_time = None
-        self.timed_out = False
+        self.status = "active"
+        self.timeout_wait = 0
 
     def __str__(self):
         if self.caller.remote_sdp is None:
@@ -255,18 +265,21 @@ class MediaStream(object):
         self.rtcp.reset(party)
         getattr(self, party).remote_sdp = (media_ip, media_port)
 
-    def substream_expired(self, substream):
+    def substream_expired(self, substream, reason, timeout_wait):
         # This will cause any re-occuronce of the same traffic to be forwarded again
         if substream is self.rtcp or self.is_on_hold:
             substream.caller.reset(False)
             substream.callee.reset(False)
         else:
-            self.timed_out = True
-            self.session.stream_expired(self)
+            session = self.session
+            self.cleanup(reason)
+            self.timeout_wait = timeout_wait
+            session.stream_expired(self)
 
-    def cleanup(self):
-        if self.is_active:
-            self.is_active = False
+    def cleanup(self, status="closed"):
+        if self.is_alive:
+            self.is_alive = False
+            self.status = status
             self.caller.cleanup()
             self.callee.cleanup()
             self.rtp.cleanup()
@@ -355,7 +368,7 @@ class Session(object):
                     raise Exception # TODO: elaborate
                 if media_port == 0:
                     log.debug("Stream rejected: %s" % stream)
-                    stream.cleanup()
+                    stream.cleanup("rejected")
                     continue
                 stream.check_hold(party, media_direction, media_ip)
                 party_info = getattr(stream, party)
@@ -401,11 +414,10 @@ class Session(object):
         return retval
 
     def stream_expired(self, stream):
-        stream.cleanup()
         active_streams = set()
         for cseq in [self.previous_cseq, self.cseq]:
             if cseq is not None:
-                active_streams.update([stream for stream in self.streams[cseq] if stream.is_active])
+                active_streams.update([stream for stream in self.streams[cseq] if stream.is_alive])
         if len(active_streams) == 0:
             self.manager.session_expired(self.call_id, self.from_tag)
 
@@ -441,10 +453,8 @@ class Session(object):
             stream_info["media_type"] = stream.media_type
             stream_info["caller_codec"] = stream.rtp.caller.codec
             stream_info["callee_codec"] = stream.rtp.callee.codec
-            if stream.timed_out:
-                stream_info["status"] = "timed out"
-            else:
-                stream_info["status"] = "closed"
+            stream_info["status"] = stream.status
+            stream_info["timeout_wait"] = stream.timeout_wait
             streams.append(stream_info)
         return stats
 
