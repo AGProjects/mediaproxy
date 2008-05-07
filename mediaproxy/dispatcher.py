@@ -148,7 +148,7 @@ class RelayServerProtocol(LineOnlyReceiver):
         try:
             first, rest = line.split(" ", 1)
         except ValueError:
-            error.log("Could not decode reply from relay: %s" % line)
+            error.log("Could not decode reply from relay %s: %s" % (self.ip, line))
             return
         if first == "expired":
             try:
@@ -187,7 +187,7 @@ class RelayServerProtocol(LineOnlyReceiver):
         for command, defer, timer in self.commands.itervalues():
             timer.cancel()
             defer.errback(RelayError("Relay at %s disconnected" % self.ip))
-        self.factory.connection_lost(self)
+        self.factory.connection_lost(self.ip)
 
 
 class RelayFactory(Factory):
@@ -196,16 +196,23 @@ class RelayFactory(Factory):
 
     def __init__(self, dispatcher):
         self.dispatcher = dispatcher
-        self.protocols = []
+        self.relays = {}
         self.sessions = {}
         self.cleanup_timers = {}
         self.shutting_down = False
 
     def buildProtocol(self, addr):
-        log.debug("Relay at %s connected" % addr.host)
+        ip = addr.host
+        log.debug("Relay at %s connected" % ip)
+        if ip in self.relays:
+            log.error("Connection to relay %s is already present, disconnecting" % ip)
+            return
+        if ip in self.cleanup_timers:
+            timer = self.cleanup_timers.pop(ip)
+            timer.cancel()
         prot = Factory.buildProtocol(self, addr)
-        prot.ip = addr.host
-        self.protocols.append(prot)
+        prot.ip = ip
+        self.relays[ip] = prot
         return prot
 
     def send_command(self, command, headers):
@@ -218,9 +225,9 @@ class RelayFactory(Factory):
             raise RelayError("Could not parse call_id")
         if call_id in self.sessions:
             relay = self.sessions[call_id]
-            if relay not in self.protocols:
-                raise RelayError("Relay for this session is no longer connected")
-            return self.sessions[call_id].send_command(command, headers)
+            if relay not in self.relays:
+                raise RelayError("Relay for this session (%s) is no longer connected" % relay)
+            return self.relays[relay].send_command(command, headers)
         elif command == "update":
             preferred_relay = None
             for header in headers:
@@ -228,12 +235,12 @@ class RelayFactory(Factory):
                     preferred_relay = header.split("media_relay: ", 1)[1]
                     break
             if preferred_relay is not None:
-                try_relays = [protocol for protocol in self.protocols if protocol.ip == preferred_relay]
-                other_relays = [protocol for protocol in self.protocols if protocol.ready and protocol.ip != preferred_relay]
+                try_relays = [protocol for protocol in self.relays.itervalues() if protocol.ip == preferred_relay]
+                other_relays = [protocol for protocol in self.relays.itervalues() if protocol.ready and protocol.ip != preferred_relay]
                 random.shuffle(other_relays)
                 try_relays.extend(other_relays)
             else:
-                try_relays = [protocol for protocol in self.protocols if protocol.ready]
+                try_relays = [protocol for protocol in self.relays.itervalues() if protocol.ready]
                 random.shuffle(try_relays)
             defer = self._try_next(try_relays, command, headers)
             defer.addCallback(self._add_session, try_relays, call_id)
@@ -242,13 +249,13 @@ class RelayFactory(Factory):
             raise RelayError("Non-update command received from OpenSER for unknown session")
 
     def _add_session(self, result, try_relays, call_id):
-        self.sessions[call_id] = try_relays[-1]
+        self.sessions[call_id] = try_relays[-1].ip
         return result
 
     def _relay_error(self, failure, try_relays, command, headers):
         failure.trap(RelayError)
         failed_relay = try_relays.pop()
-        log.warn("Relay from %s returned error: %s" % (failed_relay.ip, failure.value))
+        log.warn("Relay from %s:%d returned error: %s" % (failed_relay.ip, failure.value))
         return self._try_next(try_relays, command, headers)
 
     def _try_next(self, try_relays, command, headers):
@@ -258,18 +265,19 @@ class RelayFactory(Factory):
         defer.addErrback(self._relay_error, try_relays, command, headers)
         return defer
 
-    def connection_lost(self, prot):
-        self.protocols.remove(prot)
+    def connection_lost(self, ip):
+        del self.relays[ip]
         if self.shutting_down:
-            if len(self.protocols) == 0:
+            if len(self.relays) == 0:
                 self.defer.callback(None)
         else:
-            self.cleanup_timers[prot] = reactor.callLater(Config.cleanup_timeout, self._do_cleanup, prot)
+            self.cleanup_timers[ip] = reactor.callLater(Config.cleanup_timeout, self._do_cleanup, ip)
 
-    def _do_cleanup(self, prot):
-        log.debug("Doing cleanup for old relay %s" % prot.ip)
-        del self.cleanup_timers[prot]
-        self.sessions = dict((call_id, relay) for call_id, relay in self.sessions.iteritems() if relay != prot)
+    def _do_cleanup(self, ip):
+        log.debug("Doing cleanup for old relay %s" % ip)
+        del self.cleanup_timers[ip]
+        for call_id in [call_id for call_id, relay in self.sessions.items() if relay == ip]:
+            del self.sessions[call_id]
 
     def shutdown(self):
         if self.shutting_down:
@@ -277,10 +285,10 @@ class RelayFactory(Factory):
         self.shutting_down = True
         for timer in self.cleanup_timers.itervalues():
             timer.cancel()
-        if len(self.protocols) == 0:
+        if len(self.relays) == 0:
             return succeed(None)
         else:
-            for prot in self.protocols:
+            for prot in self.relays.itervalues():
                 prot.transport.loseConnection()
             self.defer = Deferred()
             return self.defer
