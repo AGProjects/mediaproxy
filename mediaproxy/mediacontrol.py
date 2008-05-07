@@ -184,6 +184,7 @@ class MediaParty(object):
                 if self.listener_rtp is not None:
                     self.listener_rtp.stopListening()
                 self.manager.set_bad_ports(self.ports)
+                log.warn("Cannot use port pair %d/%d" % self.ports)
             else:
                 break
 
@@ -480,7 +481,6 @@ class SessionManager(Logger):
         return self.ports.popleft()
 
     def set_bad_ports(self, ports):
-        log.warn("At least one of ports %d and %d were unusable" % ports)
         self.bad_ports.append(ports)
 
     def free_ports(self, ports):
