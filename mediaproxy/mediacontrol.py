@@ -454,7 +454,7 @@ class SessionManager(Logger):
     def __init__(self, relay, start_port, end_port):
         self.relay = relay
         self.ports = deque((i, i+1) for i in xrange(start_port, end_port, 2))
-        self.bad_ports = set()
+        self.bad_ports = deque()
         self.sessions = {}
         self.watcher = _conntrack.ExpireWatcher()
         reactor.addReader(self)
@@ -473,10 +473,15 @@ class SessionManager(Logger):
 
     # port management
     def get_ports(self):
+        if len(self.bad_ports) > len(self.ports):
+            log.debug("Excessive amount of bad ports, doing cleanup")
+            self.ports.extend(self.bad_ports)
+            self.bad_ports = deque()
         return self.ports.popleft()
 
     def set_bad_ports(self, ports):
-        self.bad_ports.add(ports)
+        log.warn("At least one of ports %d and %d were unusable" % ports)
+        self.bad_ports.append(ports)
 
     def free_ports(self, ports):
         self.ports.append(ports)
