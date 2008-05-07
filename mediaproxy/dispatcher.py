@@ -39,7 +39,7 @@ class Config(ConfigSection):
     ca = None
     listen = DispatcherAddress("any")
     relay_timeout = 5
-    cleanup_timeout = 10
+    cleanup_timeout = 3600
 
 
 configuration = ConfigFile(configuration_filename)
