@@ -137,6 +137,34 @@ class MediaSubStream(object):
         self.caller = MediaSubParty(self, listener_caller)
         self.callee = MediaSubParty(self, listener_callee)
 
+    @property
+    def caller_bytes(self):
+        if self.forwarding_rule is None:
+            return self.caller.bytes
+        else:
+            return self.caller.bytes + self.forwarding_rule.caller_bytes
+
+    @property
+    def caller_packets(self):
+        if self.forwarding_rule is None:
+            return self.caller.packets
+        else:
+            return self.caller.packets + self.forwarding_rule.caller_packets
+
+    @property
+    def callee_bytes(self):
+        if self.forwarding_rule is None:
+            return self.callee.bytes
+        else:
+            return self.callee.bytes + self.forwarding_rule.callee_bytes
+
+    @property
+    def callee_packets(self):
+        if self.forwarding_rule is None:
+            return self.callee.packets
+        else:
+            return self.callee.packets + self.forwarding_rule.callee_packets
+
     def _update_counters(self):
         self.caller.bytes += self.forwarding_rule.caller_bytes
         self.caller.packets += self.forwarding_rule.caller_packets
@@ -421,8 +449,9 @@ class Session(object):
 
     def get_totals(self, party, stat_type):
         retval = {}
+        var_name = "%s_%s" % (party, stat_type)
         for stream in set(sum(self.streams.values(), [])):
-            retval[stream.media_type] = retval.get(stream.media_type, 0) + getattr(getattr(stream.rtp, party), stat_type) + getattr(getattr(stream.rtcp, party), stat_type)
+            retval[stream.media_type] = retval.get(stream.media_type, 0) + getattr(stream.rtp, var_name) + getattr(stream.rtcp, var_name)
         return retval
 
     def stream_expired(self, stream):
@@ -461,12 +490,24 @@ class Session(object):
                 stream_info["start_time"] = stream_info["end_time"] = 0
             else:
                 stream_info["start_time"] = max(int(stream.start_time - self.start_time), 0)
-                stream_info["end_time"] = min(int(stream.end_time - self.start_time), stats["duration"])
+                if stream.end_time is None:
+                    stream_info["end_time"] = stats["duration"]
+                else:
+                    stream_info["end_time"] = min(int(stream.end_time - self.start_time), stats["duration"])
             stream_info["media_type"] = stream.media_type
             stream_info["caller_codec"] = stream.rtp.caller.codec
             stream_info["callee_codec"] = stream.rtp.callee.codec
             stream_info["status"] = stream.status
             stream_info["timeout_wait"] = stream.timeout_wait
+            for party in ["caller", "callee"]:
+                subparty = getattr(stream.rtp, party)
+                stream_info["%s_local" % party] = "%s:%d" % subparty.local
+                if subparty.got_remote:
+                    stream_info["%s_remote" % party] = "%s:%d" % subparty.remote
+                else:
+                    stream_info["%s_remote" % party] = "Unknown"
+                bytes_var = "%s_bytes" % party
+                stream_info[bytes_var] = getattr(stream.rtp, bytes_var)
             streams.append(stream_info)
         return stats
 
@@ -561,6 +602,9 @@ class SessionManager(Logger):
         del self.sessions[key]
         self.relay.session_expired(session)
         self.relay.remove_session(dispatcher)
+
+    def get_statistics(self):
+        return [session.statistics for session in self.sessions.itervalues()]
 
     def cleanup(self):
         for key in self.sessions.keys():

@@ -31,7 +31,7 @@ from application.process import process
 from mediaproxy.tls import Certificate, PrivateKey
 from mediaproxy.headers import DecodingDict, DecodingError
 from mediaproxy.mediacontrol import SessionManager
-from mediaproxy import configuration_filename, default_dispatcher_port
+from mediaproxy import __version__ as version, configuration_filename, default_dispatcher_port
 
 class DispatcherAddress(tuple):
 
@@ -75,7 +75,9 @@ configuration.read_settings("Relay", Config)
 class RelayClientProtocol(LineOnlyReceiver):
     noisy = False
     required_headers = { "update": ["call_id", "from_tag", "from_uri", "to_uri", "cseq", "user_agent", "media", "type"],
-                         "remove": ["call_id", "from_tag"] }
+                         "remove": ["call_id", "from_tag"],
+                         "summary": [],
+                         "statistics": [] }
 
     def __init__(self):
         self.command = None
@@ -105,13 +107,13 @@ class RelayClientProtocol(LineOnlyReceiver):
                     return
             try:
                 try:
-                    response = self.factory.parent.got_command(self.factory.host, self.command, self.seq, self.headers)
+                    response = self.factory.parent.got_command(self.factory.host, self.command, self.headers)
                 except:
                     traceback.print_exc()
-                    response = "%s error\r\n" % self.seq
+                    response = "error"
             finally:
                 if response:
-                    self.transport.write(response)
+                    self.transport.write("%s %s\r\n" % (self.seq, response))
                 self.command = None
         else:
             try:
@@ -257,16 +259,27 @@ class MediaRelay(MediaRelayBase):
             self._check_disconnect(old_dispatcher)
         self.dispatchers = dispatchers
 
-    def got_command(self, dispatcher, command, seq, headers):
-        if command == "update":
+    def got_command(self, dispatcher, command, headers):
+        if command == "summary":
+            summary = {}
+            summary["version"] = version
+            summary["session_count"] = len(self.session_manager.sessions)
+            if self.shutting_down:
+                summary["status"] = "halting"
+            else:
+                summary["status"] = "ok"
+            return cjson.encode(summary)
+        elif command == "statistics":
+            return cjson.encode(self.session_manager.get_statistics())
+        elif command == "update":
             local_media = self.session_manager.update_session(dispatcher, **headers)
             if local_media is None:
-                return "%s halting\r\n" % seq
+                return "halting"
             else:
-                return " ".join([seq] + [local_media[0][0]] + [str(media[1]) for media in local_media]) + "\r\n"
+                return " ".join([local_media[0][0]] + [str(media[1]) for media in local_media])
         else: # remove
             session = self.session_manager.remove_session(**headers)
-            return seq + " " + cjson.encode(session.statistics) + "\r\n"
+            return cjson.encode(session.statistics)
 
     def session_expired(self, session):
         connector = self.dispatcher_connectors.get(session.dispatcher)
