@@ -237,7 +237,6 @@ class MediaRelay(MediaRelayBase):
             ip_forward = bool(int(open(IP_FORWARD_FILE).read()))
         except:
             ip_forward = False
-        print "ip_forward: %s" % ip_forward
         if not ip_forward:
             raise ValueError("%s is not set to 1 or not present" % IP_FORWARD_FILE)
         for value in [Config.certificate, Config.private_key, Config.ca]:
