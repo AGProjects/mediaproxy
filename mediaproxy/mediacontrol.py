@@ -264,10 +264,12 @@ class MediaStream(object):
         if previous_hold and not self.is_on_hold:
             for substream in [self.rtp, self.rtcp]:
                 for subparty in [substream.caller, substream.callee]:
+                    self.status = "active"
                     subparty.after_hold()
         if not previous_hold and self.is_on_hold:
             for substream in [self.rtp, self.rtcp]:
                 for subparty in [substream.caller, substream.callee]:
+                    self.status = "on hold"
                     subparty.before_hold()
 
     def reset(self, party, media_ip, media_port):
