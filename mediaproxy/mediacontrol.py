@@ -31,6 +31,7 @@ rtp_payloads = {
 
 class Config(ConfigSection):
     stream_timeout = 90
+    on_hold_timeout = 7200
 
 configuration = ConfigFile(configuration_filename)
 configuration.read_settings("Relay", Config)
@@ -74,6 +75,11 @@ class MediaSubParty(object):
         else:
             self.timer = None
             self.remote = None
+
+    def before_hold(self):
+        if self.timer and self.timer.active():
+            self.timer.cancel()
+        self.timer = reactor.callLater(Config.on_hold_timeout, self.substream.expired, "on hold timeout", Config.on_hold_timeout)
 
     def after_hold(self):
         if self.timer and self.timer.active():
@@ -259,6 +265,10 @@ class MediaStream(object):
             for substream in [self.rtp, self.rtcp]:
                 for subparty in [substream.caller, substream.callee]:
                     subparty.after_hold()
+        if not previous_hold and self.is_on_hold:
+            for substream in [self.rtp, self.rtcp]:
+                for subparty in [substream.caller, substream.callee]:
+                    subparty.before_hold()
 
     def reset(self, party, media_ip, media_port):
         self.rtp.reset(party)
@@ -267,7 +277,7 @@ class MediaStream(object):
 
     def substream_expired(self, substream, reason, timeout_wait):
         # This will cause any re-occuronce of the same traffic to be forwarded again
-        if substream is self.rtcp or self.is_on_hold:
+        if substream is self.rtcp:
             substream.caller.reset(False)
             substream.callee.reset(False)
         else:
