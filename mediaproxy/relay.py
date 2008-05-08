@@ -276,6 +276,7 @@ class MediaRelay(MediaRelayBase):
                 summary["status"] = "halting"
             else:
                 summary["status"] = "ok"
+            summary["bps_relayed"] = self.session_manager.bps_relayed
             return cjson.encode(summary)
         elif command == "statistics":
             return cjson.encode(self.session_manager.get_statistics())

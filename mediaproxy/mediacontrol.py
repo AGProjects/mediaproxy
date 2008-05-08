@@ -30,6 +30,7 @@ rtp_payloads = {
 }
 
 class Config(ConfigSection):
+    speed_interval = 15
     stream_timeout = 90
     on_hold_timeout = 7200
 
@@ -521,7 +522,19 @@ class SessionManager(Logger):
         self.bad_ports = deque()
         self.sessions = {}
         self.watcher = _conntrack.ExpireWatcher()
+        self.totals = {}
+        self.bps_relayed = 0
+        self.speed_timer = reactor.callLater(Config.speed_interval, self._measure_speed)
         reactor.addReader(self)
+
+    def _measure_speed(self):
+        total_bytes = 0
+        new_totals = dict((call_id, sum(sum(getattr(getattr(stream, substream), party) for party in ["caller_bytes", "callee_bytes"] for substream in ["rtp", "rtcp"]) for stream in set(sum(session.streams.values(), [])))) for call_id, session in self.sessions.iteritems())
+        for key, total in new_totals.iteritems():
+            total_bytes += total - self.totals.get(key, 0)
+        self.bps_relayed = total_bytes / Config.speed_interval
+        self.totals = new_totals
+        self.speed_timer = reactor.callLater(Config.speed_interval, self._measure_speed)
 
     # implemented for IReadDescriptor
     def fileno(self):
@@ -607,5 +620,7 @@ class SessionManager(Logger):
         return [session.statistics for session in self.sessions.itervalues()]
 
     def cleanup(self):
+        if self.speed_timer.active():
+            self.speed_timer.cancel()
         for key in self.sessions.keys():
             self.session_expired(*key)
