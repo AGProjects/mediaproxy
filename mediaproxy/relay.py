@@ -33,6 +33,8 @@ from mediaproxy.headers import DecodingDict, DecodingError
 from mediaproxy.mediacontrol import SessionManager
 from mediaproxy import __version__ as version, configuration_filename, default_dispatcher_port
 
+IP_FORWARD_FILE = "/proc/sys/net/ipv4/ip_forward"
+
 class DispatcherAddress(tuple):
 
     def __new__(typ, value):
@@ -231,6 +233,13 @@ except ImportError:
 class MediaRelay(MediaRelayBase):
 
     def __init__(self):
+        try:
+            ip_forward = bool(int(open(IP_FORWARD_FILE).read()))
+        except:
+            ip_forward = False
+        print "ip_forward: %s" % ip_forward
+        if not ip_forward:
+            raise ValueError("%s is not set to 1 or not present" % IP_FORWARD_FILE)
         for value in [Config.certificate, Config.private_key, Config.ca]:
             if value is None:
                 raise ValueError("TLS certificate/key pair and CA have not been set.")
