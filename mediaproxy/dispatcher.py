@@ -23,49 +23,45 @@ from application import log
 from application.process import process
 from application.configuration import *
 
-from mediaproxy import configuration_filename, default_dispatcher_port
+from mediaproxy import configuration_filename, default_dispatcher_port, default_management_port
 from mediaproxy.tls import Certificate, PrivateKey
 
 class DispatcherAddress(datatypes.NetworkAddress):
     _defaultPort = default_dispatcher_port
 
 
+class DispatcherManagementAddress(datatypes.NetworkAddress):
+    _defaultPort = default_management_port
+
+
 class Config(ConfigSection):
-    _datatypes = {"certificate": Certificate, "private_key": PrivateKey, "ca": Certificate, "listen": DispatcherAddress, "accounting": datatypes.StringList}
+    _datatypes = {"certificate": Certificate, "private_key": PrivateKey, "ca": Certificate, "listen": DispatcherAddress, "accounting": datatypes.StringList, "listen_management": DispatcherManagementAddress, "manager_use_tls": datatypes.Boolean}
     socket = "/var/run/mediaproxy/dispatcher.sock"
     accounting = []
     certificate = None
     private_key = None
     ca = None
     listen = DispatcherAddress("any")
+    listen_management = DispatcherManagementAddress("any")
     relay_timeout = 5
     cleanup_timeout = 3600
+    manager_use_tls = True
 
 
 configuration = ConfigFile(configuration_filename)
 configuration.read_settings("Dispatcher", Config)
 
-class OpenSERControlProtocol(LineOnlyReceiver):
+class ControlProtocol(LineOnlyReceiver):
     noisy = False
 
     def __init__(self):
-        self.line_buf = []
         self.in_progress = 0
 
     def lineReceived(self, line):
-        if line.strip() == "" and self.line_buf:
-            self.in_progress += 1
-            defer = self.factory.dispatcher.send_command(self.line_buf[0], self.line_buf[1:])
-            defer.addCallback(self.reply)
-            defer.addErrback(self._relay_error)
-            defer.addErrback(self._catch_all)
-            defer.addBoth(self._decrement)
-            self.line_buf = []
-        elif not line.endswith(": "):
-            self.line_buf.append(line)
+        raise NotImplementedError()
 
     def connectionLost(self, reason):
-        log.debug("Connection to OpenSER lost: %s" % reason.value)
+        log.debug("Connection to %s lost: %s" % (self.description, reason.value))
         self.factory.connection_lost(self)
 
     def reply(self, reply):
@@ -85,10 +81,49 @@ class OpenSERControlProtocol(LineOnlyReceiver):
         if self.factory.shutting_down:
             self.transport.loseConnection()
 
+    def _add_callbacks(self, defer):
+        defer.addCallback(self.reply)
+        defer.addErrback(self._relay_error)
+        defer.addErrback(self._catch_all)
+        defer.addBoth(self._decrement)
 
-class OpenSERControlFactory(Factory):
+
+class OpenSERControlProtocol(ControlProtocol):
+    description = "OpenSER"
+
+    def __init__(self):
+        self.line_buf = []
+        ControlProtocol.__init__(self)
+
+    def lineReceived(self, line):
+        if line.strip() == "" and self.line_buf:
+            self.in_progress += 1
+            defer = self.factory.dispatcher.send_command(self.line_buf[0], self.line_buf[1:])
+            self._add_callbacks(defer)
+            self.line_buf = []
+        elif not line.endswith(": "):
+            self.line_buf.append(line)
+
+
+class ManagementControlProtocol(ControlProtocol):
+    description = "Management interface client"
+
+    def lineReceived(self, line):
+        if line in ["quit", "exit"]:
+            self.transport.loseConnection()
+        elif line == "summary":
+            defer = self.factory.dispatcher.relay_factory.get_summary()
+            self._add_callbacks(defer)
+        elif line == "statistics":
+            defer = self.factory.dispatcher.relay_factory.get_statistics()
+            self._add_callbacks(defer)
+        else:
+            log.error("Unknown command on management interface: %s" % line)
+            self.reply("error")
+
+
+class ControlFactory(Factory):
     noisy = False
-    protocol = OpenSERControlProtocol
 
     def __init__(self, dispatcher):
         self.dispatcher = dispatcher
@@ -118,12 +153,22 @@ class OpenSERControlFactory(Factory):
             self.defer = Deferred()
             return self.defer
 
+
+class OpenSERControlFactory(ControlFactory):
+    protocol = OpenSERControlProtocol
+
+
+class ManagementControlFactory(ControlFactory):
+    protocol = ManagementControlProtocol
+
+
 class RelayError(Exception):
     pass
 
 
 class RelayServerProtocol(LineOnlyReceiver):
     noisy = False
+    MAX_LENGTH = 1024 * 1024
 
     def __init__(self):
         self.commands = {}
@@ -148,7 +193,7 @@ class RelayServerProtocol(LineOnlyReceiver):
         try:
             first, rest = line.split(" ", 1)
         except ValueError:
-            error.log("Could not decode reply from relay %s: %s" % (self.ip, line))
+            log.error("Could not decode reply from relay %s: %s" % (self.ip, line))
             return
         if first == "expired":
             try:
@@ -265,6 +310,31 @@ class RelayFactory(Factory):
         defer.addErrback(self._relay_error, try_relays, command, headers)
         return defer
 
+    def get_summary(self):
+        defer = DeferredList([relay.send_command("summary", []).addCallback(self._got_summary, ip).addErrback(self._summary_error, ip) for ip, relay in self.relays.iteritems()])
+        defer.addCallback(self._got_summaries)
+        return defer
+
+    def _got_summary(self, summary, ip):
+        summary = cjson.decode(summary)
+        summary["ip"] = ip
+        return summary
+
+    def _summary_error(self, failure, ip):
+        log.error("Error processing query at relay %s: %s" % (ip, failure.value))
+        return dict(status="error", ip=ip)
+
+    def _got_summaries(self, results):
+        return "\r\n".join([cjson.encode(result) for succeeded, result in results if succeeded] + ["", ""])
+
+    def get_statistics(self):
+        defer = DeferredList([relay.send_command("statistics", []).addCallback(lambda stats: cjson.decode(stats)) for relay in self.relays.itervalues()])
+        defer.addCallback(self._got_statistics)
+        return defer
+
+    def _got_statistics(self, results):
+        return "\r\n".join([cjson.encode(session) for session in sum([stats for succeeded, stats in results if succeeded], [])] + ["", ""])
+
     def connection_lost(self, ip):
         del self.relays[ip]
         if self.shutting_down:
@@ -308,6 +378,12 @@ class Dispatcher(object):
         self.relay_listener = reactor.listenTLS(dispatcher_port, self.relay_factory, self.cred, interface=dispatcher_addr)
         self.openser_factory = OpenSERControlFactory(self)
         self.openser_listener = reactor.listenUNIX(Config.socket, self.openser_factory)
+        self.management_factory = ManagementControlFactory(self)
+        management_addr, management_port = Config.listen_management
+        if Config.manager_use_tls:
+            self.management_listener = reactor.listenTLS(management_port, self.management_factory, self.cred, interface=management_addr)
+        else:
+            self.management_listener = reactor.listenTCP(management_port, self.management_factory, interface=management_addr)
 
     def run(self):
         process.signals.add_handler(signal.SIGHUP, self._handle_SIGHUP)
@@ -341,8 +417,9 @@ class Dispatcher(object):
         reactor.callFromThread(self._shutdown)
 
     def _shutdown(self):
-        defer = DeferredList([result for result in [self.openser_listener.stopListening(), self.relay_listener.stopListening()] if result is not None])
+        defer = DeferredList([result for result in [self.openser_listener.stopListening(), self.management_listener.stopListening(), self.relay_listener.stopListening()] if result is not None])
         defer.addCallback(lambda x: self.openser_factory.shutdown())
+        defer.addCallback(lambda x: self.management_factory.shutdown())
         defer.addCallback(lambda x: self.relay_factory.shutdown())
         defer.addCallback(lambda x: self._stop())
 
