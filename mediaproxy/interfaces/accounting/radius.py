@@ -76,8 +76,11 @@ class RadiusAccounting(EventQueue, pyrad.client.Client):
         attrs["Acct-Output-Octets"] = sum(bytes for bytes in stats["callee_bytes"].itervalues())
         attrs["Sip-From-Tag"] = stats["from_tag"]
         attrs["Sip-To-Tag"] = stats["to_tag"]
-        attrs["Sip-User-Agents"] = stats["caller_ua"] + "+" + stats["callee_ua"]
-        #attrs["Sip-Applications"] = " ".join(stream["media_type"] for stream in stats["streams"])
-        #attrs["Media-Codecs"] = " ".join("/".join([stream["caller_codec"], stream["callee_codec"]]) for stream in stats["streams"])
-        #attrs["Media-Info"] = cjson.encode(stats["streams"])
+        attrs["Sip-User-Agents"] = (stats["caller_ua"] + "+" + stats["callee_ua"])[:253]
+        attrs["Sip-Applications"] = stats["streams"][0]["media_type"]
+        attrs["Media-Codecs"] = stats["streams"][0]["caller_codec"]
+        if stats["streams"][-1]["status"] != "closed":
+            attrs["Media-Info"] = "timeout"
+        else:
+            attrs["Media-Info"] = ""
         self.SendPacket(self.CreateAcctPacket(**attrs))
