@@ -429,7 +429,7 @@ class Session(object):
                     log.debug("Removing old stream: %s" % stream)
                     stream.cleanup()
         else:
-            log.debug("Received old CSeq %d, ignoring" % cseq)
+            log.debug("Received old CSeq %d:%d, ignoring" % cseq)
 
     def get_local_media(self, is_downstream, cseq, is_caller_cseq):
         if is_caller_cseq:
