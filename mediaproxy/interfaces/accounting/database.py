@@ -18,14 +18,13 @@ from sqlobject import StringCol, BLOBCol
 
 from mediaproxy import configuration_filename
 
-class Sessions(SQLObject):
+class MediaSessions(SQLObject):
     call_id = StringCol(notNone=True)
     from_tag = StringCol(notNone=True)
-    to_tag = StringCol()
-    statistics = BLOBCol()
+    metrics = BLOBCol()
 
 class Config(ConfigSection):
-    dburi = "mysql://user:password@host/database"
+    dburi = "mysql://mediaproxy:CHANGEME@localhost/mediaproxy"
     pool_size = 1
 
 configuration = ConfigFile(configuration_filename)
@@ -60,4 +59,4 @@ class DatabaseAccounting(EventQueue):
         EventQueue.__init__(self, self.do_accounting)
 
     def do_accounting(self, stats):
-        Sessions(call_id=stats["call_id"], from_tag=stats["from_tag"], to_tag=stats["to_tag"], statistics=cjson.encode(stats))
+        MediaSessions(call_id=stats["call_id"], from_tag=stats["from_tag"], metrics=cjson.encode(stats))
