@@ -79,7 +79,7 @@ class RelayClientProtocol(LineOnlyReceiver):
     required_headers = { "update": ["call_id", "from_tag", "from_uri", "to_uri", "cseq", "user_agent", "media", "type"],
                          "remove": ["call_id", "from_tag"],
                          "summary": [],
-                         "statistics": [] }
+                         "sessions": [] }
 
     def __init__(self):
         self.command = None
@@ -284,7 +284,7 @@ class MediaRelay(MediaRelayBase):
             summary["bps_relayed"] = self.session_manager.bps_relayed
             summary["stream_count"] = self.session_manager.get_stream_count()
             return cjson.encode(summary)
-        elif command == "statistics":
+        elif command == "sessions":
             return cjson.encode(self.session_manager.get_statistics())
         elif command == "update":
             local_media = self.session_manager.update_session(dispatcher, **headers)

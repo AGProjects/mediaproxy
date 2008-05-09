@@ -114,7 +114,7 @@ class ManagementControlProtocol(ControlProtocol):
         elif line == "summary":
             defer = self.factory.dispatcher.relay_factory.get_summary()
             self._add_callbacks(defer)
-        elif line == "statistics":
+        elif line == "sessions":
             defer = self.factory.dispatcher.relay_factory.get_statistics()
             self._add_callbacks(defer)
         else:
@@ -328,7 +328,7 @@ class RelayFactory(Factory):
         return "\r\n".join([cjson.encode(result) for succeeded, result in results if succeeded] + ["", ""])
 
     def get_statistics(self):
-        defer = DeferredList([relay.send_command("statistics", []).addCallback(lambda stats: cjson.decode(stats)) for relay in self.relays.itervalues()])
+        defer = DeferredList([relay.send_command("sessions", []).addCallback(lambda stats: cjson.decode(stats)) for relay in self.relays.itervalues()])
         defer.addCallback(self._got_statistics)
         return defer
 
