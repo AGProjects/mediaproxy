@@ -621,6 +621,14 @@ class SessionManager(Logger):
     def get_statistics(self):
         return [session.statistics for session in self.sessions.itervalues()]
 
+    def get_stream_count(self):
+        stream_count = {}
+        for session in self.sessions.itervalues():
+            for stream in set(sum(session.streams.values(), [])):
+                if stream.is_alive:
+                    stream_count[stream.media_type] = stream_count.get(stream.media_type, 0) + 1
+        return stream_count
+
     def cleanup(self):
         if self.speed_timer.active():
             self.speed_timer.cancel()

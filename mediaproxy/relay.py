@@ -282,6 +282,7 @@ class MediaRelay(MediaRelayBase):
             else:
                 summary["status"] = "ok"
             summary["bps_relayed"] = self.session_manager.bps_relayed
+            summary["stream_count"] = self.session_manager.get_stream_count()
             return cjson.encode(summary)
         elif command == "statistics":
             return cjson.encode(self.session_manager.get_statistics())
