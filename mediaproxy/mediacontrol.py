@@ -534,7 +534,7 @@ class SessionManager(Logger):
         new_totals = dict((call_id, sum(sum(getattr(getattr(stream, substream), party) for party in ["caller_bytes", "callee_bytes"] for substream in ["rtp", "rtcp"]) for stream in set(sum(session.streams.values(), [])))) for call_id, session in self.sessions.iteritems())
         for key, total in new_totals.iteritems():
             total_bytes += total - self.totals.get(key, 0)
-        self.bps_relayed = total_bytes / Config.speed_interval
+        self.bps_relayed = 8 * total_bytes / Config.speed_interval
         self.totals = new_totals
         self.speed_timer = reactor.callLater(Config.speed_interval, self._measure_speed)
 
