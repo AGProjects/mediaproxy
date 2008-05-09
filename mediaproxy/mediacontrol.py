@@ -470,7 +470,7 @@ class Session(object):
         if self.start_time is not None and self.end_time is not None:
             return int(self.end_time - self.start_time)
         else:
-            return 0
+            return int(time() - self.start_time)
 
     @property
     def statistics(self):
