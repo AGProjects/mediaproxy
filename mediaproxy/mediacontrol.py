@@ -402,13 +402,15 @@ class Session(object):
             if self.start_time is None:
                 self.start_time = time()
             current_streams = self.streams[cseq]
-            if len(media_list) != len(current_streams):
-                raise Exception # TODO: elaborate
+            if len(media_list) < len(current_streams):
+                for stream in current_streams[len(media_list):]:
+                    log.debug("Stream rejected by not being included in the SDP answer: %s" % stream)
+                    stream.cleanup("rejected")
             for stream, (media_type, media_ip, media_port, media_direction) in zip(current_streams, media_list):
                 if stream.media_type != media_type:
-                    raise Exception # TODO: elaborate
+                    raise ValueError('Media types do not match: "%s" and "%s"' % (stream.media_type, media_type))
                 if media_port == 0:
-                    log.debug("Stream rejected: %s" % stream)
+                    log.debug("Stream explicitly rejected: %s" % stream)
                     stream.cleanup("rejected")
                     continue
                 stream.check_hold(party, media_direction, media_ip)
