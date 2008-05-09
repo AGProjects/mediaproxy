@@ -478,7 +478,7 @@ class Session(object):
         for party in ["caller", "callee"]:
             for stat_type in ["bytes", "packets"]:
                 stats["%s_%s" % (party, stat_type)] = self.get_totals(party, stat_type)
-        for attr in ["call_id", "from_tag", "from_uri", "to_tag", "to_uri", "duration"]:
+        for attr in ["call_id", "from_tag", "from_uri", "to_tag", "to_uri", "duration", "start_time"]:
             stats[attr] = getattr(self, attr)
         for attr in ["caller_ua", "callee_ua"]:
             ua = getattr(self, attr)
