@@ -104,7 +104,7 @@ class MediaSubParty(object):
                 self.timer = None
             if self.codec == "Unknown" and self.substream is self.substream.stream.rtp:
                 try:
-                    pt = ord(data[2]) & 127
+                    pt = ord(data[1]) & 127
                 except IndexError:
                     pass
                 else:
