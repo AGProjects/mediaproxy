@@ -13,7 +13,7 @@ Description
 
 MediapProxy is a media relay for RTP and RTCP streams that works in
 tandem with OpenSER to provide NAT traversal capability for media streams
-from user agents located behind NAT. 
+from SIP user agents located behind NAT. 
 
 When using MediaProxy, NAT traversal for RTP media will work without any
 settings in the SIP User Agents or the NAT router.
@@ -55,9 +55,9 @@ Features
  - Real-time sessions statistics
  - Configurable IP and UDP port range
  - Support for any combination of audio and video streams
- - Accounting of IP network traffic
- - Logging in Radius of all media information history (like
-   addition/subtraction of streams, their type and duration).
+ - Radius accounting of IP network traffic
+ - Logging of complete media information including all streams, their type,
+   their codec and duration.
 
 
 Compatibility and pre-requisites
@@ -72,18 +72,16 @@ MediaProxy is meant to be used together with OpenSER's mediaproxy module.
 
 This version of MediaProxy (2.0 or higher) cannot be used in combination
 with any version of OpenSER older than 1.4 or any components of MediaProxy
-older than 2.0.0. You must completely upgrade any previous installation of
+older than 2.0. You must completely upgrade any previous installation of
 OpenSER and MediaProxy to these new versions.
-
-MediaProxy does not affect the use of ICE between clients.
 
 No STUN or TURN support are required in the clients.
 
 The SIP User Agents must work symmetric (that is to send and receive data on
 the same port for each stream), which is documented in RFC 4961.
 
-To display the history of the media streams from the Radius accounting
-CDRTool 6.5 or higher is required.
+To display the history of the media streams CDRTool 6.5 or higher is
+required.
 
 Some features have been removed in comparison to the previous version:
 
