@@ -10,6 +10,7 @@ import cjson
 import signal
 import traceback
 import re
+from time import time
 
 from twisted.protocols.basic import LineOnlyReceiver
 from twisted.internet.protocol import ClientFactory
@@ -255,6 +256,7 @@ class MediaRelay(MediaRelayBase):
         self.dispatcher_connectors = {}
         self.old_connectors = {}
         self.shutting_down = False
+        self.start_time = time()
         MediaRelayBase.__init__(self)
 
     def update_dispatchers(self, dispatchers):
@@ -283,6 +285,7 @@ class MediaRelay(MediaRelayBase):
                 summary["status"] = "ok"
             summary["bps_relayed"] = self.session_manager.bps_relayed
             summary["stream_count"] = self.session_manager.get_stream_count()
+            summary["uptime"] = int(time() - self.start_time)
             return cjson.encode(summary)
         elif command == "sessions":
             return cjson.encode(self.session_manager.get_statistics())
