@@ -6,6 +6,7 @@
 """Implementation of database accounting"""
 
 from collections import deque
+from datetime import datetime
 import cjson
 
 from application import log
@@ -14,7 +15,7 @@ from application.python.queue import EventQueue
 from application.configuration import *
 
 from sqlobject import SQLObject, connectionForURI, sqlhub
-from sqlobject import StringCol, BLOBCol
+from sqlobject import StringCol, BLOBCol, DateTimeCol
 
 from mediaproxy import configuration_filename
 
@@ -22,6 +23,7 @@ class MediaSessions(SQLObject):
     call_id = StringCol(notNone=True)
     from_tag = StringCol(notNone=True)
     to_tag = StringCol()
+    start_time = DateTimeCol(notNone=True)
     info = BLOBCol()
 
 class Config(ConfigSection):
@@ -60,4 +62,4 @@ class DatabaseAccounting(EventQueue):
         EventQueue.__init__(self, self.do_accounting)
 
     def do_accounting(self, stats):
-        MediaSessions(call_id=stats["call_id"], from_tag=stats["from_tag"], to_tag=stats["to_tag"], info=cjson.encode(stats))
+        MediaSessions(call_id=stats["call_id"], from_tag=stats["from_tag"], to_tag=stats["to_tag"], start_time=datetime.fromtimestamp(stats["start_time"]), info=cjson.encode(stats))
