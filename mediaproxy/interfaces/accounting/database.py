@@ -21,6 +21,7 @@ from mediaproxy import configuration_filename
 class MediaSessions(SQLObject):
     call_id = StringCol(notNone=True)
     from_tag = StringCol(notNone=True)
+    to_tag = StringCol()
     metrics = BLOBCol()
 
 class Config(ConfigSection):
@@ -59,4 +60,4 @@ class DatabaseAccounting(EventQueue):
         EventQueue.__init__(self, self.do_accounting)
 
     def do_accounting(self, stats):
-        MediaSessions(call_id=stats["call_id"], from_tag=stats["from_tag"], metrics=cjson.encode(stats))
+        MediaSessions(call_id=stats["call_id"], from_tag=stats["from_tag"], to_tag=stats["to_tag"], metrics=cjson.encode(stats))
