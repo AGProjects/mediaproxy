@@ -521,7 +521,7 @@ ExpireWatcher_read(ExpireWatcher *self)
         if (rule->prev == NULL)
             forwarding_rules = rule->next;
         else
-            rule->prev->next = rule->prev->next;
+            rule->prev->next = rule->next;
         if (rule->next != NULL)
             rule->next->prev = rule->prev;
         for (i = 1; i < 5; i++)
