@@ -77,8 +77,10 @@ class RadiusAccounting(EventQueue, pyrad.client.Client):
         attrs["Sip-From-Tag"] = stats["from_tag"]
         attrs["Sip-To-Tag"] = stats["to_tag"]
         attrs["Sip-User-Agents"] = (stats["caller_ua"] + "+" + stats["callee_ua"])[:253]
-        attrs["Sip-Applications"] = stats["streams"][0]["media_type"]
-        attrs["Media-Codecs"] = stats["streams"][0]["caller_codec"]
+        first_stream = stats["streams"][0]
+        attrs["NAS-IP-Address"] = first_stream["caller_local"].split(":")[0]
+        attrs["Sip-Applications"] = first_stream["media_type"]
+        attrs["Media-Codecs"] = first_stream["caller_codec"]
         if stats["streams"][-1]["status"] != "closed":
             attrs["Media-Info"] = "timeout"
         else:
