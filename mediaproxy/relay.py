@@ -190,10 +190,12 @@ class SRVMediaRelayBase(object):
 
     def _cb_got_all(self, results):
         self._do_update([result[1] for result in results if result[0] and result[1] is not None])
-        reactor.callLater(Config.srv_refresh, self._do_lookup)
+        if not self.shutting_down:
+            reactor.callLater(Config.srv_refresh, self._do_lookup)
 
     def _do_update(self, dispatchers):
-        self.update_dispatchers(dispatchers)
+        if not self.shutting_down:
+            self.update_dispatchers(dispatchers)
 
     def update_dispatchers(self, dispatchers):
         raise NotImplementedError()
@@ -260,8 +262,6 @@ class MediaRelay(MediaRelayBase):
         MediaRelayBase.__init__(self)
 
     def update_dispatchers(self, dispatchers):
-        if self.shutting_down:
-            return
         dispatchers = set(dispatchers)
         for new_dispatcher in dispatchers.difference(self.dispatchers):
             log.debug('Adding new dispatcher "%s:%d"' % new_dispatcher)
@@ -317,6 +317,8 @@ class MediaRelay(MediaRelayBase):
 
     def remove_session(self, dispatcher):
         self.dispatcher_session_count[dispatcher] -= 1
+        if self.dispatcher_session_count[dispatcher] == 0:
+            del self.dispatcher_session_count[dispatcher]
         if dispatcher in self.old_connectors:
             self._check_disconnect(dispatcher)
 
@@ -328,31 +330,32 @@ class MediaRelay(MediaRelayBase):
             connector.disconnect()
             if old_state != "connected":
                 del self.old_connectors[dispatcher]
-                if len(self.old_connectors) == 0:
+                if self.shutting_down and len(self.dispatcher_connectors) + len(self.old_connectors) == 0:
                     self._shutdown()
 
     def connector_needs_reconnect(self, connector):
-        if self.shutting_down:
+        if connector in self.dispatcher_connectors.values():
+            return True
+        else:
             for dispatcher, old_connector in self.old_connectors.items():
                 if old_connector is connector:
-                    del self.old_connectors[dispatcher]
-                    break
-            if len(self.old_connectors) == 0:
-                self._shutdown()
-            return False
-        else:
-            for present_connector in self.dispatcher_connectors.values() + self.old_connectors.values():
-                if present_connector is connector:
-                    return True
+                    if self.dispatcher_session_count.get(dispatcher, 0) > 0:
+                        return True
+                    else:
+                        del self.old_connectors[dispatcher]
+                        break
+            if self.shutting_down:
+                if len(self.old_connectors) == 0:
+                    self._shutdown()
             return False
 
     def shutdown(self, kill_sessions):
         if not self.shutting_down:
+            self.shutting_down = True
             if len(self.dispatcher_connectors) + len(self.old_connectors) == 0:
                 self._shutdown()
             else:
                 self.update_dispatchers([])
-            self.shutting_down = True
         if kill_sessions:
             self.session_manager.cleanup()
 

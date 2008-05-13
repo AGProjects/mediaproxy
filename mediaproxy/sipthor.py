@@ -44,11 +44,13 @@ class SIPThorMediaRelayBase(EventServiceClient, SRVMediaRelayBase):
     def handle_event(self, event):
         sip_proxy_ips = [node.ip for node in ThorEntities(event.message, role="sip_proxy")]
         self.sipthor_dispatchers = [(ip, default_dispatcher_port) for ip in sip_proxy_ips]
-        self.update_dispatchers(self.sipthor_dispatchers + self.additional_dispatchers)
+        if not self.shutting_down:
+            self.update_dispatchers(self.sipthor_dispatchers + self.additional_dispatchers)
 
     def _do_update(self, dispatchers):
         self.additional_dispatchers = dispatchers
-        self.update_dispatchers(self.sipthor_dispatchers + self.additional_dispatchers)
+        if not self.shutting_down:
+            self.update_dispatchers(self.sipthor_dispatchers + self.additional_dispatchers)
 
     def update_dispatchers(self, dispatchers):
         raise NotImplementedError()
