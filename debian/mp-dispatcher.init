@@ -4,7 +4,7 @@
 
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
-INSTALL_DIR="/home/ruud/work/mediaproxy"
+INSTALL_DIR="/usr/bin"
 RUNTIME_DIR="/var/run"
 
 SERVER="$INSTALL_DIR/mp-dispatcher"
