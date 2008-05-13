@@ -19,19 +19,27 @@ from sqlobject import StringCol, BLOBCol, DateTimeCol
 
 from mediaproxy import configuration_filename
 
-class MediaSessions(SQLObject):
-    call_id = StringCol(notNone=True)
-    from_tag = StringCol(notNone=True)
-    to_tag = StringCol()
-    start_time = DateTimeCol(notNone=True)
-    info = BLOBCol()
-
 class Config(ConfigSection):
     dburi = "mysql://mediaproxy:CHANGEME@localhost/mediaproxy"
+    sessions_table = "media_sessions"
+    callid_column = "call_id"
+    fromtag_column = "from_tag"
+    totag_column = "to_tag"
+    starttime_column = "start_time"
+    info_column = "info"
     pool_size = 1
 
 configuration = ConfigFile(configuration_filename)
 configuration.read_settings("Database", Config)
+
+class MediaSessions(SQLObject):
+    class sqlmeta:
+        table = Config.sessions_table
+    call_id = StringCol(dbName=Config.callid_column, notNone=True)
+    from_tag = StringCol(dbName=Config.fromtag_column, notNone=True)
+    to_tag = StringCol(dbName=Config.totag_column)
+    start_time = DateTimeCol(dbName=Config.starttime_column, notNone=True)
+    info = BLOBCol(dbName=Config.info_column)
 
 sqlhub.processConnection = connectionForURI(Config.dburi)
 
