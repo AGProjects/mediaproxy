@@ -467,10 +467,12 @@ class Session(object):
 
     @property
     def duration(self):
-        if self.start_time is not None and self.end_time is not None:
+        if self.end_time is not None:
             return int(self.end_time - self.start_time)
-        else:
+        elif self.start_time is not None:
             return int(time() - self.start_time)
+        else:
+            return 0
 
     @property
     def statistics(self):
