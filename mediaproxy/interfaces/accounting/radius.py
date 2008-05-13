@@ -17,7 +17,7 @@ from mediaproxy import configuration_filename
 
 class Config(ConfigSection):
     config_file = "/etc/openser/radius/client.conf"
-    additional_dictionary = process.config_file("radius/dictionary")
+    additional_dictionary = ""
 
 
 configuration = ConfigFile(configuration_filename)
@@ -53,8 +53,12 @@ class RadiusAccounting(EventQueue, pyrad.client.Client):
             secret = secrets[server]
             # pyrad does not support $INCLUDE in dictionary files!
             dicts = [line.rstrip("\n").split(None, 1)[1] for line in open(config["dictionary"]) if line.startswith("$INCLUDE")] + [config["dictionary"]]
-            if Config.additional_dictionary is not None:
-                dicts.append(Config.additional_dictionary)
+            if Config.additional_dictionary:
+                additional_dictionary = process.config_file(Config.additional_dictionary)
+                if additional_dictionary:
+                    dicts.append(additional_dictionary)
+                else:
+                    log.warn("Could not load additional RADIUS dictionary file: %s" % Config.additional_dictionary)
             raddict = pyrad.dictionary.Dictionary(*dicts)
             timeout = int(config["radius_timeout"])
             retries = int(config["radius_retries"])
