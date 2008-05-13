@@ -1,0 +1,74 @@
+; This is a sample configuration file for the MediaProxy Dispatcher.
+
+; Dispatcher main configuration
+[Dispatcher]
+
+; Listen address for incoming connections from the relay(s). The format is
+; "ip[:port]". If the ip is "0.0.0.0" the dispatcher will listen on all
+; interfaces of this host. If the port is not specified, the dispatcher will
+; listen on the default port of 25060.
+; listen = 0.0.0.0
+
+; TLS certificate, private key and CA files. These are the credentials that
+; are used for encrypting and verifying the incoming connection(s) from the
+; relay(s). These will always need to be specified here as by default they are
+; unspecified.
+; certificate = dispatcher.crt
+; private_key = dispatcher.key
+; ca = ca.pem
+
+; Local socket on which to communicate with OpenSER. The OpenSER mediaproxy
+; module should be configured to connect to this socket.
+; socket = /var/run/mediaproxy/dispatcher.sock
+
+; Listen address for incoming management interface connections. Clients can
+; connect to this and issue commands to query the status of the relays and
+; their sessions. The format is "ip[:port]". If the ip is "0.0.0.0" the
+; dispatcher will listen on all interfaces of this host. If the port is not
+; specified, the dispatcher will listen on the default port of 25061.
+; listen_management = 0.0.0.0
+
+; Whether or not to use TLS on the management interface. Note that the TLS
+; credentials for the relay connections will be re-used for this connection.
+; management_use_tls = yes
+
+; Timeout value in second for individual relays. When a command is sent from
+; the dispatcher to a relay it will wait this amount of seconds for a reply.
+; The default is 5 seconds.
+; relay_timeout = 5
+
+; A comma separated list of accounting modules that will be used to do
+; accounting on the session information once a session has finished. Currently
+; only "radius" and "database" are included, the configuration of which is
+; performed below. The default is to use no accounting module.
+; accounting =
+
+; Accounting modules configuration
+
+; Database configuration
+[Database]
+
+; URI for the database in SQLObject format.
+; dburi = mysql://mediaproxy:CHANGEME@localhost/mediaproxy
+
+; Name for the SQL table to create entries in.
+; sessions_table = media_sessions
+
+; Names for the columns within the SQL table. starttime_column is a datetime
+; column and info_column is a blob. The others are strings.
+; callid_column = call_id
+; fromtag_column = from_tag
+; totag_column = to_tag
+; starttime_column = start_time
+; info_column = info
+
+; RADIUS accounting configuration
+[Radius]
+
+; OpenSER RADIUS configuration file. All RADIUS cofiguration parameters will
+; be read from this file, including dictionary files.
+; config_file = /etc/openser/radius/client.conf
+
+; Additional dictionary files. The dictionary values in this file will be
+; loaded in addition to the ones from the OpenSER config.
+; additional_dictionary = dictionary

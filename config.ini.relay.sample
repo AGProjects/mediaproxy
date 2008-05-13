@@ -1,0 +1,49 @@
+; This is a sample configuration file for the MediaProxy Relay.
+
+; A list of dispatchers to connect to, separated by spaces. The format is
+; "host[:port] [host[:port] ...]". If a port is not specified the default port
+; of 25060 will be used. "host" can be one of the following:
+;  - A domain name that has a SRV record for a SIP proxy, i.e. at
+;    "_udp._sip.<domain>". If the DNS lookup for this succeeds the relay
+;    will connect to the IP address of the SIP proxy on the port specified in
+;    this configuration.
+;  - A hostname. The lookup for this will be performed if the SRV lookup
+;    fails.
+;  - An IP address. The relay will connect directly to this address.
+;  Both the SRV and hostname lookups will be periodically refreshed (see
+;  "srv_refresh" below).
+; dispatchers = example.com 1.2.3.4:12345
+
+; TLS certificate, private key and CA files. These are the credentials that
+; are used for encrypting and verifying the outgoing connection(s) to the
+; dispatcher(s). These will always need to be specified here as by default
+; they are unspecified.
+; certificate = dispatcher.crt
+; private_key = dispatcher.key
+; ca = ca.pem
+
+; Start port and end port of the UDP port range which can be used to allocate
+; to relayed streams. By default these are UDP ports 40000 through 50000.
+; start_port = 40000
+; end_port = 50000
+
+; SRV and domain name refresh delay. The relay will periodically query the DNS
+; server for SRV and A records of its list of dispatchers. The default is 60
+; seconds.
+; srv_refresh = 60
+
+; If the relay cannot connect to a dispatcher is should retry after this
+; amount of seconds. The default value is 30 seconds.
+; reconnect_delay = 30
+
+; Amount of time to wait for a stream to start sending data before the relay
+; decides that it has timed out. The default value is 90 seconds.
+; stream_timeout = 90
+
+; Amount of time a call can be on hold before it is declared expired by the
+; relay. The default is 7200 seconds (2 hours).
+; on_hold_timeout = 7200
+
+; Interval between measurements of the aggregate amount of data processed by
+; the relay per second. The default is to measure every 15 seconds.
+; speed_interval = 15
