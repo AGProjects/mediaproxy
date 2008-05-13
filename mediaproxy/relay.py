@@ -35,6 +35,7 @@ from mediaproxy.mediacontrol import SessionManager
 from mediaproxy import __version__ as version, configuration_filename, default_dispatcher_port
 
 IP_FORWARD_FILE = "/proc/sys/net/ipv4/ip_forward"
+KERNEL_VERSION_FILE = "/proc/sys/kernel/osrelease"
 
 class DispatcherAddress(tuple):
 
@@ -247,6 +248,12 @@ class MediaRelay(MediaRelayBase):
             ip_forward = False
         if not ip_forward:
             raise ValueError("%s is not set to 1 or not present" % IP_FORWARD_FILE)
+        try:
+            major, minor, revision = [int(num) for num in open(KERNEL_VERSION_FILE).read().split("-", 1)[0].split(".")]
+        except:
+            raise Exception("Could not determine Linux kernel version")
+        if major < 2 or minor < 6 or revision < 18:
+            raise Exception("A mimimum Linux kernel version of 2.6.18 is required")
         for value in [Config.certificate, Config.private_key, Config.ca]:
             if value is None:
                 raise ValueError("TLS certificate/key pair and CA have not been set.")
