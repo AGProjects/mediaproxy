@@ -528,10 +528,12 @@ class SessionManager(Logger):
         self.watcher = _conntrack.ExpireWatcher()
         self.totals = {}
         self.bps_relayed = 0
-        self.speed_timer = reactor.callLater(Config.speed_interval, self._measure_speed)
+        if Config.speed_interval > 0:
+            self.speed_timer = reactor.callLater(Config.speed_interval, self._measure_speed)
         reactor.addReader(self)
 
     def _measure_speed(self):
+        start_time = time()
         total_bytes = 0
         new_totals = dict((call_id, sum(sum(getattr(getattr(stream, substream), party) for party in ["caller_bytes", "callee_bytes"] for substream in ["rtp", "rtcp"]) for stream in set(sum(session.streams.values(), [])))) for call_id, session in self.sessions.iteritems())
         for key, total in new_totals.iteritems():
@@ -539,6 +541,9 @@ class SessionManager(Logger):
         self.bps_relayed = 8 * total_bytes / Config.speed_interval
         self.totals = new_totals
         self.speed_timer = reactor.callLater(Config.speed_interval, self._measure_speed)
+        us_taken = int((time() - start_time) * 1000000)
+        if us_taken > 10000:
+            log.warn("Aggregate speed calculation time exceeded 10ms: %d us for %d sessions" % (us_taken, len(self.sessions)))
 
     # implemented for IReadDescriptor
     def fileno(self):
@@ -632,7 +637,8 @@ class SessionManager(Logger):
         return stream_count
 
     def cleanup(self):
-        if self.speed_timer.active():
-            self.speed_timer.cancel()
+        if Config.speed_interval > 0:
+            if self.speed_timer.active():
+                self.speed_timer.cancel()
         for key in self.sessions.keys():
             self.session_expired(*key)
