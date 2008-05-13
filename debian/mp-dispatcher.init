@@ -1,0 +1,54 @@
+#!/bin/sh
+#
+# starts and stops the MediaProxy Dispatcher
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+INSTALL_DIR="/home/ruud/work/mediaproxy"
+RUNTIME_DIR="/var/run"
+
+SERVER="$INSTALL_DIR/mp-dispatcher"
+PID="$RUNTIME_DIR/mediaproxy/mp-dispatcher.pid"
+
+# Options for the dispatcher. Do not include --pid <pidfile>
+# --pid <pidfile> will be added automatically if needed.
+OPTIONS=""
+
+NAME="mp-dispatcher"
+DESC="MediaProxy Dispatcher"
+
+test -f $SERVER || exit 0
+
+if [ "$PID" != "/var/run/mediaproxy/mp-dispatcher.pid" ]; then
+    OPTIONS="--pid $PID $OPTIONS"
+fi
+
+start() {
+    echo "Starting $DESC: $NAME"
+    start-stop-daemon --start --quiet --pidfile $PID --exec $SERVER -- $OPTIONS
+}
+
+stop () {
+    echo "Stopping $DESC: $NAME"
+    start-stop-daemon --stop --quiet --oknodo --signal 15 --pidfile $PID
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        stop
+        #sleep 1
+        start
+        ;;
+    *)
+        echo "Usage: /etc/init.d/$NAME {start|stop|restart}" >&2
+        exit 1
+        ;;
+esac
+
+exit 0
