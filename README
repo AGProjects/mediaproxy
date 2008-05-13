@@ -48,7 +48,6 @@ Features
    kernel networking layer
  - TLS encryption between the relays and dispatcher
  - T.38 fax support
- - Lawful intercept for RTP media
  - Graceful shutdown capability
  - Modular design for custom selection algorithms of the relay location
  - Automatic load balancing and redundancy among all servers
