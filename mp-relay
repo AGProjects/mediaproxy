@@ -26,20 +26,24 @@ if __name__ == "__main__":
     parser.add_option("--pid", dest="pid_file", default=default_pid, help="pid file (%s)" % default_pid, metavar="File")
     (options, args) = parser.parse_args()
 
+    if sys.platform != 'linux2':
+        log.fatal("Cannot start %s. A Linux host is required for operation." % fullname)
+        sys.exit(1)
+
     pid_file = options.pid_file
 
     process._system_config_directory = config_directory
     try:
         process.runtime_directory = runtime_directory
     except ProcessError, e:
-        log.fatal(str(e))
+        log.fatal("Cannot start %s: %s" % (fullname, e))
         sys.exit(1)
 
     if options.fork:
         try:
             process.daemonize(pid_file)
         except ProcessError, e:
-            log.fatal(str(e))
+            log.fatal("Cannot start %s: %s" % (fullname, e))
             sys.exit(1)
         log.startSyslog(name)
 
@@ -53,8 +57,9 @@ if __name__ == "__main__":
     try:
     	relay = MediaRelay()
     except Exception, e:
-        log.error("failed to create MediaProxy Relay: %s" % e)
-        log.err()
+        log.fatal("failed to create %s: %s" % (fullname, e))
+        if e.__class__ is not RuntimeError:
+            log.err()
         sys.exit(1)
 
     relay.run()

@@ -247,16 +247,15 @@ class MediaRelay(MediaRelayBase):
         except:
             ip_forward = False
         if not ip_forward:
-            raise ValueError("%s is not set to 1 or not present" % IP_FORWARD_FILE)
+            raise RuntimeError("IP forwarding is not available or not enabled (check %s)" % IP_FORWARD_FILE)
         try:
             major, minor, revision = [int(num) for num in open(KERNEL_VERSION_FILE).read().split("-", 1)[0].split(".")]
         except:
-            raise Exception("Could not determine Linux kernel version")
+            raise RuntimeError("Could not determine Linux kernel version")
         if major < 2 or minor < 6 or revision < 18:
-            raise Exception("A mimimum Linux kernel version of 2.6.18 is required")
-        for value in [Config.certificate, Config.private_key, Config.ca]:
-            if value is None:
-                raise ValueError("TLS certificate/key pair and CA have not been set.")
+            raise RuntimeError("A mimimum Linux kernel version of 2.6.18 is required")
+        if None in [Config.certificate, Config.private_key, Config.ca]:
+            raise RuntimeError("TLS certificate/key pair and CA have not been set.")
         self.cred = X509Credentials(Config.certificate, Config.private_key, [Config.ca])
         self.session_manager = SessionManager(self, Config.start_port, Config.end_port)
         self.cred.verify_peer = True
