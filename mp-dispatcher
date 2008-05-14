@@ -42,12 +42,13 @@ if __name__ == "__main__":
             log.fatal(str(e))
             sys.exit(1)
         log.startSyslog(name)
-    else:
-        from application.debug.memory import *
 
     log.msg("Starting %s %s" % (fullname, version))
 
     from mediaproxy.dispatcher import Dispatcher
+
+    if not options.fork:
+        from application.debug.memory import *
 
     try:
     	dispatcher = Dispatcher()
