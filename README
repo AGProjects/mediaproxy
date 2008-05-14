@@ -32,8 +32,8 @@ Background
 -----------
 
 This version of MediaProxy is the successor of MediaProxy originally written
-by Dan Pascu in 2004. It is based on a complete new design that allowed for
-major improvements in areas like scalability (an order of magnitude more
+by Dan Pascu in 2004. It is based on a completely new design that allows for
+major improvements in areas such as scalability (an order of magnitude more
 scalable than previous version) and security (communication between relay
 and dispatcher is encrypted).
 
@@ -62,10 +62,10 @@ Features
 Compatibility and pre-requisites
 --------------------------------
 
-To run the software, you need a computer running Linux Operating System
-using kernel family 2.6 or higher that has been compiled with connection
-tracking support (conntrack). Because of this dependency to the Linux
-kernel, other operating systems are not supported.
+To run the software, you will need a server running the Linux Operating System
+using a kernel version 2.6.18 or higher that has been compiled with connection
+tracking support (conntrack). Because of this dependency on Linux, other
+operating systems are not supported.
 
 MediaProxy is meant to be used together with OpenSER's mediaproxy module.
 
@@ -76,18 +76,18 @@ OpenSER and MediaProxy to these new versions.
 
 No STUN or TURN support are required in the clients.
 
-The SIP User Agents must work symmetric (that is to send and receive data on
-the same port for each stream), which is documented in RFC 4961.
+The SIP User Agents must work symmetrically (that is to send and receive data
+on the same port for each stream), which is documented in RFC 4961.
 
 To display the history of the media streams CDRTool 6.5 or higher is
 required.
 
-Some features have been removed in comparison to the previous version:
+Some features that were present in the previous version have been removed:
 
-- Support for multiple domains have been discontinued
-- Support for DNS records have been removed
-- Support for asymmetric clients have been discontinued
-- Support for other operating systems than Linux have been discontinued
+- Support for multiple domains has been discontinued
+- Support for DNS records has been removed
+- Support for asymmetric clients has been discontinued
+- Support for other operating systems than Linux has been discontinued
 
 
 Support
