@@ -104,7 +104,7 @@ class RelayClientProtocol(LineOnlyReceiver):
                 self.headers = DecodingDict()
             else:
                 log.error("Unknown command: %s" % command)
-        elif line.strip() == "":
+        elif line == "":
             for header in self.required_headers[self.command]:
                 if header not in self.headers:
                     log.error('Required header "%s" for command "%s" not found' % (header, self.command))

@@ -96,11 +96,12 @@ class OpenSERControlProtocol(ControlProtocol):
         ControlProtocol.__init__(self)
 
     def lineReceived(self, line):
-        if line.strip() == "" and self.line_buf:
-            self.in_progress += 1
-            defer = self.factory.dispatcher.send_command(self.line_buf[0], self.line_buf[1:])
-            self._add_callbacks(defer)
-            self.line_buf = []
+        if line == "":
+            if self.line_buf:
+                self.in_progress += 1
+                defer = self.factory.dispatcher.send_command(self.line_buf[0], self.line_buf[1:])
+                self._add_callbacks(defer)
+                self.line_buf = []
         elif not line.endswith(": "):
             self.line_buf.append(line)
 
