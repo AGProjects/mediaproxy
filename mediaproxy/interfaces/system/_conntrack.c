@@ -758,6 +758,13 @@ PyMODINIT_FUNC
 init_conntrack(void) 
 {
     PyObject* module;
+    iptc_handle_t handle;
+
+    if ((handle = iptc_init("nat")) == NULL) {
+        PyErr_SetString(PyExc_ImportError, "Could not initialize the iptables \"nat\" table. Maybe you do not have root priviliges?");
+        return;
+    }
+    iptc_free(&handle);
 
     if (PyType_Ready(&ForwardingRule_Type) < 0)
         return;
