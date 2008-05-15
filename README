@@ -11,7 +11,7 @@ Authors: Ruud Klaver, Dan Pascu
 Description
 -----------
 
-MediapProxy is a media relay for RTP and RTCP streams that works in
+MediapProxy is a media relay for RTP/RTCP and UDP streams that works in
 tandem with OpenSER to provide NAT traversal capability for media streams
 from SIP user agents located behind NAT. 
 
@@ -31,11 +31,10 @@ See LICENSE file for more details.
 Background
 -----------
 
-This version of MediaProxy is the successor of MediaProxy originally written
-by Dan Pascu in 2004. It is based on a completely new design that allows for
-major improvements in areas such as scalability (an order of magnitude more
-scalable than previous version) and security (communication between relay
-and dispatcher is encrypted).
+MediaProxy 2.0 is the second generation media relay application which is based
+on a completely new design that allows for major improvements in areas such
+as scalability (an order of magnitude more scalable than previous version)
+and security (communication between relay and dispatcher is encrypted).
 
 New features have been added to support call flows related to user mobility
 and fax transmission.
@@ -45,7 +44,7 @@ Features
 --------
 
  - Scalability of thousands of calls per server limited only by the Linux
-   kernel networking layer
+   kernel networking layer and network interface bandwidth
  - TLS encryption between the relays and dispatcher
  - T.38 fax support
  - Graceful shutdown capability
@@ -65,7 +64,10 @@ Compatibility and pre-requisites
 To run the software, you will need a server running the Linux Operating System
 using a kernel version 2.6.18 or higher that has been compiled with connection
 tracking support (conntrack). Because of this dependency on Linux, other
-operating systems are not supported.
+operating systems are not supported. This dependency only applies to the
+media relay component. The dispatcher component which runs on the same host
+as OpenSER, can run on any platform that has a python interpreter and
+supports the twisted framework.
 
 MediaProxy is meant to be used together with OpenSER's mediaproxy module.
 
@@ -84,10 +86,11 @@ required.
 
 Some features that were present in the previous version have been removed:
 
-- Support for multiple domains has been discontinued
-- Support for DNS records has been removed
+- Support for specifying media relays per domain has been discontinued
+- Support for DNS records has been discontinued
 - Support for asymmetric clients has been discontinued
 - Support for other operating systems than Linux has been discontinued
+  (only for the media relay, as the dispatcher has no such limitation)
 
 
 Support
