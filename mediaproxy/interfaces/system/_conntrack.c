@@ -761,7 +761,7 @@ init_conntrack(void)
     iptc_handle_t handle;
 
     if ((handle = iptc_init("nat")) == NULL) {
-        PyErr_SetString(PyExc_ImportError, "Could not initialize the iptables \"nat\" table. Maybe you do not have root priviliges?");
+        PyErr_SetString(PyExc_RuntimeError, "Could not initialize the iptables 'nat' table. Missing kernel support or running without root priviliges.");
         return;
     }
     iptc_free(&handle);
