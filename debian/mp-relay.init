@@ -25,7 +25,7 @@ fi
 
 start() {
     echo "Starting $DESC: $NAME"
-    modprobe ip_tables 2>/dev/null | :
+    modprobe ip_tables 2>/dev/null || :
     start-stop-daemon --start --quiet --pidfile $PID --exec $SERVER -- $OPTIONS
 }
 
