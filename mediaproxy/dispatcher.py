@@ -399,8 +399,9 @@ class Dispatcher(object):
 
     def update_statistics(self, stats):
         log.debug("Got statistics: %s" % stats)
-        for act in self.accounting:
-            act.do_accounting(stats)
+        if stats["start_time"] > 0:
+            for act in self.accounting:
+                act.do_accounting(stats)
 
     def _handle_SIGHUP(self, *args):
         log.msg("Received SIGHUP, shutting down.")
