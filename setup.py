@@ -33,7 +33,7 @@ setup(name         = "mediaproxy",
           "Programming Language :: Python",
           "Programming Language :: C"
       ],
-      packages     = ['mediaproxy', 'mediaproxy.interfaces', 'mediaproxy.interfaces.system'],
+      packages     = ['mediaproxy', 'mediaproxy.interfaces', 'mediaproxy.interfaces.accounting', 'mediaproxy.interfaces.system'],
       scripts      = ['mp-relay', 'mp-dispatcher'],
       ext_modules  = [
           Extension(name = 'mediaproxy.interfaces.system._conntrack',
