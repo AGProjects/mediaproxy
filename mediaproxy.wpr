@@ -5,9 +5,10 @@
 ##################################################################
 [project attributes]
 proj.directory-list = [{'dirloc': loc('.'),
-                        'excludes': [u'_darcs'],
+                        'excludes': [u'_darcs',
+                                     u'mediaproxy/interfaces/system/libiptc'],
                         'filter': 'All Source Files',
-                        'include_hidden': True,
-                        'recursive': True,
-                        'watch_for_changes': True}]
+                        'include_hidden': 1,
+                        'recursive': 1,
+                        'watch_for_changes': 1}]
 proj.file-type = 'shared'
