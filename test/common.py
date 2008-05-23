@@ -1,7 +1,9 @@
 # Copyright (C) 2008 AG Projects
 #
 
+import os
 import random
+import string
 
 import mediaproxy
 
@@ -18,13 +20,15 @@ from twisted.internet import reactor
 
 from mediaproxy.headers import EncodingDict
 
-random_data = "".join(chr(random.randint(0, 255)) for i in range(512))
-
 class Config(ConfigSection):
     socket = "/var/run/mediaproxy/dispatcher.sock"
 
 configuration = ConfigFile(mediaproxy.configuration_filename)
 configuration.read_settings("Dispatcher", Config)
+
+
+random_data = os.urandom(512)
+
 
 class OpenSERControlClientProtocol(LineOnlyReceiver):
 
@@ -101,7 +105,7 @@ class Endpoint(object):
             self.name = "callee"
         self.sip_uri = sip_uri
         self.user_agent = user_agent
-        self.tag = "".join(chr(random.randint(97, 122)) for i in range(8))
+        self.tag = "".join(random.sample(string.ascii_lowercase, 8))
         self.connectors = []
         self.media = []
         self.cseq = 1
@@ -155,7 +159,7 @@ class Session(object):
     def __init__(self, caller, callee):
         self.caller = caller
         self.callee = callee
-        self.call_id = "".join(chr(random.randint(97, 122)) for i in range(16))
+        self.call_id = "".join(random.sample(string.ascii_letters, 24))
 
     def _get_parties(self, party):
         party = getattr(self, party)
