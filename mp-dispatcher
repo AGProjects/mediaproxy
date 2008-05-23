@@ -11,26 +11,24 @@ if __name__ == "__main__":
     from optparse import OptionParser
     from application.process import process, ProcessError
     from application import log
-    from mediaproxy import __version__ as version
+    import mediaproxy
 
     name = "mp-dispatcher"
     fullname = "MediaProxy Dispatcher"
     description = "MediaProxy Dispatcher component"
 
-    config_directory = "/etc/mediaproxy"
-    runtime_directory = "/var/run/mediaproxy"
-    default_pid = "%s/%s.pid" % (runtime_directory, name)
+    default_pid = "%s/%s.pid" % (mediaproxy.runtime_directory, name)
 
-    parser = OptionParser(version="%%prog %s" % version)
+    parser = OptionParser(version="%%prog %s" % mediaproxy.__version__)
     parser.add_option("--no-fork", action="store_false", dest="fork", default=1, help="run the process in the foreground (for debugging)")
     parser.add_option("--pid", dest="pid_file", default=default_pid, help="pid file (%s)" % default_pid, metavar="File")
     (options, args) = parser.parse_args()
 
     pid_file = options.pid_file
 
-    process._system_config_directory = config_directory
+    process._system_config_directory = mediaproxy.system_config_directory
     try:
-        process.runtime_directory = runtime_directory
+        process.runtime_directory = mediaproxy.runtime_directory
     except ProcessError, e:
         log.fatal("Cannot start %s: %s" % (fullname, e))
         sys.exit(1)
@@ -43,7 +41,7 @@ if __name__ == "__main__":
             sys.exit(1)
         log.startSyslog(name)
 
-    log.msg("Starting %s %s" % (fullname, version))
+    log.msg("Starting %s %s" % (fullname, mediaproxy.__version__))
 
     from mediaproxy.dispatcher import Dispatcher
 

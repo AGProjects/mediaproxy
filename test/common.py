@@ -3,26 +3,27 @@
 
 import random
 
+import mediaproxy
+
+from application.system import default_host_ip
+from application.configuration import *
+from application.process import process
+process._system_config_directory = mediaproxy.system_config_directory
+
 from twisted.internet.protocol import DatagramProtocol, ClientFactory
 from twisted.protocols.basic import LineOnlyReceiver
 from twisted.internet.task import LoopingCall
 from twisted.internet.defer import Deferred, DeferredList, succeed
 from twisted.internet import reactor
 
-from application.system import default_host_ip
-from application.configuration import *
-from application.process import process
-
 from mediaproxy.headers import EncodingDict
-from mediaproxy import configuration_filename
 
 random_data = "".join(chr(random.randint(0, 255)) for i in range(512))
 
 class Config(ConfigSection):
     socket = "/var/run/mediaproxy/dispatcher.sock"
 
-process._system_config_directory = "/etc/mediaproxy"
-configuration = ConfigFile(configuration_filename)
+configuration = ConfigFile(mediaproxy.configuration_filename)
 configuration.read_settings("Dispatcher", Config)
 
 class OpenSERControlClientProtocol(LineOnlyReceiver):

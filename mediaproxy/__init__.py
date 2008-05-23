@@ -5,6 +5,10 @@
 
 __version__ = "1.99.0"
 
-configuration_filename = "config.ini"
+system_config_directory = '/etc/mediaproxy'
+runtime_directory = '/var/run/mediaproxy'
+
+configuration_filename = 'config.ini'
+
 default_dispatcher_port = 25060
 default_management_port = 25061
