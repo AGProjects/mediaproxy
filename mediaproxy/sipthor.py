@@ -21,8 +21,17 @@ import thor
 from mediaproxy.relay import SRVMediaRelayBase
 from mediaproxy import configuration_filename, default_dispatcher_port
 
+
+class SIPThorDomain(str):
+    """A SIP Thor domain name or the keyword None"""
+    def __new__(typ, name):
+        if name.lower() == 'none':
+            return None
+        return name
+
 class ThorNetworkConfig(ConfigSection):
-    domain = "sipthor.net"
+    _datatypes = {'domain': SIPThorDomain}
+    domain = None
     nodeIP = default_host_ip
 
 ## read SIP Thor settings from both the SIP Thor and MediaProxy configurations,
@@ -31,6 +40,11 @@ sipthor_configuration = ConfigFile('%s/%s' % (thor.system_config_directory, thor
 sipthor_configuration.read_settings("ThorNetwork", ThorNetworkConfig)
 configuration = ConfigFile(configuration_filename)
 configuration.read_settings("ThorNetwork", ThorNetworkConfig)
+
+if ThorNetworkConfig.domain is None:
+    ## SIP Thor is installed but disabled. Fake an ImportError to start in standalone media relay mode.
+    log.warn("SIP Thor is installed but disabled from the configuration")
+    raise ImportError("SIP Thor is disabled")
 
 
 class SIPThorMediaRelayBase(EventServiceClient, SRVMediaRelayBase):
