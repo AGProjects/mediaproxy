@@ -47,12 +47,10 @@ if __name__ == "__main__":
 
     log.msg("Starting %s %s" % (fullname, mediaproxy.__version__))
 
-    from mediaproxy.relay import MediaRelay
-
-    if not options.fork:
-        from application.debug.memory import *
-
     try:
+        from mediaproxy.relay import MediaRelay
+        if not options.fork:
+            from application.debug.memory import *
         relay = MediaRelay()
     except Exception, e:
         log.fatal("failed to create %s: %s" % (fullname, e))
