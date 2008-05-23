@@ -23,7 +23,6 @@ from mediaproxy import configuration_filename, default_dispatcher_port
 class ThorNetworkConfig(ConfigSection):
     domain = "sipthor.net"
     nodeIP = default_host_ip
-    multiply = 1000
 
 configuration = ConfigFile(configuration_filename)
 configuration.read_settings("ThorNetwork", ThorNetworkConfig)
