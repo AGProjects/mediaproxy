@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# Copyright (C) 2008 AG Projects
+#
+
 """
 This test simulates a session with audio and video media flowing, after which
 the callee removes the video stream and only audio flows:

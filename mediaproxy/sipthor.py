@@ -1,7 +1,8 @@
-#
 # Copyright (C) 2008 AG Projects
 # Author: Ruud Klaver <ruud@ag-projects.com>
 #
+
+"""SIP Thor backend"""
 
 from twisted.internet import reactor
 

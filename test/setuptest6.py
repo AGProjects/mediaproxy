@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# Copyright (C) 2008 AG Projects
+#
+
 """
 This test simulates a session in which the caller proposes 3 streams in the
 INTIVE and the callee rejects two of these.

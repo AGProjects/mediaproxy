@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# Copyright (C) 2008 AG Projects
+#
+
 """
 This test simulates a normal call flow, with an added ACK confirming
 the SDP:

@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# Copyright (C) 2008 AG Projects
+#
+
 """
 This test simulates a session that starts with only video, then two audio
 streams are added and finally only one of the audio streams remains.

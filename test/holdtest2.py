@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# Copyright (C) 2008 AG Projects
+#
+
 """
 This test simulates a session that starts with 1 audio stream, then gets put
 on hold by the caller for 5 minutes, the gets taken out of hold again. This

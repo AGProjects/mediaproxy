@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# Copyright (C) 2008 AG Projects
+#
+
 """
 This test simulates a session with audio media flowing, after which
 the callee changes the port of the media, e.g. through an UPDATE:

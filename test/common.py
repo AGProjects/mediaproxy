@@ -1,3 +1,6 @@
+# Copyright (C) 2008 AG Projects
+#
+
 import random
 
 from twisted.internet.protocol import DatagramProtocol, ClientFactory

@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# Copyright (C) 2008 AG Projects
+#
+
 """
 This test scenario simulates the caller sending an INVITE, nothing is
 received in return. The relay should discard the session after a while.

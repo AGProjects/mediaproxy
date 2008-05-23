@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# Copyright (C) 2008 AG Projects
+#
+
 """
 This test simulates call setup where no SDP is sent in the INVITE:
    - the callee sends a 200 OK
