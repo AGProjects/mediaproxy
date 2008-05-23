@@ -367,9 +367,8 @@ class RelayFactory(Factory):
 class Dispatcher(object):
 
     def __init__(self):
-        for value in [Config.certificate, Config.private_key, Config.ca]:
-            if value is None:
-                raise ValueError("TLS certificate/key pair and CA have not been set.")
+        if None in [Config.certificate, Config.private_key, Config.ca]:
+            raise RuntimeError("TLS certificate/key pair and CA have not been set.")
         self.cred = X509Credentials(Config.certificate, Config.private_key, [Config.ca])
         self.accounting = [__import__("mediaproxy.interfaces.accounting.%s" % mod.lower(), globals(), locals(), [""]).Accounting() for mod in set(Config.accounting)]
         self.cred.verify_peer = True
