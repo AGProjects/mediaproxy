@@ -51,7 +51,7 @@ if __name__ == "__main__":
         from application.debug.memory import *
 
     try:
-    	dispatcher = Dispatcher()
+        dispatcher = Dispatcher()
     except Exception, e:
         log.fatal("failed to create %s: %s" % (fullname, e))
         if e.__class__ is not RuntimeError:
