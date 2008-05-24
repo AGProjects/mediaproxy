@@ -32,7 +32,7 @@ class SIPThorDomain(str):
 class ThorNetworkConfig(ConfigSection):
     _datatypes = {'domain': SIPThorDomain}
     domain = None
-    nodeIP = default_host_ip
+    node_ip = default_host_ip
 
 ## read SIP Thor settings from both the SIP Thor and MediaProxy configurations,
 ## but allow the MediaProxy settings to take precendence if present.
@@ -51,7 +51,7 @@ class SIPThorMediaRelayBase(EventServiceClient, SRVMediaRelayBase):
     topics = ["Thor.Members"]
 
     def __init__(self):
-        self.node = GenericThorEntity(ThorNetworkConfig.nodeIP, ["media_relay"])
+        self.node = GenericThorEntity(ThorNetworkConfig.node_ip, ["media_relay"])
         self.presence_message = ThorEvent('Thor.Presence', self.node.id)
         self.shutdown_message = ThorEvent('Thor.Leave', self.node.id)
         credentials = X509Credentials(cert_name='node')
