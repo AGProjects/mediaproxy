@@ -16,35 +16,34 @@ from twisted.internet import epollreactor
 epollreactor.install()
 from twisted.internet import reactor
 
-from gnutls.interfaces.twisted import X509Credentials
+from gnutls.errors import CertificateSecurityError
 
 from application import log
 from application.process import process
 from application.configuration import *
 
 from mediaproxy import configuration_filename, default_dispatcher_port, default_management_port
-from mediaproxy.tls import Certificate, PrivateKey
+from mediaproxy.tls import X509Credentials, X509NameValidator
+
 
 class DispatcherAddress(datatypes.NetworkAddress):
     _defaultPort = default_dispatcher_port
-
 
 class DispatcherManagementAddress(datatypes.NetworkAddress):
     _defaultPort = default_management_port
 
 
 class Config(ConfigSection):
-    _datatypes = {"certificate": Certificate, "private_key": PrivateKey, "ca": Certificate, "listen": DispatcherAddress, "accounting": datatypes.StringList, "listen_management": DispatcherManagementAddress, "manager_use_tls": datatypes.Boolean}
+    _datatypes = {'listen': DispatcherAddress, 'listen_management': DispatcherManagementAddress, 'manager_use_tls': datatypes.Boolean, 'accounting': datatypes.StringList,
+                  'passport': X509NameValidator}
     socket = "/var/run/mediaproxy/dispatcher.sock"
-    accounting = []
-    certificate = None
-    private_key = None
-    ca = None
     listen = DispatcherAddress("any")
     listen_management = DispatcherManagementAddress("any")
     relay_timeout = 5
     cleanup_timeout = 3600
     manager_use_tls = True
+    accounting = []
+    passport = None
 
 
 configuration = ConfigFile(configuration_filename)
@@ -188,6 +187,12 @@ class RelayServerProtocol(LineOnlyReceiver):
     def _timeout(self, seq, defer):
         del self.commands[seq]
         defer.errback(RelayError("Relay at %s timed out" % self.ip))
+
+    def connectionMade(self):
+        if Config.passport is not None:
+            peer_cert = self.transport.getPeerCertificate()
+            if not Config.passport.accept(peer_cert):
+                self.transport.loseConnection(CertificateSecurityError('peer certificate not accepted'))
 
     def lineReceived(self, line):
         try:
@@ -367,10 +372,8 @@ class RelayFactory(Factory):
 class Dispatcher(object):
 
     def __init__(self):
-        if None in [Config.certificate, Config.private_key, Config.ca]:
-            raise RuntimeError("TLS certificate/key pair and CA have not been set.")
-        self.cred = X509Credentials(Config.certificate, Config.private_key, [Config.ca])
         self.accounting = [__import__("mediaproxy.interfaces.accounting.%s" % mod.lower(), globals(), locals(), [""]).Accounting() for mod in set(Config.accounting)]
+        self.cred = X509Credentials(cert_name='dispatcher')
         self.cred.verify_peer = True
         self.relay_factory = RelayFactory(self)
         dispatcher_addr, dispatcher_port = Config.listen

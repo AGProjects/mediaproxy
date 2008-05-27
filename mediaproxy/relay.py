@@ -21,14 +21,14 @@ from twisted.names.client import lookupService
 from twisted.names.error import DNSNameError, DNSQueryRefusedError
 from twisted.internet.defer import DeferredList, succeed
 
-from gnutls.interfaces.twisted import X509Credentials
+from gnutls.errors import CertificateSecurityError
 
 from application import log
 from application.configuration import *
 from application.configuration.datatypes import IPAddress
 from application.process import process
 
-from mediaproxy.tls import Certificate, PrivateKey
+from mediaproxy.tls import X509Credentials, X509NameValidator
 from mediaproxy.headers import DecodingDict, DecodingError
 from mediaproxy.mediacontrol import SessionManager
 from mediaproxy import __version__ as version, configuration_filename, default_dispatcher_port
@@ -37,7 +37,6 @@ IP_FORWARD_FILE = "/proc/sys/net/ipv4/ip_forward"
 KERNEL_VERSION_FILE = "/proc/sys/kernel/osrelease"
 
 class DispatcherAddress(tuple):
-
     def __new__(typ, value):
         match = re.search(r"^(?P<address>.+?):(?P<port>\d+)$", value)
         if match:
@@ -55,21 +54,18 @@ class DispatcherAddress(tuple):
 
 
 class DispatcherAddressList(list):
-
     def __new__(typ, value):
         return [DispatcherAddress(dispatcher) for dispatcher in value.split()]
 
 
 class Config(ConfigSection):
-    _datatypes = {"dispatcher_address": IPAddress, "certificate": Certificate, "private_key": PrivateKey, "ca": Certificate, "dispatchers": DispatcherAddressList}
+    _datatypes = {'dispatcher_address': IPAddress, 'dispatchers': DispatcherAddressList, 'passport': X509NameValidator}
     dispatchers = DispatcherAddressList("")
     start_port = 40000
     end_port = 50000
-    certificate = None
-    private_key = None
-    ca = None
     srv_refresh = 60
     reconnect_delay = 30
+    passport = None
 
 
 configuration = ConfigFile(configuration_filename)
@@ -89,6 +85,10 @@ class RelayClientProtocol(LineOnlyReceiver):
     def connectionMade(self):
         peer = self.transport.getPeer()
         log.debug("Connected to dispatcher %s:%d" % (peer.host, peer.port))
+        if Config.passport is not None:
+            peer_cert = self.transport.getPeerCertificate()
+            if not Config.passport.accept(peer_cert):
+                self.transport.loseConnection(CertificateSecurityError('peer certificate not accepted'))
 
     def lineReceived(self, line):
         if self.command is None:
@@ -253,11 +253,9 @@ class MediaRelay(MediaRelayBase):
             raise RuntimeError("Could not determine Linux kernel version")
         if major < 2 or minor < 6 or revision < 18:
             raise RuntimeError("A mimimum Linux kernel version of 2.6.18 is required")
-        if None in [Config.certificate, Config.private_key, Config.ca]:
-            raise RuntimeError("TLS certificate/key pair and CA have not been set.")
-        self.cred = X509Credentials(Config.certificate, Config.private_key, [Config.ca])
-        self.session_manager = SessionManager(self, Config.start_port, Config.end_port)
+        self.cred = X509Credentials(cert_name='relay')
         self.cred.verify_peer = True
+        self.session_manager = SessionManager(self, Config.start_port, Config.end_port)
         self.dispatchers = set()
         self.dispatcher_session_count = {}
         self.dispatcher_connectors = {}
