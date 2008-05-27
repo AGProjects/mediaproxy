@@ -121,4 +121,4 @@
 
 ; Additional dictionary files. The dictionary values in this file will be
 ; loaded in addition to the ones from the OpenSER config.
-; additional_dictionary = dictionary
+; additional_dictionary = radius/dictionary
