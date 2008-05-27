@@ -54,7 +54,7 @@ class SIPThorMediaRelayBase(EventServiceClient, SRVMediaRelayBase):
         self.node = GenericThorEntity(ThorNetworkConfig.node_ip, ["media_relay"])
         self.presence_message = ThorEvent('Thor.Presence', self.node.id)
         self.shutdown_message = ThorEvent('Thor.Leave', self.node.id)
-        credentials = X509Credentials(cert_name='node')
+        credentials = X509Credentials(cert_name='relay')
         credentials.session_params.compressions = (COMP_LZO, COMP_DEFLATE, COMP_NULL)
         self.sipthor_dispatchers = []
         self.additional_dispatchers = []
