@@ -7,4 +7,4 @@ recursive-include test    *.py multitest
 recursive-include tls     .placeholder *.crt *.key *.pem
 prune debian/tmp
 prune debian/mediaproxy-*
-include INSTALL LICENSE MANIFEST.in build_inplace config.ini.sample
+include INSTALL LICENSE MANIFEST.in TODO build_inplace config.ini.sample
