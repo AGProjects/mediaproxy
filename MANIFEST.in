@@ -1,0 +1,10 @@
+recursive-include debian  changelog compat control copyright pycompat rules
+recursive-include debian  *.dirs *.files *.install *.manpages *.init
+recursive-include doc/man *.[1-9]
+recursive-include mediaproxy/interfaces/system/libiptc README *.c *.h
+recursive-include radius  *
+recursive-include test    *.py multitest
+recursive-include tls     .placeholder *.crt *.key *.pem
+prune debian/tmp
+prune debian/mediaproxy-*
+include INSTALL LICENSE MANIFEST.in build_inplace config.ini.sample
