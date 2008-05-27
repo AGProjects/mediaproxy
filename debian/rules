@@ -1,0 +1,22 @@
+#!/usr/bin/make -f
+
+DEB_PYTHON_SYSTEM=pysupport
+DEB_COMPRESS_EXCLUDE := .py
+DEB_DH_INSTALLINIT_ARGS=-- defaults 21
+
+include /usr/share/cdbs/1/rules/debhelper.mk
+include /usr/share/cdbs/1/class/python-distutils.mk
+
+clean::
+	-rm -rf build dist MANIFEST
+
+install/mediaproxy-common::
+	install -m 0644 config.ini.sample debian/mediaproxy-common/etc/mediaproxy/config.ini
+	dh_movefiles -pmediaproxy-common
+
+install/mediaproxy-dispatcher::
+	dh_movefiles -pmediaproxy-dispatcher
+
+install/mediaproxy-relay::
+	dh_movefiles -pmediaproxy-relay
+

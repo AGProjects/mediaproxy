@@ -1,0 +1,3 @@
+etc/mediaproxy/radius
+etc/mediaproxy/tls
+usr/share/doc/mediaproxy-common/tls

@@ -1,0 +1,60 @@
+#! /bin/sh
+#
+### BEGIN INIT INFO
+# Provides:          mediaproxy-relay
+# Required-Start:    $syslog $network $local_fs $time
+# Required-Stop:     $syslog $network $local_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start the MediaProxy relay
+# Description:       Start the MediaProxy relay
+### END INIT INFO
+
+NAME="mediaproxy-relay"
+DESC="MediaProxy relay"
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/bin/media-relay
+PIDFILE=/var/run/mediaproxy/relay.pid
+OPTIONS=
+
+set -e
+
+test -f $DAEMON || exit 0
+
+. /lib/lsb/init-functions
+
+case "$1" in
+  start|debug)
+	log_daemon_msg "Starting $DESC" "media-relay"
+        modprobe ip_tables 2>/dev/null || :
+	start-stop-daemon --start --quiet --pidfile $PIDFILE \
+		--exec $DAEMON -- $OPTIONS || log_progress_msg "already running"
+	log_end_msg 0
+	;;
+  stop)
+	log_daemon_msg "Stopping $DESC" "media-relay"
+	start-stop-daemon --oknodo --stop --quiet --pidfile $PIDFILE
+	log_end_msg 0
+	;;
+  stop-gracefully)
+	log_daemon_msg "Stopping $DESC when all sessions are done" "media-relay"
+	start-stop-daemon --oknodo --stop --quiet --signal 1 --pidfile $PIDFILE
+	log_end_msg 0
+	;;
+  restart|force-reload)
+	log_daemon_msg "Restarting $DESC" "media-relay"
+	start-stop-daemon --oknodo --stop --quiet --pidfile $PIDFILE
+	sleep 1
+        modprobe ip_tables 2>/dev/null || :
+	start-stop-daemon --start --quiet --pidfile $PIDFILE \
+		--exec $DAEMON -- $OPTIONS
+	log_end_msg 0
+	;;
+  *)
+	echo "Usage: /etc/init.d/$NAME {start|stop|stop-gracefully|restart|force-reload}"
+	exit 1
+	;;
+esac
+
+exit 0

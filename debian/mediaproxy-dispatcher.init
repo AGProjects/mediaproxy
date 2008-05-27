@@ -1,0 +1,53 @@
+#! /bin/sh
+#
+### BEGIN INIT INFO
+# Provides:          mediaproxy-dispatcher
+# Required-Start:    $syslog $network $local_fs $time
+# Required-Stop:     $syslog $network $local_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start the MediaProxy dispatcher
+# Description:       Start the MediaProxy dispatcher
+### END INIT INFO
+
+NAME="mediaproxy-dispatcher"
+DESC="MediaProxy dispatcher"
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/bin/media-dispatcher
+PIDFILE=/var/run/mediaproxy/dispatcher.pid
+OPTIONS=
+
+set -e
+
+test -f $DAEMON || exit 0
+
+. /lib/lsb/init-functions
+
+case "$1" in
+  start|debug)
+	log_daemon_msg "Starting $DESC" "media-dispatcher"
+	start-stop-daemon --start --quiet --pidfile $PIDFILE \
+		--exec $DAEMON -- $OPTIONS || log_progress_msg "already running"
+	log_end_msg 0
+	;;
+  stop)
+	log_daemon_msg "Stopping $DESC" "media-dispatcher"
+	start-stop-daemon --oknodo --stop --quiet --pidfile $PIDFILE
+	log_end_msg 0
+	;;
+  restart|force-reload)
+	log_daemon_msg "Restarting $DESC" "media-dispatcher"
+	start-stop-daemon --oknodo --stop --quiet --pidfile $PIDFILE
+	sleep 1
+	start-stop-daemon --start --quiet --pidfile $PIDFILE \
+		--exec $DAEMON -- $OPTIONS
+	log_end_msg 0
+	;;
+  *)
+	echo "Usage: /etc/init.d/$NAME {start|stop|restart|force-reload}"
+	exit 1
+	;;
+esac
+
+exit 0
