@@ -13,7 +13,7 @@ if __name__ == "__main__":
     from application import log
     import mediaproxy
 
-    name = "mp-relay"
+    name = "media-relay"
     fullname = "MediaProxy Relay"
     description = "MediaProxy Relay component"
 

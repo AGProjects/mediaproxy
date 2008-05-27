@@ -13,7 +13,7 @@ if __name__ == "__main__":
     from application import log
     import mediaproxy
 
-    name = "mp-dispatcher"
+    name = "media-dispatcher"
     fullname = "MediaProxy Dispatcher"
     description = "MediaProxy Dispatcher component"
 
