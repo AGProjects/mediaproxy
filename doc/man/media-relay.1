@@ -1,0 +1,63 @@
+.\"                                      Hey, EMACS: -*- nroff -*-
+.\" First parameter, NAME, should be all caps
+.\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
+.\" other parameters are allowed: see man(7), man(1)
+.TH "MediaProxy relay" 1 "Jun 30, 2007" "MediaProxy relay" "MediaProxy"
+.\" Please adjust this date whenever revising the manpage.
+.\"
+.\" Some roff macros, for reference:
+.\" .nh        disable hyphenation
+.\" .hy        enable hyphenation
+.\" .ad l      left justify
+.\" .ad b      justify to both left and right margins
+.\" .nf        disable filling
+.\" .fi        enable filling
+.\" .br        insert line break
+.\" .sp <n>    insert n+1 empty lines
+.\" for manpage-specific macros, see man(7)
+.SH NAME
+media\-relay \- the MediaProxy relay
+.SH SYNOPSIS
+.B media\-relay
+.RI [ options ]
+.SH DESCRIPTION
+.PP
+.\" TeX users may be more comfortable with the \fB<whatever>\fP and
+.\" \fI<whatever>\fP escape sequences to invode bold face and italics, 
+.\" respectively.
+MediaProxy is a distributed far end NAT traversal solution for media streams
+for SIP calls. MediaProxy has a relay running on the same host with an
+OpenSER SIP proxy and multiple media relays distributed over the network.
+.PP
+\fBmedia\-relay\fP is to be run on a system that wishes to participate in media
+relaying. It can be run on the same host as the dispatcher, or on multiple
+remote hosts. The relay takes care of establishing a path between devices
+behind NAT and forwards the media streams between them. To do so, the relay
+requires a Linux kernel, version 2.6.18 or newer compiled with support for
+connection tracking, the connection tracking event notification API and the
+netfilter "NOTRACK" target.
+.PP
+The MediaProxy relay features secure encrypted communication with the
+dispatcher and has gracefull shutdown capabilities, where it refuses to
+accept new sessions and shuts down after all the existing sessions are done.
+.SH OPTIONS
+.TP
+.B \-h, \-\-help
+Show summary of options.
+.TP
+.B \-\-version
+Show version of program.
+.TP
+.B \-\-no\-fork
+Run the process in the foreground (for debugging).
+.TP
+.B \-\-pid=file
+Set the proces pid file to \fB`file'\fP. If not specified the default
+pid file is \fB/var/run/mediaproxy/relay.pid\fP .
+.SH SEE ALSO
+.BR media-dispatcher (1),
+.PP
+For more information, please refer to the MediaProxy page which can be
+found at http://ag-projects.com/MediaProxy.html
+.SH AUTHOR
+Dan Pascu <dan@ag-projects.com>.

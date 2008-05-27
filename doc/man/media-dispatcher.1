@@ -1,0 +1,66 @@
+.\"                                      Hey, EMACS: -*- nroff -*-
+.\" First parameter, NAME, should be all caps
+.\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
+.\" other parameters are allowed: see man(7), man(1)
+.TH "MediaProxy dispatcher" 1 "Jun 30, 2007" "MediaProxy dispatcher" "MediaProxy"
+.\" Please adjust this date whenever revising the manpage.
+.\"
+.\" Some roff macros, for reference:
+.\" .nh        disable hyphenation
+.\" .hy        enable hyphenation
+.\" .ad l      left justify
+.\" .ad b      justify to both left and right margins
+.\" .nf        disable filling
+.\" .fi        enable filling
+.\" .br        insert line break
+.\" .sp <n>    insert n+1 empty lines
+.\" for manpage-specific macros, see man(7)
+.SH NAME
+media\-dispatcher \- the MediaProxy dispatcher
+.SH SYNOPSIS
+.B media\-dispatcher
+.RI [ options ]
+.SH DESCRIPTION
+.PP
+.\" TeX users may be more comfortable with the \fB<whatever>\fP and
+.\" \fI<whatever>\fP escape sequences to invode bold face and italics, 
+.\" respectively.
+MediaProxy is a distributed far end NAT traversal solution for media streams
+for SIP calls. MediaProxy has a dispatcher running on the same host with an
+OpenSER SIP proxy and multiple media relays distributed over the network.
+.PP
+\fBmedia\-dispatcher\fP is to be run on a system running the OpenSER SIP proxy
+that is configured to use MediaProxy as a media relay. The dispatcher will
+take care of distributing the media sessions over all the available relays
+that have joined the dispatcher, as well as doing accounting upon receiving
+session statistics from the relay when a session ends. The dispatcher also
+offers a management interface that can be interogated from a frontend that
+wishes to display statistics about media sessions. Upon receiving such a
+request, the dispatcher will interrogate in turn all the available media
+relays for the appropriate information, returning it back to the caller.
+.PP
+The MediaProxy dispatcher features secure encrypted communication with the
+relays, advanced accounting capabilities using multiple backends as well as
+automatic load balancing amongst the active relays. The management interface
+can also use encrypted communications if needed.
+.SH OPTIONS
+.TP
+.B \-h, \-\-help
+Show summary of options.
+.TP
+.B \-\-version
+Show version of program.
+.TP
+.B \-\-no\-fork
+Run the process in the foreground (for debugging).
+.TP
+.B \-\-pid=file
+Set the proces pid file to \fB`file'\fP. If not specified the default
+pid file is \fB/var/run/mediaproxy/dispatcher.pid\fP .
+.SH SEE ALSO
+.BR media-relay (1),
+.PP
+For more information, please refer to the MediaProxy page which can be
+found at http://ag-projects.com/MediaProxy.html
+.SH AUTHOR
+Dan Pascu <dan@ag-projects.com>.
