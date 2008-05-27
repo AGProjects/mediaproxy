@@ -4,7 +4,7 @@ recursive-include doc/man *.[1-9]
 recursive-include mediaproxy/interfaces/system/libiptc README *.c *.h
 recursive-include radius  *
 recursive-include test    *.py multitest
-recursive-include tls     .placeholder *.crt *.key *.pem
+recursive-include tls     .placeholder README *.crt *.key *.pem
 prune debian/tmp
 prune debian/mediaproxy-*
 include INSTALL LICENSE MANIFEST.in TODO build_inplace config.ini.sample

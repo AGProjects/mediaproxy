@@ -1,0 +1,7 @@
+The certificates in this directory are provided only as samples to make it
+easy for someone to try out mediaproxy for testing/evaluation pruposes or to
+have an example of what the certificates need to contain.
+
+Do _NOT_ use them in a production environment, as anyone who has downloaded
+mediaproxy will be able to connect to your servers using them.
+
