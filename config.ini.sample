@@ -1,4 +1,3 @@
-; This is a sample configuration file for MediaProxy.
 
 [Relay]
 ; A list of dispatchers to connect to, separated by spaces. The format is
