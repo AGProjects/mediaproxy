@@ -12,9 +12,9 @@ import re
 from time import time
 
 from twisted.protocols.basic import LineOnlyReceiver
+from twisted.internet.error import ConnectionDone
 from twisted.internet.protocol import ClientFactory
-from twisted.internet import epollreactor
-epollreactor.install()
+from twisted.internet import epollreactor; epollreactor.install()
 from twisted.internet import reactor
 from twisted.names import dns
 from twisted.names.client import lookupService
@@ -90,7 +90,7 @@ class RelayClientProtocol(LineOnlyReceiver):
 
     def connectionMade(self):
         peer = self.transport.getPeer()
-        log.debug("Connected to dispatcher %s:%d" % (peer.host, peer.port))
+        log.debug("Connected to dispatcher at %s:%d" % (peer.host, peer.port))
         if Config.passport is not None:
             peer_cert = self.transport.getPeerCertificate()
             if not Config.passport.accept(peer_cert):
@@ -148,11 +148,14 @@ class DispatcherConnectingFactory(ClientFactory):
         return self.host == other.host
 
     def clientConnectionFailed(self, connector, reason):
-        log.error('Could not connect to dispatcher "%s:%d" retrying in %d seconds: %s' % (self.host[0], self.host[1], Config.reconnect_delay, reason.getErrorMessage()))
+        log.error('Could not connect to dispatcher at %(host)s:%(port)d (retrying in %%d seconds): %%s' % connector.__dict__ % (Config.reconnect_delay, reason.value))
         self.delayed = reactor.callLater(Config.reconnect_delay, connector.connect)
 
     def clientConnectionLost(self, connector, reason):
-        log.error('Connection lost to dispatcher "%s:%d": %s' % (self.host[0], self.host[1], reason.getErrorMessage()))
+        if reason.type != ConnectionDone:
+            log.error("Connection with dispatcher at %(host)s:%(port)d was lost: %%s" % connector.__dict__ % reason.value)
+        else:
+            log.msg("Connection with dispatcher at %(host)s:%(port)d was closed" % connector.__dict__)
         if self.parent.connector_needs_reconnect(connector):
             if isinstance(reason.value, CertificateError):
                 self.delayed = reactor.callLater(Config.reconnect_delay, connector.connect)
@@ -276,12 +279,12 @@ class MediaRelay(MediaRelayBase):
     def update_dispatchers(self, dispatchers):
         dispatchers = set(dispatchers)
         for new_dispatcher in dispatchers.difference(self.dispatchers):
-            log.debug('Adding new dispatcher "%s:%d"' % new_dispatcher)
+            log.debug('Adding new dispatcher at %s:%d' % new_dispatcher)
             dispatcher_addr, dispatcher_port = new_dispatcher
             factory = DispatcherConnectingFactory(self, dispatcher_addr, dispatcher_port)
             self.dispatcher_connectors[new_dispatcher] = reactor.connectTLS(dispatcher_addr, dispatcher_port, factory, self.cred)
         for old_dispatcher in self.dispatchers.difference(dispatchers):
-            log.debug('Removing old dispatcher "%s:%d"' % old_dispatcher)
+            log.debug('Removing old dispatcher at %s:%d' % old_dispatcher)
             self.old_connectors[old_dispatcher] = self.dispatcher_connectors.pop(old_dispatcher)
             self._check_disconnect(old_dispatcher)
         self.dispatchers = dispatchers

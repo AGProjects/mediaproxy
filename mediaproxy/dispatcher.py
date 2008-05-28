@@ -10,10 +10,10 @@ import signal
 import cjson
 
 from twisted.protocols.basic import LineOnlyReceiver
+from twisted.internet.error import ConnectionDone
 from twisted.internet.protocol import Factory
 from twisted.internet.defer import Deferred, DeferredList, maybeDeferred, succeed
-from twisted.internet import epollreactor
-epollreactor.install()
+from twisted.internet import epollreactor; epollreactor.install()
 from twisted.internet import reactor
 
 from gnutls.errors import CertificateSecurityError
@@ -233,7 +233,10 @@ class RelayServerProtocol(LineOnlyReceiver):
             defer.callback(rest)
 
     def connectionLost(self, reason):
-        log.debug("Relay at %s disconnected" % self.ip)
+        if reason.type != ConnectionDone:
+            log.error("Connection with relay at %s was lost: %s" % (self.ip, reason.value))
+        else:
+            log.msg("Connection with relay at %s was closed" % self.ip)
         for command, defer, timer in self.commands.itervalues():
             timer.cancel()
             defer.errback(RelayError("Relay at %s disconnected" % self.ip))
@@ -253,7 +256,7 @@ class RelayFactory(Factory):
 
     def buildProtocol(self, addr):
         ip = addr.host
-        log.debug("Relay at %s connected" % ip)
+        log.debug("Connection from relay at %s" % ip)
         if ip in self.relays:
             log.error("Connection to relay %s is already present, disconnecting" % ip)
             return
