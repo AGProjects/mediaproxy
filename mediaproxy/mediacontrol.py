@@ -124,7 +124,6 @@ class MediaSubParty(object):
             self.timer.cancel()
         self.timer = None
         self.stop_block()
-        self.local = (self.local[0], 0)
         self.listener.protocol.cb_func = None
         self.substream = None
 
@@ -442,9 +441,9 @@ class Session(object):
             pos = 1
         cseq = max(key for key in self.streams.keys() if key[pos] == cseq)
         if is_downstream:
-            retval = [stream.rtp.callee.local for stream in self.streams[cseq]]
+            retval = [(stream.status in ["active", "on hold"]) and stream.rtp.callee.local or (stream.rtp.callee.local[0], 0) for stream in self.streams[cseq]]
         else:
-            retval = [stream.rtp.caller.local for stream in self.streams[cseq]]
+            retval = [(stream.status in ["active", "on hold"]) and stream.rtp.caller.local or (stream.rtp.caller.local[0], 0) for stream in self.streams[cseq]]
         return retval
 
     def cleanup(self):
