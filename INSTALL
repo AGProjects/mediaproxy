@@ -103,11 +103,13 @@ For the RADIUS accounting module:
  - pyrad
    http://www.wiggy.net/code/pyrad/
 
-Both the dispatcher and the relay read their configuration from
-/etc/mediaproxy/config.ini. A sample configuration file is provided which
-should be self-explanatory. At the very least a set of TLS credentials is
-required. Sample certificates for this are included in the tls/ subdirectory.
-DO NOT USE THESE IN A PRODUCTION ENVIRONMENT, but only for testing purposes.
+
+Packaging
+---------
+
+The MediaProxy source already includes the necessary files to build Debian
+packages. They should probably also work without changes for Ubuntu, though
+they have not been tested with it.
 
 
 Operation
@@ -116,37 +118,41 @@ Operation
 Before the relay is run, please make sure that /proc/sys/net/ipv4/ip_forward
 is set to "1".
 
-Both the dispatcher and the relay should be executed with root priviliges.
+Both the dispatcher and the relay should be executed with root privileges.
 With no arguments, both applications will automatically fork into the
 background and log to syslog. They can remain in the foreground and log to
 console when given the --no-fork argument.
 
 The relay can be shut down in two ways. When receiving either an INT or TERM
 signal, the relay will terminate all of its sessions immediately and inform
-the dispatcher that those sessions have epxired. When given the HUP signal,
+the dispatcher that those sessions have expired. When given the HUP signal,
 it will not accept any new sessions from the dispatcher and wait for all of
 the running sessions to expire, thus terminating gracefully.
 
-Startup scripts for debian are provided in the debian subdirectory. The relay
-script also has the command "stop-gracefully", which sends the relay the HUP
-signal as described above.
+Both the dispatcher and the relay read their configuration from
+/etc/mediaproxy/config.ini. A sample configuration file is provided which
+should be self-explanatory. At the very least a set of TLS credentials is
+required. Sample certificates for this are included in the tls/ subdirectory.
+DO NOT USE THESE IN A PRODUCTION ENVIRONMENT, but only for testing purposes.
+For more information about TLS certificates and how to generate your own,
+check the tls/README file.
 
 
 Management interface
 --------------------
 
-The management interface will accept commands terminated by a newline. It
-will return the results of the command, one per line, terminated by an empty
-line.
+The management interface will accept commands terminated by \r\n. It will
+return the results of the command, one per line, terminated by an empty
+line (also \r\n terminated).
 
 Currently two commands are supported:
 
-"sessions" : This will have the dispatcher query all of its connected relays
-             for active sessions. For every sessions it finds it will return
-             one line with a JSON encoded dictionary containing session
-             information.
+sessions : This will have the dispatcher query all of its connected relays
+           for active sessions. For every sessions it finds it will return
+           one line with a JSON encoded dictionary containing session
+           information.
 
-"summary" : This will have the dispatcher present a summary of each of its
-            connected relays. The results are returned as a JSON encoded
-            dictionary, one line per relay.
+summary : This will have the dispatcher present a summary of each of its
+          connected relays. The results are returned as a JSON encoded
+          dictionary, one line per relay.
 

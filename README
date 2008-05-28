@@ -1,6 +1,6 @@
 
 MediaProxy
-----------
+
 
 Copyright (c) 2008 AG Projects
 http://ag-projects.com
@@ -13,7 +13,7 @@ Home page: http://www.ag-projects.com/MediaProxy.html
 Description
 -----------
 
-MediapProxy is a media relay for RTP/RTCP and UDP streams that works in
+MediaProxy is a media relay for RTP/RTCP and UDP streams that works in
 tandem with OpenSER to provide NAT traversal capability for media streams
 from SIP user agents located behind NAT.
 
@@ -72,6 +72,11 @@ applies to the media relay component. The dispatcher component which runs on
 the same host as OpenSER, can run on any platform that has a python
 interpreter and supports the twisted framework.
 
+Communication between the dispatcher and the relays uses TLS encryption and
+requires a set of X509 certificates to work. For more information about this
+please read tls/README which contains information about the sample certificates
+that are included as well as information about how to generate your own.
+
 MediaProxy is meant to be used together with OpenSER's mediaproxy module.
 
 This version of MediaProxy (2.0 or higher) cannot be used in combination
@@ -101,7 +106,7 @@ Support
 
 Please report any bugs to users@lists.openser.org
 
-The mailing list archieve is available at:
+The mailing list archive is available at:
 http://lists.openser.org/cgi-bin/mailman/listinfo/users
 
 MediaProxy is developed and supported by AG Projects. AG Projects offers

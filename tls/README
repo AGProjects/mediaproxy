@@ -1,7 +1,41 @@
 The certificates in this directory are provided only as samples to make it
-easy for someone to try out mediaproxy for testing/evaluation pruposes or to
+easy for someone to try out MediaProxy for testing/evaluation purposes or to
 have an example of what the certificates need to contain.
 
 Do _NOT_ use them in a production environment, as anyone who has downloaded
 mediaproxy will be able to connect to your servers using them.
+
+To generate your own certificates, we recommend you use tinyca available at
+http://tinyca.sm-zone.net/ or directly available as a Debian package.
+
+Using tinyca, you should first generate a ceritifcate authority. Next you
+should go to the Preferences menu and edit the OpenSSL configuration. There
+in the "Server Certificate Settings" change "Netscape Certificate Type" to
+"SSL Server, SSL Client" and press OK.
+
+Next go to the Certificates tab and then press the New button on the toolbar.
+Choose "Create Key and Certificate (Server)" to generate the certificate and
+private key for the MediaProxy dispatcher. Repeat the same to generate the
+certificate and private key for the MediaProxy relay.
+
+Next export your dispatcher certificate in PEM format to dispatcher.crt (do
+not include the private key in it), and the dispatcher private key also in
+PEM format to dispatcher.key (also do not include the certificate with it
+and select to save it without a passphrase). Repeat the same for the relay,
+but this time name the file relay.crt and relay.key.
+You also need to export the certificate authority in PEM format to ca.pem as
+well as the CRL list into crl.pem.
+
+Then you can use all the exported certificates and private keys by placing
+them in /etc/mediaproxy/tls/. Additionally you can configure passport entries
+for the dispatcher and the relay in config.ini to perform extra checks on
+the certificates (like for example checking the subject organization or the
+common name) to take advantage of improved security.
+
+The CA, CRL, certificates and private keys must be named like below (names
+are not configurable, only the path where they reside can be configured):
+
+ca.pem, crl.pem, dispatcher.crt, dispatcher.key, relay.crt, relay.key
+
+The names are self explanatory.
 
