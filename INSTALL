@@ -13,8 +13,7 @@ Home page: http://www.ag-projects.com/MediaProxy.html
 Architecture
 ------------
 
-MediaProxy is made up of (at least) two components: A dispatcher and a
-relay.
+MediaProxy is made up of (at least) two components: A dispatcher and a relay.
 
 The dispatcher component always runs on the same host as OpenSER and
 communicates with its mediaproxy module through a UNIX domain socket. The
@@ -34,8 +33,8 @@ The same is done for any SIP messages from the callee, thus all the media
 streams will be sent through the relay. When the session between caller and
 callee has finished, either through a SIP BYE or because the media is no
 longer flowing and has timed out, the relay will send session information to
-the dispatcher, which can store this information using one or more
-accounting modules.
+the dispatcher, which can store this information using one or more accounting
+modules.
 
 The session information may also be queried using a management interface on
 the dispatcher.
@@ -81,8 +80,10 @@ MediaProxy has the following requirements:
    - netfilter "NOTRACK" target
  - Python (at least 2.4)
    http://python.org
- - Twisted framework
+ - Twisted framework (at least 2.5.0 with epollreactor support)
    http://twistedmatrix.com
+ - python-zopeinterface (this is also a requirement for twisted)
+   http://zope.org/Products/ZopeInterface
  - python-application (at least 1.0.9)
    http://pypi.python.org/pypi/python-application
  - GNU-TLS
@@ -120,15 +121,15 @@ With no arguments, both applications will automatically fork into the
 background and log to syslog. They can remain in the foreground and log to
 console when given the --no-fork argument.
 
-The relay can be shut down in two ways. When receiving either the INT or
-TERM signal, the relay will terminate all of its sessions immediately and
-inform the dispatcher that those sessions have epxired. When given the HUP
-signal, it will not accept any new sessions from the dispatcher and wait for
-all of the running sessions to expire, thus terminating gracefully.
+The relay can be shut down in two ways. When receiving either an INT or TERM
+signal, the relay will terminate all of its sessions immediately and inform
+the dispatcher that those sessions have epxired. When given the HUP signal,
+it will not accept any new sessions from the dispatcher and wait for all of
+the running sessions to expire, thus terminating gracefully.
 
-Startup scripts for debian are provided in the debian subdirectory. The
-relay script also has the command "stop-gracefully", which sends the relay
-the HUP signal as described above.
+Startup scripts for debian are provided in the debian subdirectory. The relay
+script also has the command "stop-gracefully", which sends the relay the HUP
+signal as described above.
 
 
 Management interface
