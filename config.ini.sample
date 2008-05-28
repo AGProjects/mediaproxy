@@ -15,6 +15,28 @@
 ;  "dns_check_interval" below).
 ;dispatchers = example.com 1.2.3.4:12345
 
+; Specify extra checks to be performed on the dispatcher TLS credentials before
+; considering the connection with the dispatcher succesful. The passport is
+; specified as a list of attribute/value pairs in the form:
+;   AN:value[, AN:value...]
+; where the attribute name (AN) is one of the available attribute names from
+; the X509 certificate subject: O, OU, CN, C, L, ST, EMAIL. The value is a
+; string that has to match with the corresponding attribute value from the
+; dispatcher certificate. A wildcard (*) can be used in the value at the
+; beginning or the end of the string to indicate that the corresponding
+; attribute from the dispatcher certificate must end with respectively to
+; start with the given string (excluding the wildcard).
+; For example using this passport:
+;   passport = O:AG Projects, CN:*dispatcher
+; means that a connection with a dispatcher will only be accepted if the
+; dispatcher certificate subject has organization set to "AG Projects" and
+; the common name ends with "dispatcher". To specify that no additional
+; identity checks need to be performed, use the keyword None. If passport
+; is None, then only the certificate signature is verified agains the
+; certificate authority in tls/ca.pem (signature is always verified even
+; when passport is None). Default value is None.
+;passport = None
+
 ; The port range to use for relaying media streams in the form start:end with
 ; start and end being even numbers in the [1024, 65536] range and start < end
 ; The default range is 50000:60000
@@ -71,6 +93,28 @@
 ; Whether or not to use TLS on the management interface. Note that the TLS
 ; credentials for the relay connections will be re-used for this connection.
 ;management_use_tls = yes
+
+; Specify extra checks to be performed on the relay TLS credentials before
+; considering the connection with the relay succesful. The passport is
+; specified as a list of attribute/value pairs in the form:
+;   AN:value[, AN:value...]
+; where the attribute name (AN) is one of the available attribute names from
+; the X509 certificate subject: O, OU, CN, C, L, ST, EMAIL. The value is a
+; string that has to match with the corresponding attribute value from the
+; relay certificate. A wildcard (*) can be used in the value at the beginning
+; or the end of the string to indicate that the corresponding attribute from
+; the relay certificate must end with respectively to start with the given
+; string (excluding the wildcard).
+; For example using this passport:
+;   passport = O:AG Projects, CN:relay*
+; means that a connection with a relay will only be accepted if the relay
+; certificate subject has organization set to "AG Projects" and the common
+; name starts with "relay". To specify that no additional identity checks
+; need to be performed, use the keyword None. If passport is None, then only
+; the certificate signature is verified agains the certificate authority in
+; tls/ca.pem (signature is always verified even when passport is None).
+; Default value is None.
+;passport = None
 
 ; Timeout value in second for individual relays. When a command is sent from
 ; the dispatcher to a relay it will wait this amount of seconds for a reply.
