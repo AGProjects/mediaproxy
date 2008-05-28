@@ -71,7 +71,6 @@ class Config(ConfigSection):
     port_range = PortRange("50000:60000")
     dns_check_interval = 60
     reconnect_delay = 30
-    certificate_reconnect_delay = 900
     passport = None
 
 
@@ -156,7 +155,7 @@ class DispatcherConnectingFactory(ClientFactory):
         log.error('Connection lost to dispatcher "%s:%d": %s' % (self.host[0], self.host[1], reason.getErrorMessage()))
         if self.parent.connector_needs_reconnect(connector):
             if isinstance(reason.value, CertificateError):
-                self.delayed = reactor.callLater(Config.certificate_reconnect_delay, connector.connect)
+                self.delayed = reactor.callLater(Config.reconnect_delay, connector.connect)
             else:
                 connector.connect()
 
