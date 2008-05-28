@@ -1,12 +1,11 @@
 ; This is a sample configuration file for MediaProxy.
 
-; Relay main configuration
 [Relay]
 ; A list of dispatchers to connect to, separated by spaces. The format is
 ; "host[:port] [host[:port] ...]". If a port is not specified the default port
 ; of 25060 will be used. "host" can be one of the following:
 ;  - A domain name that has a SRV record for a SIP proxy, i.e. at
-;    "_udp._sip.<domain>". If the DNS lookup for this succeeds the relay
+;    "_sip._udp.<domain>". If the DNS lookup for this succeeds the relay
 ;    will connect to the IP address of the SIP proxy on the port specified in
 ;    this configuration.
 ;  - A hostname. The lookup for this will be performed if the SRV lookup
@@ -14,78 +13,60 @@
 ;  - An IP address. The relay will connect directly to this address.
 ;  Both the SRV and hostname lookups will be periodically refreshed (see
 ;  "dns_check_interval" below).
-; dispatchers = example.com 1.2.3.4:12345
+;dispatchers = example.com 1.2.3.4:12345
 
-; TLS certificate, private key and CA files. These are the credentials that
-; are used for encrypting and verifying the outgoing connection(s) to the
-; dispatcher(s). These will always need to be specified here as by default
-; they are unspecified.
-; certificate = relay.crt
-; private_key = relay.key
-; ca = ca.crt
-
-; Start port and end port of the UDP port range which can be used to allocate
-; to relayed streams. By default these are UDP ports 40000 through 50000.
-; start_port = 40000
-; end_port = 50000
-
-; SRV and domain name refresh delay. The relay will periodically query the DNS
-; server for SRV and A records of its list of dispatchers. The default is 60
-; seconds.
-; dns_check_interval = 60
-
-; If the relay cannot connect to a dispatcher is should retry after this
-; amount of seconds. The default value is 30 seconds.
-; reconnect_delay = 30
+; The port range to use for relaying media streams in the form start:end with
+; start and end being even numbers in the [1024, 65536] range and start < end
+; The default range is 50000:60000
+;port_range = 50000:60000
 
 ; Amount of time to wait for a stream to start sending data before the relay
 ; decides that it has timed out. The default value is 90 seconds.
-; stream_timeout = 90
+;stream_timeout = 90
 
 ; Amount of time a call can be on hold before it is declared expired by the
 ; relay. The default is 7200 seconds (2 hours).
-; on_hold_timeout = 7200
+;on_hold_timeout = 7200
+
+; How often to check in DNS if the SRV and A records for the dispatcher have
+; changed. Interval is in seconds and default value is 60 seconds.
+;dns_check_interval = 60
+
+; If the relay cannot connect to a dispatcher is should retry after this
+; amount of seconds. The default value is 30 seconds.
+;reconnect_delay = 30
 
 ; Interval between measurements of the aggregate amount of data processed by
 ; the relay per second. The default is to measure every 15 seconds.
-; speed_interval = 15
-; This is a sample configuration file for the MediaProxy Dispatcher.
+;speed_interval = 15
+
 
 [Dispatcher]
-
-; Listen address for incoming connections from the relay(s). The format is
-; "ip[:port]". If the ip is "0.0.0.0" the dispatcher will listen on all
-; interfaces of this host. If the port is not specified, the dispatcher will
-; listen on the default port of 25060.
-; listen = 0.0.0.0
-
-; TLS certificate, private key and CA files. These are the credentials that
-; are used for encrypting and verifying the incoming connection(s) from the
-; relay(s). These will always need to be specified here as by default they are
-; unspecified.
-; certificate = dispatcher.crt
-; private_key = dispatcher.key
-; ca = ca.crt
-
 ; Local socket on which to communicate with OpenSER. The OpenSER mediaproxy
 ; module should be configured to connect to this socket.
-; socket = /var/run/mediaproxy/dispatcher.sock
+;socket = /var/run/mediaproxy/dispatcher.sock
+
+; Listen address for incoming connections from the relay(s). The format is
+; "ip[:port]". If the ip is "0.0.0.0" or the keyword "any", the dispatcher
+; will listen on all interfaces of this host. If the port is not specified,
+; the dispatcher will listen on the default port of 25060.
+;listen = 0.0.0.0
 
 ; Listen address for incoming management interface connections. Clients can
 ; connect to this and issue commands to query the status of the relays and
 ; their sessions. The format is "ip[:port]". If the ip is "0.0.0.0" the
 ; dispatcher will listen on all interfaces of this host. If the port is not
 ; specified, the dispatcher will listen on the default port of 25061.
-; listen_management = 0.0.0.0
+;listen_management = 0.0.0.0
 
 ; Whether or not to use TLS on the management interface. Note that the TLS
 ; credentials for the relay connections will be re-used for this connection.
-; management_use_tls = yes
+;management_use_tls = yes
 
 ; Timeout value in second for individual relays. When a command is sent from
 ; the dispatcher to a relay it will wait this amount of seconds for a reply.
 ; The default is 5 seconds.
-; relay_timeout = 5
+;relay_timeout = 5
 
 ; A comma separated list of accounting modules that will be used to do
 ; accounting on the session information once a session has finished. Currently
@@ -93,32 +74,37 @@
 ; performed below. The default is to use no accounting module.
 ; accounting =
 
+[TLS]
+; Path to the certificates. If a relative path, /etc/mediaproxy will be prepended
+;certs_path = tls
+
+; How often in seconds to verify the CRL list for revoked certificates. Default
+; value is 300 seconds (5 minutes)
+;check_interval = 300
+
+
 ; Accounting modules configuration
 
-; Database configuration
 [Database]
+; Database URI in the form: scheme://user:password@host/database
+;dburi = mysql://mediaproxy:CHANGEME@localhost/mediaproxy
 
-; URI for the database in SQLObject format.
-; dburi = mysql://mediaproxy:CHANGEME@localhost/mediaproxy
+; Name for the table.
+;sessions_table = media_sessions
 
-; Name for the SQL table to create entries in.
-; sessions_table = media_sessions
+; Name for the columns. start_time is a datetime column and info is a blob.
+; the other columns are strings
+;callid_column = call_id
+;fromtag_column = from_tag
+;totag_column = to_tag
+;start_time_column = start_time
+;info_column = info
 
-; Names for the columns within the SQL table. starttime_column is a datetime
-; column and info_column is a blob. The others are strings.
-; callid_column = call_id
-; fromtag_column = from_tag
-; totag_column = to_tag
-; starttime_column = start_time
-; info_column = info
-
-; RADIUS accounting configuration
 [Radius]
-
 ; OpenSER RADIUS configuration file. All RADIUS cofiguration parameters will
 ; be read from this file, including dictionary files.
-; config_file = /etc/openser/radius/client.conf
+;config_file = /etc/openser/radius/client.conf
 
-; Additional dictionary files. The dictionary values in this file will be
-; loaded in addition to the ones from the OpenSER config.
-; additional_dictionary = radius/dictionary
+; Additional dictionary file with MediaProxy specific attributes.
+;additional_dictionary = radius/dictionary
+
