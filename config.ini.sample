@@ -13,7 +13,7 @@
 ;    fails.
 ;  - An IP address. The relay will connect directly to this address.
 ;  Both the SRV and hostname lookups will be periodically refreshed (see
-;  "srv_refresh" below).
+;  "dns_check_interval" below).
 ; dispatchers = example.com 1.2.3.4:12345
 
 ; TLS certificate, private key and CA files. These are the credentials that
@@ -32,7 +32,7 @@
 ; SRV and domain name refresh delay. The relay will periodically query the DNS
 ; server for SRV and A records of its list of dispatchers. The default is 60
 ; seconds.
-; srv_refresh = 60
+; dns_check_interval = 60
 
 ; If the relay cannot connect to a dispatcher is should retry after this
 ; amount of seconds. The default value is 30 seconds.

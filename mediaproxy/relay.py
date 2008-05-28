@@ -69,7 +69,7 @@ class Config(ConfigSection):
     _datatypes = {'dispatchers': DispatcherAddressList, 'port_range': PortRange, 'passport': X509NameValidator}
     dispatchers = DispatcherAddressList("")
     port_range = PortRange("50000:60000")
-    srv_refresh = 60
+    dns_check_interval = 60
     reconnect_delay = 30
     passport = None
 
@@ -197,7 +197,7 @@ class SRVMediaRelayBase(object):
     def _cb_got_all(self, results):
         self._do_update([result[1] for result in results if result[0] and result[1] is not None])
         if not self.shutting_down:
-            reactor.callLater(Config.srv_refresh, self._do_lookup)
+            reactor.callLater(Config.dns_check_interval, self._do_lookup)
 
     def _do_update(self, dispatchers):
         if not self.shutting_down:
