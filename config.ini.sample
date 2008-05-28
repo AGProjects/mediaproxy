@@ -122,10 +122,11 @@
 ; The default is 5 seconds.
 ;relay_timeout = 5
 
-; A comma separated list of accounting modules that will be used to do
-; accounting on the session information once a session has finished. Currently
-; only "radius" and "database" are included, the configuration of which is
-; performed below. The default is to use no accounting module.
+; A comma separated list of accounting backends that will be used to save
+; accounting data with the session information once a session has finished.
+; Currently 2 backends are available: "radius" and "database". If enabled
+; they can be configured below in their respective sections. The default
+; is to use no accounting backend.
 ;accounting =
 
 [TLS]
@@ -137,9 +138,9 @@
 ;verify_interval = 300
 
 
-; Accounting modules configuration
-
 [Database]
+; This section needs to be configured if database accounting is enabled
+
 ; Database URI in the form: scheme://user:password@host/database
 ;dburi = mysql://mediaproxy:CHANGEME@localhost/mediaproxy
 
@@ -155,6 +156,8 @@
 ;info_column = info
 
 [Radius]
+; This section needs to be configured if radius accounting is enabled
+
 ; OpenSER RADIUS configuration file. All RADIUS cofiguration parameters will
 ; be read from this file, including dictionary files.
 ;config_file = /etc/openser/radius/client.conf
