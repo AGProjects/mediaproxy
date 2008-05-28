@@ -39,7 +39,9 @@
 
 ; The port range to use for relaying media streams in the form start:end with
 ; start and end being even numbers in the [1024, 65536] range and start < end
-; The default range is 50000:60000
+; The default range is 50000:60000. You should allocate 4 times the number of
+; streams you plan for the relay to handle simultaneously. The default range
+; having 10000 ports, is able to handle up to 2500 streams.
 ;port_range = 50000:60000
 
 ; The amount of time to wait for a stream in a new SDP offer to start sending
