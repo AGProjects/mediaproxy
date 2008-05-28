@@ -36,9 +36,11 @@
 ; amount of seconds. The default value is 30 seconds.
 ;reconnect_delay = 30
 
-; Interval between measurements of the aggregate amount of data processed by
-; the relay per second. The default is to measure every 15 seconds.
-;speed_interval = 15
+; How often to collect statistics about the aggregate amount of data processed
+; by the relay per second. The value is in seconds and default is 15 seconds.
+; Use 0 to disable it in case you have to many streams processed by the relay
+; and it warns you in syslog that statistics gathering takes too long.
+;stats_collect_interval = 15
 
 
 [Dispatcher]
