@@ -34,14 +34,14 @@ class DispatcherManagementAddress(datatypes.NetworkAddress):
 
 
 class Config(ConfigSection):
-    _datatypes = {'listen': DispatcherAddress, 'listen_management': DispatcherManagementAddress, 'manager_use_tls': datatypes.Boolean, 'accounting': datatypes.StringList,
+    _datatypes = {'listen': DispatcherAddress, 'listen_management': DispatcherManagementAddress, 'management_use_tls': datatypes.Boolean, 'accounting': datatypes.StringList,
                   'passport': X509NameValidator}
     socket = "/var/run/mediaproxy/dispatcher.sock"
     listen = DispatcherAddress("any")
     listen_management = DispatcherManagementAddress("any")
     relay_timeout = 5
     cleanup_timeout = 3600
-    manager_use_tls = True
+    management_use_tls = True
     accounting = []
     passport = None
 
@@ -385,7 +385,7 @@ class Dispatcher(object):
         self.openser_listener = reactor.listenUNIX(Config.socket, self.openser_factory)
         self.management_factory = ManagementControlFactory(self)
         management_addr, management_port = Config.listen_management
-        if Config.manager_use_tls:
+        if Config.management_use_tls:
             self.management_listener = reactor.listenTLS(management_port, self.management_factory, self.cred, interface=management_addr)
         else:
             self.management_listener = reactor.listenTCP(management_port, self.management_factory, interface=management_addr)
