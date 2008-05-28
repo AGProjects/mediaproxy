@@ -54,7 +54,7 @@
 ; module should be configured to connect to this socket.
 ;socket = /var/run/mediaproxy/dispatcher.sock
 
-; Listen address for incoming connections from the relay(s). The format is
+; Listen address for incoming connections from the relays. The format is
 ; "ip[:port]". If the ip is "0.0.0.0" or the keyword "any", the dispatcher
 ; will listen on all interfaces of this host. If the port is not specified,
 ; the dispatcher will listen on the default port of 25060.
@@ -62,9 +62,10 @@
 
 ; Listen address for incoming management interface connections. Clients can
 ; connect to this and issue commands to query the status of the relays and
-; their sessions. The format is "ip[:port]". If the ip is "0.0.0.0" the
-; dispatcher will listen on all interfaces of this host. If the port is not
-; specified, the dispatcher will listen on the default port of 25061.
+; their sessions. The format is "ip[:port]". If the ip is "0.0.0.0" or the
+; keyword "any", the dispatcher will listen on all interfaces of this host.
+; If the port is not specified, the dispatcher will listen on the default
+; port of 25061.
 ;listen_management = 0.0.0.0
 
 ; Whether or not to use TLS on the management interface. Note that the TLS
