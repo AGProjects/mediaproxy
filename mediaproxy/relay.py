@@ -52,17 +52,23 @@ class DispatcherAddress(tuple):
             is_domain = True
         return (address, port, is_domain)
 
-
 class DispatcherAddressList(list):
     def __new__(typ, value):
         return [DispatcherAddress(dispatcher) for dispatcher in value.split()]
 
+class PortRange(object):
+    """A port range in the form start:end with start and end being even numbers in the [1024, 65536] range"""
+    def __init__(self, value):
+        self.start, self.end = [int(p) for p in value.split(':', 1)]
+        allowed = xrange(1024, 65537, 2)
+        if not (self.start in allowed and self.end in allowed and self.start < self.end):
+            raise ValueError("bad range: %r: ports must be even numbers in the range [1024, 65536] with start < end" % value)
+
 
 class Config(ConfigSection):
-    _datatypes = {'dispatcher_address': IPAddress, 'dispatchers': DispatcherAddressList, 'passport': X509NameValidator}
+    _datatypes = {'dispatcher_address': IPAddress, 'dispatchers': DispatcherAddressList, 'port_range': PortRange, 'passport': X509NameValidator}
     dispatchers = DispatcherAddressList("")
-    start_port = 40000
-    end_port = 50000
+    port_range = PortRange("50000:60000")
     srv_refresh = 60
     reconnect_delay = 30
     passport = None
@@ -255,7 +261,7 @@ class MediaRelay(MediaRelayBase):
             raise RuntimeError("A mimimum Linux kernel version of 2.6.18 is required")
         self.cred = X509Credentials(cert_name='relay')
         self.cred.verify_peer = True
-        self.session_manager = SessionManager(self, Config.start_port, Config.end_port)
+        self.session_manager = SessionManager(self, Config.port_range.start, Config.port_range.end)
         self.dispatchers = set()
         self.dispatcher_session_count = {}
         self.dispatcher_connectors = {}
