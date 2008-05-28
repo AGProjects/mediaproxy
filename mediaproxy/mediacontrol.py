@@ -249,7 +249,7 @@ class MediaStream(object):
         self.rtcp = MediaSubStream(self, self.caller.listener_rtcp, self.callee.listener_rtcp)
         getattr(self, initiating_party).remote_sdp = (media_ip, media_port)
         self.check_hold(initiating_party, direction, media_ip)
-        self.start_time = time()
+        self.start_time = None
         self.end_time = None
         self.status = "active"
         self.timeout_wait = 0
@@ -398,14 +398,19 @@ class Session(object):
             self.cseq = cseq
         elif self.cseq == cseq:
             log.debug("Received updated SDP answer")
+            now = time()
             if self.start_time is None:
-                self.start_time = time()
+                self.start_time = now
             current_streams = self.streams[cseq]
             if len(media_list) < len(current_streams):
                 for stream in current_streams[len(media_list):]:
                     log.debug("Stream rejected by not being included in the SDP answer: %s" % stream)
                     stream.cleanup("rejected")
+                    if stream.start_time is None:
+                        stream.start_time = now
             for stream, (media_type, media_ip, media_port, media_direction) in zip(current_streams, media_list):
+                if stream.start_time is None:
+                    stream.start_time = now
                 if stream.media_type != media_type:
                     raise ValueError('Media types do not match: "%s" and "%s"' % (stream.media_type, media_type))
                 if media_port == 0:
@@ -491,7 +496,9 @@ class Session(object):
         streams = stats["streams"] = []
         for stream in sorted(set(sum(self.streams.values(), [])), key=lambda x: getattr(x, "start_time")):
             stream_info = {}
-            if self.start_time is None:
+            if stream.start_time is None:
+                stream_info["start_time"] = stream_info["end_time"] = None
+            elif self.start_time is None:
                 stream_info["start_time"] = stream_info["end_time"] = 0
             else:
                 stream_info["start_time"] = max(int(stream.start_time - self.start_time), 0)
