@@ -7,13 +7,15 @@ http://ag-projects.com
 
 Authors: Ruud Klaver, Dan Pascu
 
+Home page: http://www.ag-projects.com/MediaProxy.html
+
 
 Description
 -----------
 
 MediapProxy is a media relay for RTP/RTCP and UDP streams that works in
 tandem with OpenSER to provide NAT traversal capability for media streams
-from SIP user agents located behind NAT. 
+from SIP user agents located behind NAT.
 
 When using MediaProxy, NAT traversal for RTP media will work without any
 settings in the SIP User Agents or the NAT router.
@@ -31,10 +33,11 @@ See LICENSE file for more details.
 Background
 -----------
 
-MediaProxy 2.0 is the second generation media relay application which is based
-on a completely new design that allows for major improvements in areas such
-as scalability (an order of magnitude more scalable than previous version)
-and security (communication between relay and dispatcher is encrypted).
+MediaProxy 2.0 is the second generation media relay application which is
+based on a completely new design that allows for major improvements in areas
+such as scalability (an order of magnitude more scalable than previous
+version) and security (communication between relay and dispatcher is
+encrypted).
 
 New features have been added to support call flows related to user mobility
 and fax transmission.
@@ -61,13 +64,13 @@ Features
 Compatibility and pre-requisites
 --------------------------------
 
-To run the software, you will need a server running the Linux Operating System
-using a kernel version 2.6.18 or higher that has been compiled with connection
-tracking support (conntrack). Because of this dependency on Linux, other
-operating systems are not supported. This dependency only applies to the
-media relay component. The dispatcher component which runs on the same host
-as OpenSER, can run on any platform that has a python interpreter and
-supports the twisted framework.
+To run the software, you will need a server running the Linux Operating
+System using a kernel version 2.6.18 or higher that has been compiled with
+connection tracking support (conntrack). Because of this dependency on
+Linux, other operating systems are not supported. This dependency only
+applies to the media relay component. The dispatcher component which runs on
+the same host as OpenSER, can run on any platform that has a python
+interpreter and supports the twisted framework.
 
 MediaProxy is meant to be used together with OpenSER's mediaproxy module.
 
@@ -78,8 +81,8 @@ OpenSER and MediaProxy to these new versions.
 
 No STUN or TURN support are required in the clients.
 
-The SIP User Agents must work symmetrically (that is to send and receive data
-on the same port for each stream), which is documented in RFC 4961.
+The SIP User Agents must work symmetrically (that is to send and receive
+data on the same port for each stream), which is documented in RFC 4961.
 
 To display the history of the media streams CDRTool 6.5 or higher is
 required.
@@ -105,3 +108,4 @@ MediaProxy is developed and supported by AG Projects. AG Projects offers
 best-effort gratis support for MediaProxy. "best-effort" means that we try
 to solve the bugs you report or help fix your problems as soon as we can,
 subject to available resources.
+

@@ -1,27 +1,41 @@
+
+MediaProxy installation procedure
+---------------------------------
+
+Copyright (c) 2008 AG Projects
+http://ag-projects.com
+
+Authors: Ruud Klaver, Dan Pascu
+
+Home page: http://www.ag-projects.com/MediaProxy.html
+
+
 Architecture
 ------------
 
-MediaProxy is made up of (at least) two components: A dispatcher and a relay.
+MediaProxy is made up of (at least) two components: A dispatcher and a
+relay.
 
 The dispatcher component always runs on the same host as OpenSER and
 communicates with its mediaproxy module through a UNIX domain socket. The
 relay(s) connect to the dispatcher using TLS. This relay component may be on
 the same or on a different host as OpenSER. There may be several relays for
-the dispatcher to choose from and a relay may service more than one dispatcher.
+the dispatcher to choose from and a relay may service more than one
+dispatcher.
 
-When OpenSER requests that a call be relayed, the dispatcher will forward this
-request to one of its connected relays, along with some data from the SDP. The
-relay will allocate a set of UDP ports for this session, depending on the
-number of proposed streams. It will inform the dispatcher which ports it has
-allocated so that it may in turn notify the mediaproxy module of OpenSER,
-which will replace the relevant parts of the SDP.
+When OpenSER requests that a call be relayed, the dispatcher will forward
+this request to one of its connected relays, along with some data from the
+SDP. The relay will allocate a set of UDP ports for this session, depending
+on the number of proposed streams. It will inform the dispatcher which ports
+it has allocated so that it may in turn notify the mediaproxy module of
+OpenSER, which will replace the relevant parts of the SDP.
 
 The same is done for any SIP messages from the callee, thus all the media
 streams will be sent through the relay. When the session between caller and
 callee has finished, either through a SIP BYE or because the media is no
 longer flowing and has timed out, the relay will send session information to
-the dispatcher, which can store this information using one or more accounting
-modules.
+the dispatcher, which can store this information using one or more
+accounting modules.
 
 The session information may also be queried using a management interface on
 the dispatcher.
@@ -94,32 +108,35 @@ should be self-explanatory. At the very least a set of TLS credentials is
 required. Sample certificates for this are included in the tls/ subdirectory.
 DO NOT USE THESE IN A PRODUCTION ENVIRONMENT, but only for testing purposes.
 
+
 Operation
 ---------
 
 Before the relay is run, please make sure that /proc/sys/net/ipv4/ip_forward
 is set to "1".
 
-Both the dispatcher and the relay should be executed with root priviliges. With
-no arguments, both applications will automatically fork into the background and
-log to syslog. They can remain in the foreground and log to console when given
-the --no-fork argument.
+Both the dispatcher and the relay should be executed with root priviliges.
+With no arguments, both applications will automatically fork into the
+background and log to syslog. They can remain in the foreground and log to
+console when given the --no-fork argument.
 
-The relay can be shut down in two ways. When receiving either the INT or TERM
-signal, the relay will terminate all of its sessions immediately and inform the
-dispatcher that those sessions have epxired. When given the HUP signal, it will
-not accept any new sessions from the dispatcher and wait for all of the running
-sessions to expire, thus terminating gracefully.
+The relay can be shut down in two ways. When receiving either the INT or
+TERM signal, the relay will terminate all of its sessions immediately and
+inform the dispatcher that those sessions have epxired. When given the HUP
+signal, it will not accept any new sessions from the dispatcher and wait for
+all of the running sessions to expire, thus terminating gracefully.
 
-Startup scripts for debian are provided in the debian subdirectory. The relay
-script also has the command "stop-gracefully", which sends the relay the HUP
-signal as described above.
+Startup scripts for debian are provided in the debian subdirectory. The
+relay script also has the command "stop-gracefully", which sends the relay
+the HUP signal as described above.
+
 
 Management interface
 --------------------
 
-The management interface will accept commands terminated by a newline. It will
-return the results of the command, one per line, terminated by an empty line.
+The management interface will accept commands terminated by a newline. It
+will return the results of the command, one per line, terminated by an empty
+line.
 
 Currently two commands are supported:
 
@@ -131,3 +148,4 @@ Currently two commands are supported:
 "summary" : This will have the dispatcher present a summary of each of its
             connected relays. The results are returned as a JSON encoded
             dictionary, one line per relay.
+
