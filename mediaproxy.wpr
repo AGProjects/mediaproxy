@@ -6,9 +6,17 @@
 [project attributes]
 proj.directory-list = [{'dirloc': loc('.'),
                         'excludes': [u'_darcs',
-                                     u'mediaproxy/interfaces/system/libiptc'],
+                                     u'mediaproxy/interfaces/system/libiptc',
+                                     u'dist',
+                                     u'doc'],
                         'filter': 'All Source Files',
                         'include_hidden': 1,
+                        'recursive': 1,
+                        'watch_for_changes': 1},
+                       {'dirloc': loc('doc/man'),
+                        'excludes': (),
+                        'filter': '*',
+                        'include_hidden': 0,
                         'recursive': 1,
                         'watch_for_changes': 1}]
 proj.file-type = 'shared'
