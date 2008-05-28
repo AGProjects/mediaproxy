@@ -16,7 +16,7 @@ from mediaproxy import configuration_filename
 
 class Config(ConfigSection):
     config_file = "/etc/openser/radius/client.conf"
-    additional_dictionary = ""
+    additional_dictionary = "radius/dictionary"
 
 
 configuration = ConfigFile(configuration_filename)
