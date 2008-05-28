@@ -20,8 +20,14 @@
 ; The default range is 50000:60000
 ;port_range = 50000:60000
 
-; Amount of time to wait for a stream to start sending data before the relay
-; decides that it has timed out. The default value is 90 seconds.
+; The amount of time to wait for a stream in a new SDP offer to start sending
+; data before the relay decides that it has timed out. The default value is 90
+; seconds. This only applies to the initial setup stage, before the first
+; packet for a stream is received (from both ends). After the stream is started
+; and the conntrack rule is in place, the idle timeout (how long before the
+; conntrack rule expires when no traffic is received) is controlled by a kernel
+; setting that defaults to 180 seconds and can be adjusted in:
+;     /proc/sys/net/ipv4/netfilter/ip_conntrack_udp_timeout_stream
 ;stream_timeout = 90
 
 ; Amount of time a call can be on hold before it is declared expired by the
