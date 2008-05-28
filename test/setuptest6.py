@@ -60,7 +60,7 @@ def kthxbye(result, protocol, session):
 def disconnect(result, connector):
     print "disconnecting"
     connector.disconnect()
-    reactor.stop()
+    reactor.callLater(1, reactor.stop)
 
 def catch_all_err(failure):
     print failure
