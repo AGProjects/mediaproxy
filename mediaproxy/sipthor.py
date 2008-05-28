@@ -16,7 +16,6 @@ from gnutls.constants import *
 from thor.entities import ThorEntities, GenericThorEntity
 from thor.eventservice import EventServiceClient, ThorEvent
 from thor.tls import X509Credentials
-import thor
 
 from mediaproxy.relay import SRVMediaRelayBase
 from mediaproxy import configuration_filename, default_dispatcher_port
@@ -34,10 +33,6 @@ class ThorNetworkConfig(ConfigSection):
     domain = None
     node_ip = default_host_ip
 
-## read SIP Thor settings from both the SIP Thor and MediaProxy configurations,
-## but allow the MediaProxy settings to take precendence if present.
-sipthor_configuration = ConfigFile('%s/%s' % (thor.system_config_directory, thor.configuration_filename))
-sipthor_configuration.read_settings("ThorNetwork", ThorNetworkConfig)
 configuration = ConfigFile(configuration_filename)
 configuration.read_settings("ThorNetwork", ThorNetworkConfig)
 
