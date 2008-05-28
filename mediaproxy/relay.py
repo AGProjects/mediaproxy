@@ -66,7 +66,7 @@ class PortRange(object):
 
 
 class Config(ConfigSection):
-    _datatypes = {'dispatcher_address': IPAddress, 'dispatchers': DispatcherAddressList, 'port_range': PortRange, 'passport': X509NameValidator}
+    _datatypes = {'dispatchers': DispatcherAddressList, 'port_range': PortRange, 'passport': X509NameValidator}
     dispatchers = DispatcherAddressList("")
     port_range = PortRange("50000:60000")
     srv_refresh = 60
