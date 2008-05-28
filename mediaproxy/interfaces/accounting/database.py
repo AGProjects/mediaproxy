@@ -24,7 +24,7 @@ class Config(ConfigSection):
     callid_column = "call_id"
     fromtag_column = "from_tag"
     totag_column = "to_tag"
-    starttime_column = "start_time"
+    start_time_column = "start_time"
     info_column = "info"
     pool_size = 1
 
@@ -37,7 +37,7 @@ class MediaSessions(SQLObject):
     call_id = StringCol(dbName=Config.callid_column, notNone=True)
     from_tag = StringCol(dbName=Config.fromtag_column, notNone=True)
     to_tag = StringCol(dbName=Config.totag_column)
-    start_time = DateTimeCol(dbName=Config.starttime_column, notNone=True)
+    start_time = DateTimeCol(dbName=Config.start_time_column, notNone=True)
     info = BLOBCol(dbName=Config.info_column)
 
 sqlhub.processConnection = connectionForURI(Config.dburi)
