@@ -72,15 +72,15 @@
 ; accounting on the session information once a session has finished. Currently
 ; only "radius" and "database" are included, the configuration of which is
 ; performed below. The default is to use no accounting module.
-; accounting =
+;accounting =
 
 [TLS]
-; Path to the certificates. If a relative path, /etc/mediaproxy will be prepended
+; Path to the certificates. If relative, /etc/mediaproxy will be prepended.
 ;certs_path = tls
 
-; How often in seconds to verify the CRL list for revoked certificates. Default
-; value is 300 seconds (5 minutes)
-;check_interval = 300
+; How often (in seconds) to verify the peer certificate for expiration and
+; revocation. Default value is 300 seconds (5 minutes)
+;verify_interval = 300
 
 
 ; Accounting modules configuration
