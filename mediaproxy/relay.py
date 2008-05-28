@@ -67,7 +67,7 @@ class PortRange(object):
 
 class Config(ConfigSection):
     _datatypes = {'dispatchers': DispatcherAddressList, 'port_range': PortRange, 'passport': X509NameValidator}
-    dispatchers = DispatcherAddressList("")
+    dispatchers = []
     port_range = PortRange("50000:60000")
     dns_check_interval = 60
     reconnect_delay = 30
@@ -79,10 +79,10 @@ configuration.read_settings("Relay", Config)
 
 class RelayClientProtocol(LineOnlyReceiver):
     noisy = False
-    required_headers = { "update": ["call_id", "from_tag", "from_uri", "to_uri", "cseq", "user_agent", "media", "type"],
-                         "remove": ["call_id", "from_tag"],
-                         "summary": [],
-                         "sessions": [] }
+    required_headers = {"update": ["call_id", "from_tag", "from_uri", "to_uri", "cseq", "user_agent", "media", "type"],
+                        "remove": ["call_id", "from_tag"],
+                        "summary": [],
+                        "sessions": []}
 
     def __init__(self):
         self.command = None
