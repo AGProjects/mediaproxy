@@ -334,7 +334,7 @@ class RelayFactory(Factory):
         return dict(status="error", ip=ip)
 
     def _got_summaries(self, results):
-        return "\r\n".join([cjson.encode(result) for succeeded, result in results if succeeded] + ["", ""])
+        return "\r\n".join([cjson.encode(result) for succeeded, result in results if succeeded] + [''])
 
     def get_statistics(self):
         defer = DeferredList([relay.send_command("sessions", []).addCallback(lambda stats: cjson.decode(stats)) for relay in self.relays.itervalues()])
@@ -342,7 +342,7 @@ class RelayFactory(Factory):
         return defer
 
     def _got_statistics(self, results):
-        return "\r\n".join([cjson.encode(session) for session in sum([stats for succeeded, stats in results if succeeded], [])] + ["", ""])
+        return "\r\n".join([cjson.encode(session) for session in sum([stats for succeeded, stats in results if succeeded], [])] + [''])
 
     def connection_lost(self, ip):
         del self.relays[ip]
