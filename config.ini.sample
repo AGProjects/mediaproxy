@@ -65,11 +65,12 @@
 ; amount of seconds. The default value is 30 seconds.
 ;reconnect_delay = 30
 
-; How often to collect statistics about the aggregate amount of data processed
-; by the relay per second. The value is in seconds and default is 15 seconds.
+; How often to sample the aggregate ammount of data processed by the relay, in
+; order to compute an average of the relayed traffic over that period. The
+; value is expressed in seconds and the default value is 15 seconds.
 ; Use 0 to disable it in case you have to many streams processed by the relay
-; and it warns you in syslog that statistics gathering takes too long.
-;stats_collect_interval = 15
+; and it warns you in syslog that gathering this information takes too long.
+;traffic_sampling_period = 15
 
 
 [Dispatcher]
