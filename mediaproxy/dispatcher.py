@@ -270,7 +270,7 @@ class RelayFactory(Factory):
         log.debug("Connection from relay at %s" % ip)
         if ip in self.relays:
             log.error("Connection to relay %s is already present, disconnecting" % ip)
-            return
+            return None
         if ip in self.cleanup_timers:
             timer = self.cleanup_timers.pop(ip)
             timer.cancel()
