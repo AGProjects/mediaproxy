@@ -7,6 +7,7 @@
 
 import random
 import signal
+import pickle
 import cjson
 
 from twisted.protocols.basic import LineOnlyReceiver
@@ -194,6 +195,8 @@ class RelayServerProtocol(LineOnlyReceiver):
             peer_cert = self.transport.getPeerCertificate()
             if not Config.passport.accept(peer_cert):
                 self.transport.loseConnection(CertificateSecurityError('peer certificate not accepted'))
+                return
+        self.factory.purge_sessions(self)
 
     def lineReceived(self, line):
         try:
@@ -251,9 +254,16 @@ class RelayFactory(Factory):
     def __init__(self, dispatcher):
         self.dispatcher = dispatcher
         self.relays = {}
-        self.sessions = {}
-        self.cleanup_timers = {}
         self.shutting_down = False
+        state_file = process.runtime_file("dispatcher_state")
+        try:
+            self.sessions = pickle.load(open(state_file))
+        except:
+            self.sessions = {}
+            self.cleanup_timers = {}
+        else:
+            self.cleanup_timers = dict((ip, reactor.callLater(Config.cleanup_timeout, self._do_cleanup, ip)) for ip in set(self.sessions.keys()))
+        unlink(state_file)
 
     def buildProtocol(self, addr):
         ip = addr.host
@@ -268,6 +278,18 @@ class RelayFactory(Factory):
         prot.ip = ip
         self.relays[ip] = prot
         return prot
+
+    def purge_sessions(self, relay):
+        defer = relay.send_command("sessions", [])
+        defer.addCallback(self._cb_purge_sessions, relay.ip)
+
+    def _cb_purge_sessions(self, result, relay_ip):
+        relay_sessions = cjson.decode(result)
+        relay_call_ids = [session["call_id"] for session in relay_sessions]
+        for session_id, session_relay_ip in self.sessions.items():
+            if session_relay_ip == relay_ip and session_id not in relay_call_ids:
+                log.warn("Session %s is not longer on relay %s, statistics are probably lost" % (session_id, relay_ip))
+                del self.sessions[session_id]
 
     def send_command(self, command, headers):
         call_id = None
@@ -365,12 +387,17 @@ class RelayFactory(Factory):
         for timer in self.cleanup_timers.itervalues():
             timer.cancel()
         if len(self.relays) == 0:
-            return succeed(None)
+            retval = succeed(None)
         else:
             for prot in self.relays.itervalues():
                 prot.transport.loseConnection()
             self.defer = Deferred()
-            return self.defer
+            retval = self.defer
+        retval.addCallback(self._save_state)
+        return retval
+
+    def _save_state(self, result):
+        pickle.dump(self.sessions, open(process.runtime_file("dispatcher_state"), "w"))
 
 
 class Dispatcher(object):
