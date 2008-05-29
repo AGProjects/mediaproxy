@@ -7,7 +7,7 @@
 
 import random
 import signal
-import pickle
+import cPickle as pickle
 import cjson
 
 from twisted.protocols.basic import LineOnlyReceiver
