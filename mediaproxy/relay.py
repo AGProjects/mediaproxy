@@ -266,7 +266,6 @@ class MediaRelay(MediaRelayBase):
         if major < 2 or minor < 6 or revision < 18:
             raise RuntimeError("A mimimum Linux kernel version of 2.6.18 is required")
         self.cred = X509Credentials(cert_name='relay')
-        self.cred.verify_peer = True
         self.session_manager = SessionManager(self, Config.port_range.start, Config.port_range.end)
         self.dispatchers = set()
         self.dispatcher_session_count = {}

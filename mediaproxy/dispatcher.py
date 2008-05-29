@@ -378,7 +378,6 @@ class Dispatcher(object):
     def __init__(self):
         self.accounting = [__import__("mediaproxy.interfaces.accounting.%s" % mod.lower(), globals(), locals(), [""]).Accounting() for mod in set(Config.accounting)]
         self.cred = X509Credentials(cert_name='dispatcher')
-        self.cred.verify_peer = True
         self.relay_factory = RelayFactory(self)
         dispatcher_addr, dispatcher_port = Config.listen
         self.relay_listener = reactor.listenTLS(dispatcher_port, self.relay_factory, self.cred, interface=dispatcher_addr)
