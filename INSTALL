@@ -72,12 +72,14 @@ Installation
 
 MediaProxy has the following requirements:
 
- - Linux (at least 2.6.18) with the following features compiled:
-   - connection tracking system
-   - nfnetlink
-   - ctnetlink
+ - Linux (at least 2.6.18) with the following features compiled in:
+   - netfilter support
+   - connection tracking support
+   - connection tracking netlink interface
    - connection tracking event notification API
-   - netfilter "NOTRACK" target
+   - netfilter "NOTRACK" target support
+   - netfilter "CONNMARK" target support
+   - netfilter "connmark" match support
  - Python (at least 2.4)
    http://python.org
  - Twisted framework (at least 2.5.0 with epollreactor support)
