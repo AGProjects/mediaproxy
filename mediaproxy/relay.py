@@ -193,12 +193,11 @@ class SRVMediaRelayBase(object):
 
     def _eb_no_srv(self, failure, addr, port):
         failure.trap(DNSNameError, DNSQueryRefusedError)
-        log.warn('Could not resolve SIP SRV record for domain "%s", attempting A record lookup' % addr)
         return reactor.resolve(addr).addCallback(lambda host: (host, port)).addErrback(self._eb_no_dns, addr)
 
     def _eb_no_dns(self, failure, addr):
         failure.trap(DNSNameError, DNSQueryRefusedError)
-        log.error('Could not resolve A record for hostname "%s"' % addr)
+        log.error("Could not resolve neither SRV nor A record for '%s'" % addr)
 
     def _cb_got_all(self, results):
         self._do_update([result[1] for result in results if result[0] and result[1] is not None])
