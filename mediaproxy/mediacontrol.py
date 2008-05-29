@@ -501,10 +501,13 @@ class Session(object):
                 stream_info["start_time"] = stream_info["end_time"] = 0
             else:
                 stream_info["start_time"] = max(int(stream.start_time - self.start_time), 0)
-                if stream.end_time is None:
-                    stream_info["end_time"] = stats["duration"]
+                if stream.status == "rejected":
+                    stream_info["end_time"] = stream_info["start_time"]
                 else:
-                    stream_info["end_time"] = min(int(stream.end_time - self.start_time), stats["duration"])
+                    if stream.end_time is None:
+                        stream_info["end_time"] = stats["duration"]
+                    else:
+                        stream_info["end_time"] = min(int(stream.end_time - self.start_time), stats["duration"])
             stream_info["media_type"] = stream.media_type
             stream_info["caller_codec"] = stream.rtp.caller.codec
             stream_info["callee_codec"] = stream.rtp.callee.codec
