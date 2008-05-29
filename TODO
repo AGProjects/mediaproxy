@@ -1,2 +1,3 @@
- - Lawful intercept for RTP media
- - Selection of mediaproxy based on proximity
+- Lawful intercept for RTP media
+- Selection of mediaproxy based on proximity
+- Add ability to relay to restart on the fly without losing the sessions
