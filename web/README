@@ -1,0 +1,4 @@
+This is a simple web page that uses the MediaProxy dispatcher management
+interface to gather information about media relays and media sessions.
+It displayes both summaries per relay, as well as complete information about
+all the active media sessions.

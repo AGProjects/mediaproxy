@@ -75,3 +75,26 @@ Description: MediaProxy relay
  .
  This package provides the MediaProxy relay.
 
+Package: mediaproxy-web-sessions
+Architecture: all
+Depends: php5 | php5-cgi
+Description: MediaProxy sessions web page
+ MediaProxy is a distributed far end NAT traversal solution for media streams
+ for SIP calls. MediaProxy has a dispatcher running on the same host with an
+ OpenSER SIP proxy and multiple media relays distributed over the network.
+ The media relays work by manipulating conntrack rules in the Linux kernel to
+ create paths that forward the media streams between the 2 SIP user agents
+ participating in the call. Because it avoids to copy stream data from kernel
+ space to user space and back to kernel space like other implementations,
+ MediaProxy can handle much more media streams at a time, limited only to the
+ network interface bandwidth and the Linux kernel network layer processing
+ speed.
+ .
+ MediaProxy features secure encrypted communication between the dispatcher
+ and the relays, advanced accounting capabilities using multiple backends,
+ support for any combination of audio and video streams, realtime statistics,
+ T.38 fax support as well as automatic load balancing and redundancy amongst
+ the active relays.
+ .
+ This package provides a simple web page to display active media sessions.
+

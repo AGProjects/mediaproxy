@@ -7,6 +7,12 @@ DEB_DH_INSTALLINIT_ARGS=-- defaults 21
 include /usr/share/cdbs/1/rules/debhelper.mk
 include /usr/share/cdbs/1/class/python-distutils.mk
 
+DEB_INSTALL_DOCS_ALL=
+DEB_INSTALL_DOCS_mediaproxy-common=README TODO
+DEB_INSTALL_DOCS_mediaproxy-dispatcher=README TODO
+DEB_INSTALL_DOCS_mediaproxy-relay=README TODO
+DEB_INSTALL_DOCS_mediaproxy-web-sessions=web/README
+
 clean::
 	-rm -rf build dist MANIFEST
 
@@ -20,3 +26,5 @@ install/mediaproxy-dispatcher::
 install/mediaproxy-relay::
 	dh_movefiles -pmediaproxy-relay
 
+install/mediaproxy-web-sessions::
+	install -m 0644 debian/mediaproxy-web-sessions.apache_conf debian/mediaproxy-web-sessions/etc/apache2/conf.d/mediaproxy_sessions

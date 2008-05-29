@@ -1,5 +1,6 @@
 recursive-include debian  changelog compat control copyright pycompat rules
-recursive-include debian  *.dirs *.files *.install *.manpages *.init
+recursive-include debian  *.dirs *.files *.install *.manpages *.init *.docs
+recursive-include debian  *.apache_conf
 recursive-include doc/man *.[1-9]
 recursive-include mediaproxy/interfaces/system/libiptc README *.c *.h
 recursive-include radius  *

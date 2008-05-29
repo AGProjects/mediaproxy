@@ -1,0 +1,3 @@
+etc/apache2/conf.d
+etc/mediaproxy/web
+usr/share/mediaproxy
