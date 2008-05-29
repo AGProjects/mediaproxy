@@ -80,6 +80,9 @@ MediaProxy has the following requirements:
    - netfilter "NOTRACK" target support
    - netfilter "CONNMARK" target support
    - netfilter "connmark" match support
+   - IPv4 connection tracking support
+   - IP tables support
+   - IP tables Full NAT support
  - Python (at least 2.4)
    http://python.org
  - Twisted framework (at least 2.5.0 with epollreactor support)
