@@ -1,4 +1,4 @@
 <?
 # The address of the Media Proxy dispatcher
-$dispatcher = "localhost";
+$dispatcher = "undefined";
 ?>
