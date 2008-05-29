@@ -21,6 +21,7 @@ from gnutls.errors import CertificateSecurityError
 from application import log
 from application.process import process
 from application.configuration import *
+from application.system import unlink
 
 from mediaproxy import configuration_filename, default_dispatcher_port, default_management_port
 from mediaproxy.tls import X509Credentials, X509NameValidator
@@ -36,7 +37,7 @@ class DispatcherManagementAddress(datatypes.NetworkAddress):
 class Config(ConfigSection):
     _datatypes = {'listen': DispatcherAddress, 'listen_management': DispatcherManagementAddress, 'management_use_tls': datatypes.Boolean, 'accounting': datatypes.StringList,
                   'passport': X509NameValidator}
-    socket = "/var/run/mediaproxy/dispatcher.sock"
+    socket_path = "dispatcher.sock"
     listen = DispatcherAddress("any")
     listen_management = DispatcherManagementAddress("any")
     relay_timeout = 5
@@ -382,7 +383,9 @@ class Dispatcher(object):
         dispatcher_addr, dispatcher_port = Config.listen
         self.relay_listener = reactor.listenTLS(dispatcher_port, self.relay_factory, self.cred, interface=dispatcher_addr)
         self.openser_factory = OpenSERControlFactory(self)
-        self.openser_listener = reactor.listenUNIX(Config.socket, self.openser_factory)
+        socket_path = process.runtime_file(Config.socket_path)
+        unlink(socket_path)
+        self.openser_listener = reactor.listenUNIX(socket_path, self.openser_factory)
         self.management_factory = ManagementControlFactory(self)
         management_addr, management_port = Config.listen_management
         if Config.management_use_tls:

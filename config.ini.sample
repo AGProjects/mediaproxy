@@ -74,8 +74,9 @@
 
 [Dispatcher]
 ; Local socket on which to communicate with OpenSER. The OpenSER mediaproxy
-; module should be configured to connect to this socket.
-;socket = /var/run/mediaproxy/dispatcher.sock
+; module should be configured to connect to this socket. If a relative path,
+; /var/run/mediaproxy will be prepended. Default value is dispatcher.sock.
+;socket_path = dispatcher.sock
 
 ; Listen address for incoming connections from the relays. The format is
 ; "ip[:port]". If the ip is "0.0.0.0" or the keyword "any", the dispatcher
