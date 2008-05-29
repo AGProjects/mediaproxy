@@ -93,7 +93,7 @@ class MediaSessions {
             return true;
 
         } else {
-            printf ("<p><font color=red>Error connecting to %s:%s: %s (%s) </font>\n",$dispatcher_ip,$dispatcher_port,$errstr,$errno);
+            printf ("<p><font color=red>Error connecting to %s:%s: %s (%s) </font>\n",$this->dispatcher_ip,$this->dispatcher_port,$errstr,$errno);
             return false;
         }
     }
