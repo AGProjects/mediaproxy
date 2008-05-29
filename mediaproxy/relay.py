@@ -2,7 +2,7 @@
 # Author: Ruud Klaver <ruud@ag-projects.com>
 #
 
-"""Implementation of the MediaProxy relay component"""
+"""Implementation of the MediaProxy relay"""
 
 
 import cjson
