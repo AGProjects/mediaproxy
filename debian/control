@@ -24,7 +24,7 @@ Description: MediaProxy common files
  MediaProxy features secure encrypted communication between the dispatcher
  and the relays, advanced accounting capabilities using multiple backends,
  support for any combination of audio and video streams, realtime statistics,
- T.38 fax support as well as automatic load balancing and redundancy amongst
+ T.38 fax support as well as automatic load balancing and redundancy among
  the active relays.
  .
  This package includes files common to all MediaProxy packages.
@@ -47,7 +47,7 @@ Description: MediaProxy dispatcher
  MediaProxy features secure encrypted communication between the dispatcher
  and the relays, advanced accounting capabilities using multiple backends,
  support for any combination of audio and video streams, realtime statistics,
- T.38 fax support as well as automatic load balancing and redundancy amongst
+ T.38 fax support as well as automatic load balancing and redundancy among
  the active relays.
  .
  This package provides the MediaProxy dispatcher.
@@ -70,7 +70,7 @@ Description: MediaProxy relay
  MediaProxy features secure encrypted communication between the dispatcher
  and the relays, advanced accounting capabilities using multiple backends,
  support for any combination of audio and video streams, realtime statistics,
- T.38 fax support as well as automatic load balancing and redundancy amongst
+ T.38 fax support as well as automatic load balancing and redundancy among
  the active relays.
  .
  This package provides the MediaProxy relay.
@@ -93,7 +93,7 @@ Description: MediaProxy sessions web page
  MediaProxy features secure encrypted communication between the dispatcher
  and the relays, advanced accounting capabilities using multiple backends,
  support for any combination of audio and video streams, realtime statistics,
- T.38 fax support as well as automatic load balancing and redundancy amongst
+ T.38 fax support as well as automatic load balancing and redundancy among
  the active relays.
  .
  This package provides a simple web page to display active media sessions.
