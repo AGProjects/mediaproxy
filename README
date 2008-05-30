@@ -51,8 +51,8 @@ Features
  - TLS encryption between the relays and dispatcher
  - T.38 fax support
  - Graceful shutdown capability
- - Modular design for custom selection algorithms of the relay location
- - Automatic load balancing and redundancy among all servers
+ - Modular design for custom selection algorithms for the relay location
+ - Automatic load balancing and redundancy among all media relays
  - Real-time sessions statistics
  - Configurable IP and UDP port range
  - Support for any combination of audio and video streams
