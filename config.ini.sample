@@ -62,8 +62,8 @@
 ;dns_check_interval = 60
 
 ; If the relay cannot connect to a dispatcher is should retry after this
-; amount of seconds. The default value is 30 seconds.
-;reconnect_delay = 30
+; amount of seconds. The default value is 10 seconds.
+;reconnect_delay = 10
 
 ; How often to sample the aggregate ammount of data processed by the relay, in
 ; order to compute an average of the relayed traffic over that period. The

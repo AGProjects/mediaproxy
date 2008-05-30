@@ -70,7 +70,7 @@ class Config(ConfigSection):
     dispatchers = []
     port_range = PortRange("50000:60000")
     dns_check_interval = 60
-    reconnect_delay = 30
+    reconnect_delay = 10
     passport = None
 
 
