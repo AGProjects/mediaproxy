@@ -8,7 +8,7 @@ mediaproxy will be able to connect to your servers using them.
 To generate your own certificates, we recommend you use tinyca available at
 http://tinyca.sm-zone.net/ or directly available as a Debian package.
 
-Using tinyca, you should first generate a ceritifcate authority. Next you
+Using tinyca, you should first generate a ceritificate authority. Next you
 should go to the Preferences menu and edit the OpenSSL configuration. There
 in the "Server Certificate Settings" change "Netscape Certificate Type" to
 "SSL Server, SSL Client" and press OK.
