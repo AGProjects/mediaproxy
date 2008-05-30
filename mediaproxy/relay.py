@@ -310,7 +310,10 @@ class MediaRelay(MediaRelayBase):
                 return " ".join([local_media[0][0]] + [str(media[1]) for media in local_media])
         else: # remove
             session = self.session_manager.remove_session(**headers)
-            return cjson.encode(session.statistics)
+            if session is None:
+                return "error"
+            else:
+                return cjson.encode(session.statistics)
 
     def session_expired(self, session):
         connector = self.dispatcher_connectors.get(session.dispatcher)

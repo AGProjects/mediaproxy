@@ -616,7 +616,11 @@ class SessionManager(Logger):
 
     def remove_session(self, call_id, from_tag, **kw_rest):
         key = self._find_session_key(call_id, from_tag, kw_rest)
-        session = self.sessions[key]
+        try:
+            session = self.sessions[key]
+        except KeyError:
+            log.warn("The dispatcher tried to remove a session which is no longer present on the relay")
+            return None
         log.debug("removing session %s" % session)
         session.cleanup()
         dispatcher = session.dispatcher
@@ -626,7 +630,11 @@ class SessionManager(Logger):
 
     def session_expired(self, call_id, from_tag):
         key = (call_id, from_tag)
-        session = self.sessions[key]
+        try:
+            session = self.sessions[key]
+        except KeyError:
+            log.warn("A session expired that was no longer present on the relay")
+            return
         log.debug("expired session %s" % session)
         dispatcher = session.dispatcher
         session.cleanup()
