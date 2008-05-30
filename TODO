@@ -1,3 +1,7 @@
 - Lawful intercept for RTP media
 - Selection of mediaproxy based on proximity
 - Add ability to relay to restart on the fly without losing the sessions
+- Minimize interruption caused by a dispatcher restart
+- Make traffic calculation more efficient
+- Only log connection state transitions to avoid too much logging in case
+  the dispatcher is down and the relay can't reconnect.
