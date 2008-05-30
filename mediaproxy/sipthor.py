@@ -72,21 +72,12 @@ class SIPThorMediaRelayBase(EventServiceClient, SRVMediaRelayBase):
 
     def _handle_SIGHUP(self, *args):
         SRVMediaRelayBase._handle_SIGHUP(self, *args)
-        #log.msg("Received SIGHUP, shutting down after all sessions have expired.")
-        #reactor.callFromThread(self.shutdown, False)
 
     def _handle_SIGINT(self, *args):
         SRVMediaRelayBase._handle_SIGINT(self, *args)
-        #if process._daemon:
-        #    log.msg("Received SIGINT, shutting down.")
-        #else:
-        #    log.msg("Received KeyboardInterrupt, exiting.")
-        #reactor.callFromThread(self.shutdown, True)
 
     def _handle_SIGTERM(self, *args):
         SRVMediaRelayBase._handle_SIGTERM(self, *args)
-        #log.msg("Received SIGTERM, shutting down.")
-        #reactor.callFromThread(self.shutdown, True)
 
     def shutdown(self, kill_sessions):
         raise NotImplementedError()
