@@ -1,3 +1,10 @@
+mediaproxy (2.0.1) unstable; urgency=low
+
+  * Added python-twisted-names to the debian dependency list.
+  * Added libnetfilter-conntrack-dev to the debian build dependency list.
+
+ -- Dan Pascu <dan@ag-projects.com>  Sat, 31 May 2008 18:21:08 +0300
+
 mediaproxy (2.0.0) unstable; urgency=low
 
   * Initial release.
