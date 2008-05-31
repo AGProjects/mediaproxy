@@ -2,12 +2,12 @@ Source: mediaproxy
 Section: net
 Priority: optional
 Maintainer: Dan Pascu <dan@ag-projects.com>
-Build-Depends: cdbs (>= 0.4.47), debhelper (>= 5.0.42), python-all-dev (>= 2.4.4), python-support
+Build-Depends: cdbs (>= 0.4.47), debhelper (>= 5.0.42), python-all-dev (>= 2.4.4), python-support, libnetfilter-conntrack-dev
 Standards-Version: 3.7.3
 
 Package: mediaproxy-common
 Architecture: any
-Depends: ${python:Depends}, ${shlibs:Depends}, python-application, python-cjson, python-gnutls, python-twisted-core, python-zopeinterface
+Depends: ${python:Depends}, ${shlibs:Depends}, python-application, python-cjson, python-gnutls, python-twisted-core, python-twisted-names, python-zopeinterface
 Recommends: python-pyrad, python-sqlobject
 Description: MediaProxy common files
  MediaProxy is a distributed far end NAT traversal solution for media streams
