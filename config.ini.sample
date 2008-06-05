@@ -36,6 +36,11 @@
 ; when passport is None). Default value is None.
 ;passport = None
 
+; The host IP address used for relaying streams. The default for this value
+; is to use the IP address of the interface that has the default route. Unless
+; you are running a customized setup you will not need to set this option.
+;relay_ip = <default host IP>
+
 ; The port range to use for relaying media streams in the form start:end with
 ; start and end being even numbers in the [1024, 65536] range and start < end
 ; The default range is 50000:60000. You should allocate 4 times the number of

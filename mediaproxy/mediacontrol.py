@@ -15,6 +15,7 @@ from twisted.python.log import Logger
 from application import log
 from application.system import default_host_ip
 from application.configuration import *
+from application.configuration.datatypes import IPAddress
 
 from mediaproxy.interfaces.system import _conntrack
 from mediaproxy import configuration_filename
@@ -29,12 +30,17 @@ rtp_payloads = {
 }
 
 class Config(ConfigSection):
+    _datatypes = {"relay_ip": IPAddress}
+    relay_ip = default_host_ip
     stream_timeout = 90
     on_hold_timeout = 7200
     traffic_sampling_period = 15
 
 configuration = ConfigFile(configuration_filename)
 configuration.read_settings("Relay", Config)
+
+if Config.relay_ip is None:
+    raise RuntimeError("Could not determine default host IP; either add default route or specify relay IP manually")
 
 class StreamListenerProtocol(DatagramProtocol):
     noisy = False
@@ -220,8 +226,8 @@ class MediaParty(object):
             self.listener_rtp = None
             self.ports = port_rtp, port_rtcp = self.manager.get_ports()
             try:
-                self.listener_rtp = reactor.listenUDP(port_rtp, StreamListenerProtocol(), interface=default_host_ip)
-                self.listener_rtcp = reactor.listenUDP(port_rtcp, StreamListenerProtocol(), interface=default_host_ip)
+                self.listener_rtp = reactor.listenUDP(port_rtp, StreamListenerProtocol(), interface=Config.relay_ip)
+                self.listener_rtcp = reactor.listenUDP(port_rtcp, StreamListenerProtocol(), interface=Config.relay_ip)
             except CannotListenError:
                 if self.listener_rtp is not None:
                     self.listener_rtp.stopListening()
