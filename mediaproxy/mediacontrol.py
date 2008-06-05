@@ -15,7 +15,6 @@ from twisted.python.log import Logger
 from application import log
 from application.system import default_host_ip
 from application.configuration import *
-from application.configuration.datatypes import IPAddress
 
 from mediaproxy.interfaces.system import _conntrack
 from mediaproxy import configuration_filename
@@ -30,7 +29,7 @@ rtp_payloads = {
 }
 
 class Config(ConfigSection):
-    _datatypes = {"relay_ip": IPAddress}
+    _datatypes = {"relay_ip": datatypes.IPAddress}
     relay_ip = default_host_ip
     stream_timeout = 90
     on_hold_timeout = 7200
