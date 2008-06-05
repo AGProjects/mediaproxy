@@ -1,3 +1,11 @@
+mediaproxy (2.0.2) unstable; urgency=low
+
+  * Added relay_ip configuration option to media-relay.
+  * If relay_ip is not set and we cannot determine the default host IP
+    using the interface with the default route, report error and exit.
+
+ -- Dan Pascu <dan@ag-projects.com>  Thu, 05 Jun 2008 21:17:04 +0300
+
 mediaproxy (2.0.1) unstable; urgency=low
 
   * Added python-twisted-names to the debian dependency list.
