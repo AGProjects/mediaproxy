@@ -262,7 +262,7 @@ class MediaRelay(MediaRelayBase):
             major, minor, revision = [int(num) for num in open(KERNEL_VERSION_FILE).read().split("-", 1)[0].split(".")]
         except:
             raise RuntimeError("Could not determine Linux kernel version")
-        if major < 2 or minor < 6 or revision < 18:
+        if (major, minor, revision) < (2, 6, 18):
             raise RuntimeError("A mimimum Linux kernel version of 2.6.18 is required")
         self.cred = X509Credentials(cert_name='relay')
         self.session_manager = SessionManager(self, Config.port_range.start, Config.port_range.end)
