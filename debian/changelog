@@ -1,3 +1,14 @@
+mediaproxy (2.0.3) unstable; urgency=low
+
+  * Set resource limit for maximum open file descriptors to be able to handle
+    all streams permitted by the port_range setting.
+  * Allow media-dispatcher to use choose the best available reactor.
+  * Fixed issue with media-dispatcher not running on non-Linux platforms.
+  * Made the twisted framework epollreactor mandatory for the media-relay.
+  * Made the relay check if the twisted framework is at least version 2.5.0.
+
+ -- Dan Pascu <dan@ag-projects.com>  Mon, 23 Jun 2008 21:11:46 +0300
+
 mediaproxy (2.0.2) unstable; urgency=low
 
   * Added relay_ip configuration option to media-relay.
