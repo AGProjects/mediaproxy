@@ -12,15 +12,17 @@ import resource
 import re
 from time import time
 
+try:    from twisted.internet import epollreactor; epollreactor.install()
+except: raise RuntimeError("mandatory epoll reactor support is missing from the twisted framework")
+
 from twisted.protocols.basic import LineOnlyReceiver
 from twisted.internet.error import ConnectionDone
 from twisted.internet.protocol import ClientFactory
-from twisted.internet import epollreactor; epollreactor.install()
+from twisted.internet.defer import DeferredList, succeed
 from twisted.internet import reactor
 from twisted.names import dns
 from twisted.names.client import lookupService
 from twisted.names.error import DNSNameError, DNSQueryRefusedError
-from twisted.internet.defer import DeferredList, succeed
 
 from gnutls.errors import CertificateError, CertificateSecurityError
 
