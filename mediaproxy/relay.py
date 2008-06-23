@@ -8,6 +8,7 @@
 import cjson
 import signal
 import traceback
+import resource
 import re
 from time import time
 
@@ -76,6 +77,20 @@ class Config(ConfigSection):
 
 configuration = ConfigFile(configuration_filename)
 configuration.read_settings("Relay", Config)
+
+## Increase the system limit for the maximum number of open file descriptors
+## to be able to handle connections to all ports in port_range
+try:
+    fd_limit = Config.port_range.end - Config.port_range.start + 1000
+    resource.setrlimit(resource.RLIMIT_NOFILE, (fd_limit, fd_limit))
+except ValueError:
+    raise RuntimeError("Cannot set resource limit for maximum open file descriptors to %d" % fd_limit)
+else:
+    new_limits = resource.getrlimit(resource.RLIMIT_NOFILE)
+    if new_limits < (fd_limit, fd_limit):
+        raise RuntimeError("Allocated resource limit for maximum open file descriptors is less then requested (%d instead of %d)" % (new_limits[0], fd_limit))
+    else:
+        log.msg("Set resource limit for maximum open file descriptors to %d" % fd_limit)
 
 class RelayClientProtocol(LineOnlyReceiver):
     noisy = False
