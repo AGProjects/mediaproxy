@@ -10,11 +10,14 @@ import signal
 import cPickle as pickle
 import cjson
 
+for name in ('epollreactor', 'kqreactor', 'pollreactor', 'selectreactor'):
+    try:    __import__('twisted.internet.%s' % name, globals(), locals(), fromlist=[name]).install()
+    except: continue
+    else:   break
 from twisted.protocols.basic import LineOnlyReceiver
 from twisted.internet.error import ConnectionDone
 from twisted.internet.protocol import Factory
 from twisted.internet.defer import Deferred, DeferredList, maybeDeferred, succeed
-from twisted.internet import epollreactor; epollreactor.install()
 from twisted.internet import reactor
 
 from gnutls.errors import CertificateSecurityError
@@ -26,6 +29,9 @@ from application.system import unlink
 
 from mediaproxy import configuration_filename, default_dispatcher_port, default_management_port
 from mediaproxy.tls import X509Credentials, X509NameValidator
+
+
+log.msg("Twisted is using %s" % reactor.__module__.rsplit('.', 1)[-1])
 
 
 class DispatcherAddress(datatypes.NetworkAddress):
