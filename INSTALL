@@ -45,7 +45,7 @@ All of this is illustrated in the following diagram:
   |   |   +---------------------+                    |   |
   |   |   |           SIP Proxy |                    |   |
   |   |   |  +---------+        |        SIP         |   |
-  |   |<--+->| OpenSER |<-------+------------------->|   |
+  |   |<--+->| OpenSIPs |<------+------------------->|   |
   |   |   |  +---------+        |                    |   |
   |   |   |       ^             |                    |   |
   |   |   |       | UNIX socket |                    |   |
