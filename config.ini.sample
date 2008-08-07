@@ -81,7 +81,7 @@
 
 
 [Dispatcher]
-; Local socket on which to communicate with OpenSER. The OpenSER mediaproxy
+; Local socket on which to communicate with OpenSIPs. The OpenSIPs mediaproxy
 ; module should be configured to connect to this socket. If a relative path,
 ; /var/run/mediaproxy will be prepended. Default value is dispatcher.sock.
 ;socket_path = dispatcher.sock
@@ -167,7 +167,7 @@
 [Radius]
 ; This section needs to be configured if radius accounting is enabled
 
-; OpenSER RADIUS configuration file. All RADIUS cofiguration parameters will
+; OpenSIPs RADIUS configuration file. All RADIUS cofiguration parameters will
 ; be read from this file, including dictionary files.
 ;config_file = /etc/openser/radius/client.conf
 

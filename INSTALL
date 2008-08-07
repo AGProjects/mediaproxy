@@ -15,19 +15,19 @@ Architecture
 
 MediaProxy is made up of (at least) two components: A dispatcher and a relay.
 
-The dispatcher component always runs on the same host as OpenSER and
+The dispatcher component always runs on the same host as OpenSIPs and
 communicates with its mediaproxy module through a UNIX domain socket. The
 relay(s) connect to the dispatcher using TLS. This relay component may be on
-the same or on a different host as OpenSER. There may be several relays for
+the same or on a different host as OpenSIPs. There may be several relays for
 the dispatcher to choose from and a relay may service more than one
 dispatcher.
 
-When OpenSER requests that a call be relayed, the dispatcher will forward
+When OpenSIPs requests that a call be relayed, the dispatcher will forward
 this request to one of its connected relays, along with some data from the
 SDP. The relay will allocate a set of UDP ports for this session, depending
 on the number of proposed streams. It will inform the dispatcher which ports
 it has allocated so that it may in turn notify the mediaproxy module of
-OpenSER, which will replace the relevant parts of the SDP.
+OpenSIPs, which will replace the relevant parts of the SDP.
 
 The same is done for any SIP messages from the callee, thus all the media
 streams will be sent through the relay. When the session between caller and
