@@ -83,6 +83,10 @@ MediaProxy has the following requirements:
    - IPv4 connection tracking support
    - IP tables support
    - IP tables Full NAT support
+ - libnetfilter-conntrack
+   Most of the Linux distributions separate a library package into runtime
+   and development packages. To build mediaproxy, the development version
+   is needed (it usually has a -dev suffix in the package name).
  - Python (at least 2.4)
    http://python.org
  - Twisted framework (at least 2.5.0 with epollreactor support)
