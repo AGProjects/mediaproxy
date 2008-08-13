@@ -438,7 +438,7 @@ class Dispatcher(object):
 
     def update_statistics(self, stats):
         log.debug("Got statistics: %s" % stats)
-        if stats["start_time"] > 0:
+        if stats["to_tag"] is not None:
             for act in self.accounting:
                 act.do_accounting(stats)
 
