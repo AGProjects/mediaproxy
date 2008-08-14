@@ -186,7 +186,10 @@ class Session(object):
             from_uri = other.sip_uri
             to_uri = party.sip_uri
             cseq = other.cseq
-        defer = openser.update(call_id = self.call_id, from_tag = from_tag, to_tag = to_tag, from_uri = from_uri, to_uri = to_uri, cseq = cseq,  user_agent = party.user_agent, media = party.get_media(use_old_hold), type = type)
+        if is_final:
+            defer = openser.update(call_id = self.call_id, from_tag = from_tag, to_tag = to_tag, from_uri = from_uri, to_uri = to_uri, cseq = cseq,  user_agent = party.user_agent, media = party.get_media(use_old_hold), type = type)
+        else:
+            defer = openser.update(call_id = self.call_id, from_tag = from_tag, from_uri = from_uri, to_uri = to_uri, cseq = cseq,  user_agent = party.user_agent, media = party.get_media(use_old_hold), type = type)
         if is_final:
             if type == "request":
                 party.cseq += 1
