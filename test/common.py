@@ -1,6 +1,9 @@
 # Copyright (C) 2008 AG Projects
 #
 
+import sys
+sys.path.append(".")
+sys.path.append("..")
 import os
 import random
 import string
