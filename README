@@ -104,10 +104,10 @@ Some features that were present in the previous version have been removed:
 Support
 -------
 
-Please report any bugs to users@lists.openser.org
+Please report any bugs to users@lists.opensips.org
 
 The mailing list archive is available at:
-http://lists.openser.org/cgi-bin/mailman/listinfo/users
+http://lists.opensips.org/cgi-bin/mailman/listinfo/users
 
 MediaProxy is developed and supported by AG Projects. AG Projects offers
 best-effort gratis support for MediaProxy. "best-effort" means that we try

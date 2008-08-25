@@ -94,8 +94,8 @@ class ControlProtocol(LineOnlyReceiver):
         defer.addBoth(self._decrement)
 
 
-class OpenSERControlProtocol(ControlProtocol):
-    description = "OpenSER"
+class OpenSIPSControlProtocol(ControlProtocol):
+    description = "OpenSIPS"
 
     def __init__(self):
         self.line_buf = []
@@ -161,8 +161,8 @@ class ControlFactory(Factory):
             return self.defer
 
 
-class OpenSERControlFactory(ControlFactory):
-    protocol = OpenSERControlProtocol
+class OpenSIPSControlFactory(ControlFactory):
+    protocol = OpenSIPSControlProtocol
 
 
 class ManagementControlFactory(ControlFactory):
@@ -328,7 +328,7 @@ class RelayFactory(Factory):
             defer.addCallback(self._add_session, try_relays, call_id)
             return defer
         else:
-            raise RelayError("Non-update command received from OpenSER for unknown session")
+            raise RelayError("Non-update command received from OpenSIPS for unknown session")
 
     def _add_session(self, result, try_relays, call_id):
         self.sessions[call_id] = try_relays[-1].ip
@@ -414,10 +414,10 @@ class Dispatcher(object):
         self.relay_factory = RelayFactory(self)
         dispatcher_addr, dispatcher_port = Config.listen
         self.relay_listener = reactor.listenTLS(dispatcher_port, self.relay_factory, self.cred, interface=dispatcher_addr)
-        self.openser_factory = OpenSERControlFactory(self)
+        self.opensips_factory = OpenSIPSControlFactory(self)
         socket_path = process.runtime_file(Config.socket_path)
         unlink(socket_path)
-        self.openser_listener = reactor.listenUNIX(socket_path, self.openser_factory)
+        self.opensips_listener = reactor.listenUNIX(socket_path, self.opensips_factory)
         self.management_factory = ManagementControlFactory(self)
         management_addr, management_port = Config.listen_management
         if Config.management_use_tls:
@@ -458,8 +458,8 @@ class Dispatcher(object):
         reactor.callFromThread(self._shutdown)
 
     def _shutdown(self):
-        defer = DeferredList([result for result in [self.openser_listener.stopListening(), self.management_listener.stopListening(), self.relay_listener.stopListening()] if result is not None])
-        defer.addCallback(lambda x: self.openser_factory.shutdown())
+        defer = DeferredList([result for result in [self.opensips_listener.stopListening(), self.management_listener.stopListening(), self.relay_listener.stopListening()] if result is not None])
+        defer.addCallback(lambda x: self.opensips_factory.shutdown())
         defer.addCallback(lambda x: self.management_factory.shutdown())
         defer.addCallback(lambda x: self.relay_factory.shutdown())
         defer.addCallback(lambda x: self._stop())

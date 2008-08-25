@@ -169,7 +169,7 @@
 
 ; OpenSIPs RADIUS configuration file. All RADIUS cofiguration parameters will
 ; be read from this file, including dictionary files.
-;config_file = /etc/openser/radius/client.conf
+;config_file = /etc/opensips/radius/client.conf
 
 ; Additional dictionary file with MediaProxy specific attributes.
 ;additional_dictionary = radius/dictionary

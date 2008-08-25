@@ -12,7 +12,7 @@ Recommends: python-pyrad, python-sqlobject
 Description: MediaProxy common files
  MediaProxy is a distributed far end NAT traversal solution for media streams
  for SIP calls. MediaProxy has a dispatcher running on the same host with an
- OpenSER SIP proxy and multiple media relays distributed over the network.
+ OpenSIPS SIP proxy and multiple media relays distributed over the network.
  The media relays work by manipulating conntrack rules in the Linux kernel to
  create paths that forward the media streams between the 2 SIP user agents
  participating in the call. Because it avoids to copy stream data from kernel
@@ -35,7 +35,7 @@ Depends: ${python:Depends}, mediaproxy-common (>= ${source:Version}), lsb-base
 Description: MediaProxy dispatcher
  MediaProxy is a distributed far end NAT traversal solution for media streams
  for SIP calls. MediaProxy has a dispatcher running on the same host with an
- OpenSER SIP proxy and multiple media relays distributed over the network.
+ OpenSIPS SIP proxy and multiple media relays distributed over the network.
  The media relays work by manipulating conntrack rules in the Linux kernel to
  create paths that forward the media streams between the 2 SIP user agents
  participating in the call. Because it avoids to copy stream data from kernel
@@ -58,7 +58,7 @@ Depends: ${python:Depends}, mediaproxy-common (>= ${source:Version}), lsb-base
 Description: MediaProxy relay
  MediaProxy is a distributed far end NAT traversal solution for media streams
  for SIP calls. MediaProxy has a dispatcher running on the same host with an
- OpenSER SIP proxy and multiple media relays distributed over the network.
+ OpenSIPS SIP proxy and multiple media relays distributed over the network.
  The media relays work by manipulating conntrack rules in the Linux kernel to
  create paths that forward the media streams between the 2 SIP user agents
  participating in the call. Because it avoids to copy stream data from kernel
@@ -81,7 +81,7 @@ Depends: php5 | php5-cgi
 Description: MediaProxy sessions web page
  MediaProxy is a distributed far end NAT traversal solution for media streams
  for SIP calls. MediaProxy has a dispatcher running on the same host with an
- OpenSER SIP proxy and multiple media relays distributed over the network.
+ OpenSIPS SIP proxy and multiple media relays distributed over the network.
  The media relays work by manipulating conntrack rules in the Linux kernel to
  create paths that forward the media streams between the 2 SIP user agents
  participating in the call. Because it avoids to copy stream data from kernel

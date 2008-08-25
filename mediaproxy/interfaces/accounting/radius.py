@@ -15,7 +15,7 @@ import pyrad.dictionary
 from mediaproxy import configuration_filename
 
 class Config(ConfigSection):
-    config_file = "/etc/openser/radius/client.conf"
+    config_file = "/etc/opensips/radius/client.conf"
     additional_dictionary = "radius/dictionary"
 
 

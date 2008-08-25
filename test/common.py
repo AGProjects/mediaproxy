@@ -33,7 +33,7 @@ configuration.read_settings("Dispatcher", Config)
 random_data = os.urandom(512)
 
 
-class OpenSERControlClientProtocol(LineOnlyReceiver):
+class OpenSIPSControlClientProtocol(LineOnlyReceiver):
 
     def __init__(self):
         self.defer = None
@@ -68,8 +68,8 @@ class OpenSERControlClientProtocol(LineOnlyReceiver):
         return self._send_command("remove", EncodingDict(kw_args))
 
 
-class OpenSERConnectorFactory(ClientFactory):
-    protocol = OpenSERControlClientProtocol
+class OpenSIPSConnectorFactory(ClientFactory):
+    protocol = OpenSIPSControlClientProtocol
 
     def __init__(self):
         self.defer = Deferred()
@@ -172,7 +172,7 @@ class Session(object):
             other = self.caller
         return party, other
 
-    def do_update(self, openser, party, type, is_final, use_old_hold=False):
+    def do_update(self, opensips, party, type, is_final, use_old_hold=False):
         party, other = self._get_parties(party)
         if type == "request":
             from_tag = party.tag
@@ -187,9 +187,9 @@ class Session(object):
             to_uri = party.sip_uri
             cseq = other.cseq
         if is_final:
-            defer = openser.update(call_id = self.call_id, from_tag = from_tag, to_tag = to_tag, from_uri = from_uri, to_uri = to_uri, cseq = cseq,  user_agent = party.user_agent, media = party.get_media(use_old_hold), type = type)
+            defer = opensips.update(call_id = self.call_id, from_tag = from_tag, to_tag = to_tag, from_uri = from_uri, to_uri = to_uri, cseq = cseq,  user_agent = party.user_agent, media = party.get_media(use_old_hold), type = type)
         else:
-            defer = openser.update(call_id = self.call_id, from_tag = from_tag, from_uri = from_uri, to_uri = to_uri, cseq = cseq,  user_agent = party.user_agent, media = party.get_media(use_old_hold), type = type)
+            defer = opensips.update(call_id = self.call_id, from_tag = from_tag, from_uri = from_uri, to_uri = to_uri, cseq = cseq,  user_agent = party.user_agent, media = party.get_media(use_old_hold), type = type)
         if is_final:
             if type == "request":
                 party.cseq += 1
@@ -197,11 +197,11 @@ class Session(object):
                 other.cseq += 1
         return defer
 
-    def do_remove(self, openser, party):
+    def do_remove(self, opensips, party):
         party, other = self._get_parties(party)
-        openser.remove(call_id = self.call_id, from_tag = party.tag, to_tag = other.tag)
+        opensips.remove(call_id = self.call_id, from_tag = party.tag, to_tag = other.tag)
 
 def connect_to_dispatcher():
-    factory = OpenSERConnectorFactory()
+    factory = OpenSIPSConnectorFactory()
     connector = reactor.connectUNIX(Config.socket, factory)
     return connector, factory.defer
