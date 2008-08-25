@@ -3,7 +3,7 @@ Section: net
 Priority: optional
 Maintainer: Dan Pascu <dan@ag-projects.com>
 Build-Depends: cdbs (>= 0.4.47), debhelper (>= 5.0.42), python-all-dev (>= 2.4.4), python-support, libnetfilter-conntrack-dev
-Standards-Version: 3.7.3
+Standards-Version: 3.8.0
 
 Package: mediaproxy-common
 Architecture: any
