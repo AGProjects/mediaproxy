@@ -283,7 +283,7 @@ class MediaRelay(MediaRelayBase):
         if not ip_forward:
             raise RuntimeError("IP forwarding is not available or not enabled (check %s)" % IP_FORWARD_FILE)
         try:
-            major, minor, revision = [int(num) for num in open(KERNEL_VERSION_FILE).read().split("-", 1)[0].split(".", 4)[:3]]
+            major, minor, revision = [int(num) for num in open(KERNEL_VERSION_FILE).read().split("-", 1)[0].split(".")[:3]]
         except:
             raise RuntimeError("Could not determine Linux kernel version")
         if (major, minor, revision) < (2, 6, 18):
