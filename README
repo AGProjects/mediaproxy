@@ -23,7 +23,7 @@ Description
 -----------
 
 MediaProxy is a media relay for RTP/RTCP and UDP streams that works in
-tandem with OpenSIPs to provide NAT traversal capability for media streams
+tandem with OpenSIPS to provide NAT traversal capability for media streams
 from SIP user agents located behind NAT.
 
 When using MediaProxy, NAT traversal for RTP media will work without any
@@ -66,19 +66,19 @@ Architecture
 
 MediaProxy is made up of (at least) two components: A dispatcher and a relay.
 
-The dispatcher component always runs on the same host as OpenSIPs and
+The dispatcher component always runs on the same host as OpenSIPS and
 communicates with its mediaproxy module through a UNIX domain socket. The
 relay(s) connect to the dispatcher using TLS. This relay component may be on
-the same or on a different host as OpenSIPs. There may be several relays for
+the same or on a different host as OpenSIPS. There may be several relays for
 the dispatcher to choose from and a relay may service more than one
 dispatcher.
 
-When OpenSIPs requests that a call be relayed, the dispatcher will forward
+When OpenSIPS requests that a call be relayed, the dispatcher will forward
 this request to one of its connected relays, along with some data from the
 SDP. The relay will allocate a set of UDP ports for this session, depending
 on the number of proposed streams. It will inform the dispatcher which ports
 it has allocated so that it may in turn notify the mediaproxy module of
-OpenSIPs, which will replace the relevant parts of the SDP.
+OpenSIPS, which will replace the relevant parts of the SDP.
 
 The same is done for any SIP messages from the callee, thus all the media
 streams will be sent through the relay. When the session between caller and
@@ -96,7 +96,7 @@ All of this is illustrated in the following diagram:
   |   |   +---------------------+                    |   |
   |   |   |           SIP Proxy |                    |   |
   |   |   |  +----------+       |        SIP         |   |
-  |   |<--+->| OpenSIPs |<------+------------------->|   |
+  |   |<--+->| OpenSIPS |<------+------------------->|   |
   |   |   |  +----------+       |                    |   |
   |   |   |       ^             |                    |   |
   |   |   |       | UNIX socket |                    |   |
@@ -126,7 +126,7 @@ System using a kernel version 2.6.18 or higher that has been compiled with
 connection tracking support (conntrack). Because of this dependency on
 Linux, other operating systems are not supported. This dependency only
 applies to the media relay component. The dispatcher component which runs on
-the same host as OpenSIPs, can run on any platform that has a python
+the same host as OpenSIPS, can run on any platform that has a python
 interpreter and supports the twisted framework.
 
 Communication between the dispatcher and the relays uses TLS encryption and
@@ -134,12 +134,12 @@ requires a set of X509 certificates to work. For more information about this
 please read tls/README which contains information about the sample certificates
 that are included as well as information about how to generate your own.
 
-MediaProxy is meant to be used together with OpenSIPs's mediaproxy module.
+MediaProxy is meant to be used together with OpenSIPS's mediaproxy module.
 
 This version of MediaProxy (2.0 or higher) cannot be used in combination
-with any version of OpenSIPs older than 1.4 or any components of MediaProxy
+with any version of OpenSIPS older than 1.4 or any components of MediaProxy
 older than 2.0. You must completely upgrade any previous installation of
-OpenSER to OpenSIPs to use this version of MediaProxy.
+OpenSER to OpenSIPS to use this version of MediaProxy.
 
 No STUN or TURN support are required in the clients.
 
