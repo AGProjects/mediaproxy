@@ -1,3 +1,24 @@
+mediaproxy (2.0.4) unstable; urgency=low
+
+  * Mention libnetfilter-conntrack in the installation requirements section
+  * Added note about using distribution provided kernel images
+  * Renamed OpenSER to OpenSIPs
+  * Do accounting only after a 200 OK response was received, which is
+    indicated by the presence of the to_tag that is not sent by OpenSIPS
+    for provisional replies, but only with the 200 OK
+  * Have synthetic test scripts look for the mediaproxy module in current and
+    parent directories automatically
+  * In the synthetic tests have OpenSIPS send the to tag only with 200 OK
+  * Added synthetic test script to test provisional responses from two
+    different PSTN gateways with varying to tags
+  * Enhanced kernel version parsing to support non-standard named kernels
+    (i.e. major.minor.revsion.extra)
+  * Updated debian standards version
+  * Rephrased description in manual pages and debian control file
+  * Restructured and improved documentation to better describe how to install
+
+ -- Dan Pascu <dan@ag-projects.com>  Wed, 27 Aug 2008 12:02:04 +0300
+
 mediaproxy (2.0.3) unstable; urgency=low
 
   * Set resource limit for maximum open file descriptors to be able to handle
