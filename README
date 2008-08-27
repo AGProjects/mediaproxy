@@ -134,7 +134,7 @@ requires a set of X509 certificates to work. For more information about this
 please read tls/README which contains information about the sample certificates
 that are included as well as information about how to generate your own.
 
-MediaProxy is meant to be used together with OpenSIPS's mediaproxy module.
+MediaProxy is meant to be used together with OpenSIPS' mediaproxy module.
 
 This version of MediaProxy (2.0 or higher) cannot be used in combination
 with any version of OpenSIPS older than 1.4 or any components of MediaProxy
