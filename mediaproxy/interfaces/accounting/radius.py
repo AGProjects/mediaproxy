@@ -22,6 +22,31 @@ class Config(ConfigSection):
 configuration = ConfigFile(configuration_filename)
 configuration.read_settings("Radius", Config)
 
+# helper class to make pyrad support the $INCLUDE statement in dictionary files
+class RadiusDictionaryFile(object):
+
+    def __init__(self, base_file_name):
+        self.file_names = [base_file_name]
+        self.fd_stack = [open(base_file_name)]
+
+    def readlines(self):
+        while True:
+            line = self.fd_stack[-1].readline()
+            if line:
+                if line.startswith("$INCLUDE"):
+                    file_name = line.rstrip("\n").split(None, 1)[1]
+                    if file_name not in self.file_names:
+                        self.file_names.append(file_name)
+                        self.fd_stack.append(open(file_name))
+                    continue
+                else:
+                    yield line
+            else:
+                self.fd_stack.pop()
+                if len(self.fd_stack) == 0:
+                    return
+
+
 class Accounting(object):
 
     def __init__(self):
@@ -50,12 +75,11 @@ class RadiusAccounting(EventQueue, pyrad.client.Client):
             else:
                 acctport = 1813
             secret = secrets[server]
-            # pyrad does not support $INCLUDE in dictionary files!
-            dicts = [line.rstrip("\n").split(None, 1)[1] for line in open(config["dictionary"]) if line.startswith("$INCLUDE")] + [config["dictionary"]]
+            dicts = [RadiusDictionaryFile(config["dictionary"])]
             if Config.additional_dictionary:
                 additional_dictionary = process.config_file(Config.additional_dictionary)
                 if additional_dictionary:
-                    dicts.append(additional_dictionary)
+                    dicts.append(RadiusDictionaryFile(additional_dictionary))
                 else:
                     log.warn("Could not load additional RADIUS dictionary file: %s" % Config.additional_dictionary)
             raddict = pyrad.dictionary.Dictionary(*dicts)
