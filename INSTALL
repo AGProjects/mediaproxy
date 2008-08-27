@@ -10,67 +10,10 @@ Authors: Ruud Klaver, Dan Pascu
 Home page: http://www.ag-projects.com/MediaProxy.html
 
 
-Architecture
-------------
+Prerequisites
+-------------
 
-MediaProxy is made up of (at least) two components: A dispatcher and a relay.
-
-The dispatcher component always runs on the same host as OpenSIPs and
-communicates with its mediaproxy module through a UNIX domain socket. The
-relay(s) connect to the dispatcher using TLS. This relay component may be on
-the same or on a different host as OpenSIPs. There may be several relays for
-the dispatcher to choose from and a relay may service more than one
-dispatcher.
-
-When OpenSIPs requests that a call be relayed, the dispatcher will forward
-this request to one of its connected relays, along with some data from the
-SDP. The relay will allocate a set of UDP ports for this session, depending
-on the number of proposed streams. It will inform the dispatcher which ports
-it has allocated so that it may in turn notify the mediaproxy module of
-OpenSIPs, which will replace the relevant parts of the SDP.
-
-The same is done for any SIP messages from the callee, thus all the media
-streams will be sent through the relay. When the session between caller and
-callee has finished, either through a SIP BYE or because the media is no
-longer flowing and has timed out, the relay will send session information to
-the dispatcher, which can store this information using one or more accounting
-modules.
-
-The session information may also be queried using a management interface on
-the dispatcher.
-
-All of this is illustrated in the following diagram:
-
-  +---+                                              +---+
-  |   |   +---------------------+                    |   |
-  |   |   |           SIP Proxy |                    |   |
-  |   |   |  +----------+       |        SIP         |   |
-  |   |<--+->| OpenSIPs |<------+------------------->|   |
-  |   |   |  +----------+       |                    |   |
-  |   |   |       ^             |                    |   |
-  |   |   |       | UNIX socket |                    |   |
-  | C |   |       v             |                    | C |
-  | A |   | +------------+      |   +------------+   | A |
-  | L |   | | Dispatcher |<-----+-->| Management |   | L |
-  | L |   | +------------+  TCP |   |   client   |   | L |
-  | E |   |         ^      /TLS |   +------------+   | E |
-  | R |   |         |           |                    | E |
-  |   |   +---------+-----------+                    |   |
-  |   |             |                                |   |
-  |   |             | TLS                            |   |
-  |   |             v                                |   |
-  |   |      +-------------+           UDP           |   |
-  |   |<---->|    Relay    |<----------------------->|   |
-  |   |      +-------------+        RTP / RTCP       |   |
-  +---+                                              +---+
-
-Please note that the accounting modules are not shown.
-
-
-Installation
-------------
-
-MediaProxy has the following requirements:
+In order to build and install, MediaProxy has the following requirements:
 
  - Linux (at least 2.6.18) with the following features compiled in:
    - netfilter support
@@ -88,7 +31,7 @@ MediaProxy has the following requirements:
    available and can be used out of the box.
  - libnetfilter-conntrack
    Most of the Linux distributions separate a library package into runtime
-   and development packages. To build mediaproxy, the development version
+   and development packages. To build MediaProxy, the development version
    is needed (it usually has a -dev suffix in the package name).
  - Python (at least 2.4)
    http://python.org
@@ -116,12 +59,129 @@ For the RADIUS accounting module:
    http://www.wiggy.net/code/pyrad/
 
 
+Installation
+------------
+
+When installing from source, first make sure the above mentioned prerequisites
+are installed. If the distribution you are running has them already packaged,
+you should install the distribution provided packages, else you'll have to
+install them from source. If you install them as packages, make sure that you
+also install the development versions for python and libnetfilter-conntrack in
+order to be able to build MediaProxy. If you have to install something from
+source, please consult the installation instructions for that specific package
+in order to find out how to install it. For python packages there is a simple
+method to install them by running easy_install (make sure to run them as root):
+
+easy_install twisted
+easy_install zope.interface
+easy_install python-application
+easy_install python-cjson
+easy_install python-gnutls # this needs libgnutls-dev >= 2.4.1 installed
+easy_install sqlobject
+easy_install pyrad
+
+All of the above should work out of the box, except python-gnutls which needs
+libgnutls-dev at least version 2.4.1 to be installed to succeed.
+
+An alternative method to install the python packages is to download, unpack
+and run (as root):
+
+./setup.py build; ./setup.py install
+
+for each of them in the directories where they were unpacked.
+
+It should be noted that this only needs to be done for the packages that are
+not provided already by your distribution, otherwise it is recommended to use
+the distribution provided packages unless they do not meet the minimum version
+requirements mentioned above of it they exhibit problems at runtime.
+
+After all the prerequisites are installed, MediaProxy can be installed either
+as a system wide package or in a standalone directory.
+
+1. To install it as a system wide package, run (as root):
+
+./setup.py build
+./setup.py install
+
+In the directory where you unpacked MediaProxy.
+
+2. To install in a standalone directory, unpack MediaProxy to the directory
+where you want it placed. Then change to that directory and run:
+
+./build_inplace
+
+After this MediaProxy components can be run from that directory.
+
+
+In both cases, you can use the Debian startup scripts in the Debian
+subdirectory, mediaproxy-dispatcher.init and mediaproxy-relay.init as
+examples to create your own startup scripts for your distribution.
+
+
 Packaging
 ---------
 
 The MediaProxy source already includes the necessary files to build Debian
 packages. They should probably also work without changes for Ubuntu, though
 they have not been tested with it.
+
+To build Debian/Ubuntu packages, you can do the following (this is known to
+work with Debian testing and unstable and should work without changes in
+Ubuntu 8.04 Hardy as well, though they were not tested there):
+
+apt-get update
+apt-get install devscripts cdbs debhelper python-all-dev python-support \
+                libnetfilter-conntrack-dev python-application python-cjson \
+                python-gnutls python-twisted-core python-twisted-names \
+                python-zopeinterface python-pyrad python-sqlobject
+
+then unpack MediaProxy and in the directory where it was unpacked run:
+
+debuild
+
+If can safely ignore the pgp signing error at the end of the build process,
+that is only because you do not have the pgp key for the person who is listed
+as maintainer for the package. The packages are build fine even if they are
+not signed.
+
+After building them is done, you can find the .deb packages in the parent
+directory, from where you can install them using dpkg:
+
+cd ../
+dpkg -i mediaproxy-*.deb
+
+or you can install just the ones you need on that particular system.
+Please note that mediaproxy-dispatcher and mediaproxy-relay both depend on
+mediaproxy-common so you have to install it too along with either of them.
+
+
+Configuration file
+------------------
+
+The configuration file is named config.ini and a config.ini.sample file is
+provided in the source. You can copy config.ini.sample to config.ini and
+modify it to suit your needs. The sample configuration file is commented and
+self-explanatory. Both the dispatcher and the relay read their configuration
+from the same file but from different sections. If either of them is not
+installed on a given system, its specific sections are ignored, so you only
+need to configure the sections for the installed component(s).
+
+MediaProxy will look for both a local configuration file, which is placed in
+the same directory as the mp-relay and mp-dispather scripts, and a system
+configuration file which is placed in /etc/mediaproxy/
+
+Even though a local configuration file can be used in any case, it only makes
+sense to be used in the standalone installation case, where MediaProxy lives
+in its own directory and there is a reason to contain all the MediaProxy
+related files to a single directory.
+
+For system wide installations, where the mp-relay and mp-dispatcher scripts
+reside in /usr/bin or /usr/local/bin, it makes little sense to place a local
+configuration file there, so in this case using the system configuration file
+in /etc/mediaproxy/config.ini is recommended.
+
+When both configuration files are present, both will be read and the settings
+in the local configuration will override the ones in the system configuration.
 
 
 Operation
@@ -135,36 +195,20 @@ With no arguments, both applications will automatically fork into the
 background and log to syslog. They can remain in the foreground and log to
 console when given the --no-fork argument.
 
+At the very least a set of TLS credentials is required. Sample certificates
+for this are included in the tls/ subdirectory.
+DO NOT USE THESE IN A PRODUCTION ENVIRONMENT, but only for testing purposes.
+
 The relay can be shut down in two ways. When receiving either an INT or TERM
 signal, the relay will terminate all of its sessions immediately and inform
 the dispatcher that those sessions have expired. When given the HUP signal,
 it will not accept any new sessions from the dispatcher and wait for all of
 the running sessions to expire, thus terminating gracefully.
 
-Both the dispatcher and the relay read their configuration from
-/etc/mediaproxy/config.ini. A sample configuration file is provided which
-should be self-explanatory. At the very least a set of TLS credentials is
-required. Sample certificates for this are included in the tls/ subdirectory.
-DO NOT USE THESE IN A PRODUCTION ENVIRONMENT, but only for testing purposes.
 For more information about TLS certificates and how to generate your own,
 check the tls/README file.
 
 
-Management interface
---------------------
-
-The management interface will accept commands terminated by \r\n. It will
-return the results of the command, one per line, terminated by an empty
-line (also \r\n terminated).
-
-Currently two commands are supported:
-
-sessions : This will have the dispatcher query all of its connected relays
-           for active sessions. For every sessions it finds it will return
-           one line with a JSON encoded dictionary containing session
-           information.
-
-summary : This will have the dispatcher present a summary of each of its
-          connected relays. The results are returned as a JSON encoded
-          dictionary, one line per relay.
+For more information about the architecture and how MediaProxy operates,
+please consult the README file.
 

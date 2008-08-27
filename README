@@ -10,17 +10,6 @@ Authors: Ruud Klaver, Dan Pascu
 Home page: http://www.ag-projects.com/MediaProxy.html
 
 
-Description
------------
-
-MediaProxy is a media relay for RTP/RTCP and UDP streams that works in
-tandem with OpenSIPs to provide NAT traversal capability for media streams
-from SIP user agents located behind NAT.
-
-When using MediaProxy, NAT traversal for RTP media will work without any
-settings in the SIP User Agents or the NAT router.
-
-
 License
 -------
 
@@ -30,17 +19,15 @@ version 2.
 See LICENSE file for more details.
 
 
-Background
+Description
 -----------
 
-MediaProxy 2.0 is the second generation media relay application which is
-based on a completely new design that allows for major improvements in areas
-such as scalability (an order of magnitude more scalable than previous
-version) and security (communication between relay and dispatcher is
-encrypted).
+MediaProxy is a media relay for RTP/RTCP and UDP streams that works in
+tandem with OpenSIPs to provide NAT traversal capability for media streams
+from SIP user agents located behind NAT.
 
-New features have been added to support call flows related to user mobility
-and fax transmission.
+When using MediaProxy, NAT traversal for RTP media will work without any
+settings in the SIP User Agents or the NAT router.
 
 
 Features
@@ -57,8 +44,78 @@ Features
  - Configurable IP and UDP port range
  - Support for any combination of audio and video streams
  - Radius accounting of IP network traffic
- - Logging of complete media information including all streams, their type,
-   their codec and duration.
+ - Database accounting of complete media information including all streams,
+   their type, codecs and duration.
+
+
+Background
+-----------
+
+MediaProxy 2.0 is the second generation media relay application which is
+based on a completely new design that allows for major improvements in areas
+such as scalability (an order of magnitude more scalable than previous
+version) and security (communication between relay and dispatcher is
+encrypted).
+
+New features have been added to support call flows related to user mobility
+and fax transmission.
+
+
+Architecture
+------------
+
+MediaProxy is made up of (at least) two components: A dispatcher and a relay.
+
+The dispatcher component always runs on the same host as OpenSIPs and
+communicates with its mediaproxy module through a UNIX domain socket. The
+relay(s) connect to the dispatcher using TLS. This relay component may be on
+the same or on a different host as OpenSIPs. There may be several relays for
+the dispatcher to choose from and a relay may service more than one
+dispatcher.
+
+When OpenSIPs requests that a call be relayed, the dispatcher will forward
+this request to one of its connected relays, along with some data from the
+SDP. The relay will allocate a set of UDP ports for this session, depending
+on the number of proposed streams. It will inform the dispatcher which ports
+it has allocated so that it may in turn notify the mediaproxy module of
+OpenSIPs, which will replace the relevant parts of the SDP.
+
+The same is done for any SIP messages from the callee, thus all the media
+streams will be sent through the relay. When the session between caller and
+callee has finished, either through a SIP BYE or because the media is no
+longer flowing and has timed out, the relay will send session information to
+the dispatcher, which can store this information using one or more accounting
+modules.
+
+The session information may also be queried using a management interface on
+the dispatcher.
+
+All of this is illustrated in the following diagram:
+
+  +---+                                              +---+
+  |   |   +---------------------+                    |   |
+  |   |   |           SIP Proxy |                    |   |
+  |   |   |  +----------+       |        SIP         |   |
+  |   |<--+->| OpenSIPs |<------+------------------->|   |
+  |   |   |  +----------+       |                    |   |
+  |   |   |       ^             |                    |   |
+  |   |   |       | UNIX socket |                    |   |
+  | C |   |       v             |                    | C |
+  | A |   | +------------+      |   +------------+   | A |
+  | L |   | | Dispatcher |<-----+-->| Management |   | L |
+  | L |   | +------------+  TCP |   |   client   |   | L |
+  | E |   |         ^      /TLS |   +------------+   | E |
+  | R |   |         |           |                    | E |
+  |   |   +---------+-----------+                    |   |
+  |   |             |                                |   |
+  |   |             | TLS                            |   |
+  |   |             v                                |   |
+  |   |      +-------------+           UDP           |   |
+  |   |<---->|    Relay    |<----------------------->|   |
+  |   |      +-------------+        RTP / RTCP       |   |
+  +---+                                              +---+
+
+Please note that the accounting modules are not shown.
 
 
 Compatibility and pre-requisites
@@ -82,7 +139,7 @@ MediaProxy is meant to be used together with OpenSIPs's mediaproxy module.
 This version of MediaProxy (2.0 or higher) cannot be used in combination
 with any version of OpenSIPs older than 1.4 or any components of MediaProxy
 older than 2.0. You must completely upgrade any previous installation of
-OpenSER to OpenSIPs and MediaProxy to these new versions.
+OpenSER to OpenSIPs to use this version of MediaProxy.
 
 No STUN or TURN support are required in the clients.
 
@@ -99,6 +156,28 @@ Some features that were present in the previous version have been removed:
 - Support for asymmetric clients has been discontinued
 - Support for other operating systems than Linux has been discontinued
   (only for the media relay, as the dispatcher has no such limitation)
+
+For information of how to install MediaProxy, please consult the INSTALL
+file.
+
+
+Management interface
+--------------------
+
+The management interface will accept commands terminated by \r\n. It will
+return the results of the command, one per line, terminated by an empty
+line (also \r\n terminated).
+
+Currently two commands are supported:
+
+sessions : This will have the dispatcher query all of its connected relays
+           for active sessions. For every sessions it finds it will return
+           one line with a JSON encoded dictionary containing session
+           information.
+
+summary : This will have the dispatcher present a summary of each of its
+          connected relays. The results are returned as a JSON encoded
+          dictionary, one line per relay.
 
 
 Support
