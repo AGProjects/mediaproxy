@@ -180,16 +180,27 @@ summary : This will have the dispatcher present a summary of each of its
           dictionary, one line per relay.
 
 
-Support
--------
-
-Please report any bugs to users@lists.opensips.org
-
-The mailing list archive is available at:
-http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+Free support
+------------
 
 MediaProxy is developed and supported by AG Projects. AG Projects offers
-best-effort gratis support for MediaProxy. "best-effort" means that we try
-to solve the bugs you report or help fix your problems as soon as we can,
+best-effort free support for MediaProxy. "best-effort" means that we try to
+solve the bugs you report or help fix your problems as soon as we can,
 subject to available resources.
+
+You may report bugs or feature request to:
+
+users@lists.opensips.org
+
+A mailing list archive is available at:
+http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+
+
+Commercial support
+------------------
+
+Commercial support options are available by purchasing:
+
+1. Multimedia Service Platform: http://ag-projects.com/Products or
+2. MediaProxy and support: https://secure.dns-hosting.info/buyer_guide.phtml
 
