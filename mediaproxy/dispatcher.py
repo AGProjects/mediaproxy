@@ -265,13 +265,11 @@ class RelaySession(object):
         self.relay_ip = relay_ip
         self.h_entry = None
         self.h_id = None
-        for header in command_headers:
-            if header.startswith("dialog_id: "):
-                try:
-                    self.h_entry, self.h_id = header.split("dialog_id: ", 1)[1].split(":")
-                except:
-                    pass
-                break
+        if "dialog_id" in command_headers:
+            try:
+                self.h_entry, self.h_id = command_headers["dialog_id"].split(":")
+            except:
+                pass
 
 
 class RelayFactory(Factory):
@@ -319,24 +317,20 @@ class RelayFactory(Factory):
                 del self.sessions[session_id]
 
     def send_command(self, command, headers):
-        call_id = None
-        for header in headers:
-            if header.startswith("call_id: "):
-                call_id = header.split("call_id: ", 1)[1]
-                break
-        if call_id is None:
-            raise RelayError("Could not parse call_id")
+        try:
+            parsed_headers = dict(header.split(": ", 1) for header in headers)
+        except:
+            raise RelayError("Could not parse headers from OpenSIPs")
+        if "call_id" not in parsed_headers:
+            raise RelayError("Could not find call_id header")
+        call_id = parsed_headers["call_id"]
         if call_id in self.sessions:
             relay = self.sessions[call_id].relay_ip
             if relay not in self.relays:
                 raise RelayError("Relay for this session (%s) is no longer connected" % relay)
             return self.relays[relay].send_command(command, headers)
         elif command == "update":
-            preferred_relay = None
-            for header in headers:
-                if header.startswith("media_relay: "):
-                    preferred_relay = header.split("media_relay: ", 1)[1]
-                    break
+            preferred_relay = parsed_headers.get("media_relay")
             if preferred_relay is not None:
                 try_relays = [protocol for protocol in self.relays.itervalues() if protocol.ip == preferred_relay]
                 other_relays = [protocol for protocol in self.relays.itervalues() if protocol.ready and protocol.ip != preferred_relay]
@@ -346,13 +340,13 @@ class RelayFactory(Factory):
                 try_relays = [protocol for protocol in self.relays.itervalues() if protocol.ready]
                 random.shuffle(try_relays)
             defer = self._try_next(try_relays, command, headers)
-            defer.addCallback(self._add_session, try_relays, call_id, headers)
+            defer.addCallback(self._add_session, try_relays, call_id, parsed_headers)
             return defer
         else:
             raise RelayError("Non-update command received from OpenSIPS for unknown session")
 
-    def _add_session(self, result, try_relays, call_id, headers):
-        self.sessions[call_id] = RelaySession(try_relays[-1].ip, headers)
+    def _add_session(self, result, try_relays, call_id, parsed_headers):
+        self.sessions[call_id] = RelaySession(try_relays[-1].ip, parsed_headers)
         return result
 
     def _relay_error(self, failure, try_relays, command, headers):
