@@ -329,9 +329,10 @@ class RelayFactory(Factory):
             parsed_headers = dict(header.split(": ", 1) for header in headers)
         except:
             raise RelayError("Could not parse headers from OpenSIPs")
-        if "call_id" not in parsed_headers:
-            raise RelayError("Could not find call_id header")
-        call_id = parsed_headers["call_id"]
+        try:
+            call_id = parsed_headers["call_id"]
+        except KeyError:
+            raise RelayError("Missing call_id header")
         if call_id in self.sessions:
             relay = self.sessions[call_id].relay_ip
             if relay not in self.relays:
