@@ -90,7 +90,7 @@ class UNIXSocketConnection(object):
         if deferred.called:
             return
         deferred.errback(Failure(TimeoutError("OpenSIPS command did timeout")))
-    
+
     def send(self, request):
         self.deferred = request.deferred
         try:
@@ -125,12 +125,12 @@ class UNIXSocketConnectionPool(object):
                 break
             self.connections.append(conn)
             self.workers += 1
-    
+
     def _release_connection(self, result, conn):
         self.connections.append(conn)
         self._process_waiters()
         return result
-    
+
     def _process_waiters(self):
         while self.waiters:
             try:
@@ -140,7 +140,7 @@ class UNIXSocketConnectionPool(object):
             request = self.waiters.popleft()
             request.deferred.addBoth(self._release_connection, conn)
             conn.send(request)
-    
+
     def defer_to_connection(self, command):
         request = Request(command)
         self.waiters.append(request)
@@ -151,21 +151,21 @@ class UNIXSocketConnectionPool(object):
 
 class ManagementInterface(object):
     __metaclass__ = Singleton
-    
+
     def __init__(self):
         self.pool = UNIXSocketConnectionPool(OpenSIPSConfig.max_connections)
-    
+
     def __RH_make_bool(self, result):
         if isinstance(result, Failure):
             return False
         return True
-    
+
     def __RH_end_dialog(self, result):
         if isinstance(result, Failure):
             log.error("failed to end dialog: %s: %s" % (result.type, str(result.value)))
             return False
         return True
-    
+
     def end_dialog(self, dialog_id):
         cmd = ':dlg_end_dlg:\n%s\n%s\n\n' % (dialog_id.h_entry, dialog_id.h_id)
         return self.pool.defer_to_connection(cmd).addBoth(self.__RH_end_dialog)
