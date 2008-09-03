@@ -218,10 +218,10 @@ class RelayServerProtocol(LineOnlyReceiver):
                 log.error("Error decoding JSON from relay at %s" % self.ip)
             else:
                 session = self.factory.sessions[stats["call_id"]]
-                if session.h_entry is not None:
+                if session.dialog_id is not None:
                     if stats["to_tag"] is not None and stats["streams"] and stats["streams"][-1]["status"] != "closed":
-                        self.factory.dispatcher.opensips_management.end_dialog(session)
-                    stats["dialog_id"] = "%s:%s" % (session.h_entry, session.h_id)
+                        self.factory.dispatcher.opensips_management.end_dialog(session.dialog_id)
+                    stats["dialog_id"] = session.dialog_id
                 self.factory.dispatcher.update_statistics(stats)
                 del self.factory.sessions[stats["call_id"]]
             return
@@ -259,17 +259,25 @@ class RelayServerProtocol(LineOnlyReceiver):
         self.factory.connection_lost(self.ip)
 
 
-class RelaySession(object):
+class DialogID(str):
+    def __new__(cls, did):
+        if did is None:
+            return None
+        try:
+            h_entry, h_id = did.split(':')
+        except:
+            log.error("invalid dialog_id value: `%s'" % did)
+            return None
+        instance = str.__new__(cls, did)
+        instance.h_entry = h_entry
+        instance.h_id = h_id
+        return instance
 
+
+class RelaySession(object):
     def __init__(self, relay_ip, command_headers):
         self.relay_ip = relay_ip
-        self.h_entry = None
-        self.h_id = None
-        if "dialog_id" in command_headers:
-            try:
-                self.h_entry, self.h_id = command_headers["dialog_id"].split(":")
-            except:
-                pass
+        self.dialog_id = DialogID(command_headers.get('dialog_id'))
 
 
 class RelayFactory(Factory):
