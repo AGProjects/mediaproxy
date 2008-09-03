@@ -268,7 +268,7 @@ class RelayFactory(Factory):
             self.sessions = {}
             self.cleanup_timers = {}
         else:
-            self.cleanup_timers = dict((ip, reactor.callLater(Config.cleanup_timeout, self._do_cleanup, ip)) for ip in set(self.sessions.keys()))
+            self.cleanup_timers = dict((ip, reactor.callLater(Config.cleanup_timeout, self._do_cleanup, ip)) for ip in set(self.sessions.itervalues()))
         unlink(state_file)
 
     def buildProtocol(self, addr):
