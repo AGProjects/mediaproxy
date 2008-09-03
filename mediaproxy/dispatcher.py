@@ -29,6 +29,7 @@ from application.system import unlink
 
 from mediaproxy import configuration_filename, default_dispatcher_port, default_management_port
 from mediaproxy.tls import X509Credentials, X509NameValidator
+from mediaproxy.interfaces import opensips
 
 
 log.msg("Twisted is using %s" % reactor.__module__.rsplit('.', 1)[-1])
@@ -216,6 +217,11 @@ class RelayServerProtocol(LineOnlyReceiver):
             except cjson.DecodeError:
                 log.error("Error decoding JSON from relay at %s" % self.ip)
             else:
+                session = self.factory.sessions[stats["call_id"]]
+                if session.h_entry is not None:
+                    if stats["streams"][-1]["status"] != "closed":
+                        self.factory.dispatcher.opensips_management.end_dialog(session)
+                    stats["dialog_id"] = "%s:%s" % (session.h_entry, session.h_id)
                 self.factory.dispatcher.update_statistics(stats)
                 del self.factory.sessions[stats["call_id"]]
             return
@@ -253,6 +259,21 @@ class RelayServerProtocol(LineOnlyReceiver):
         self.factory.connection_lost(self.ip)
 
 
+class RelaySession(object):
+
+    def __init__(self, relay_ip, command_headers):
+        self.relay_ip = relay_ip
+        self.h_entry = None
+        self.h_id = None
+        for header in command_headers:
+            if header.startswith("dialog_id: "):
+                try:
+                    self.h_entry, self.h_id = header.split("dialog_id: ", 1)[1].split(":")
+                except:
+                    pass
+                break
+
+
 class RelayFactory(Factory):
     noisy = False
     protocol = RelayServerProtocol
@@ -268,7 +289,7 @@ class RelayFactory(Factory):
             self.sessions = {}
             self.cleanup_timers = {}
         else:
-            self.cleanup_timers = dict((ip, reactor.callLater(Config.cleanup_timeout, self._do_cleanup, ip)) for ip in set(self.sessions.itervalues()))
+            self.cleanup_timers = dict((ip, reactor.callLater(Config.cleanup_timeout, self._do_cleanup, ip)) for ip in set(session.relay_ip for session in self.sessions.itervalues()))
         unlink(state_file)
 
     def buildProtocol(self, addr):
@@ -292,8 +313,8 @@ class RelayFactory(Factory):
     def _cb_purge_sessions(self, result, relay_ip):
         relay_sessions = cjson.decode(result)
         relay_call_ids = [session["call_id"] for session in relay_sessions]
-        for session_id, session_relay_ip in self.sessions.items():
-            if session_relay_ip == relay_ip and session_id not in relay_call_ids:
+        for session_id, session in self.sessions.items():
+            if session.relay_ip == relay_ip and session_id not in relay_call_ids:
                 log.warn("Session %s is not longer on relay %s, statistics are probably lost" % (session_id, relay_ip))
                 del self.sessions[session_id]
 
@@ -306,7 +327,7 @@ class RelayFactory(Factory):
         if call_id is None:
             raise RelayError("Could not parse call_id")
         if call_id in self.sessions:
-            relay = self.sessions[call_id]
+            relay = self.sessions[call_id].relay_ip
             if relay not in self.relays:
                 raise RelayError("Relay for this session (%s) is no longer connected" % relay)
             return self.relays[relay].send_command(command, headers)
@@ -325,13 +346,13 @@ class RelayFactory(Factory):
                 try_relays = [protocol for protocol in self.relays.itervalues() if protocol.ready]
                 random.shuffle(try_relays)
             defer = self._try_next(try_relays, command, headers)
-            defer.addCallback(self._add_session, try_relays, call_id)
+            defer.addCallback(self._add_session, try_relays, call_id, headers)
             return defer
         else:
             raise RelayError("Non-update command received from OpenSIPS for unknown session")
 
-    def _add_session(self, result, try_relays, call_id):
-        self.sessions[call_id] = try_relays[-1].ip
+    def _add_session(self, result, try_relays, call_id, headers):
+        self.sessions[call_id] = RelaySession(try_relays[-1].ip, headers)
         return result
 
     def _relay_error(self, failure, try_relays, command, headers):
@@ -383,7 +404,7 @@ class RelayFactory(Factory):
     def _do_cleanup(self, ip):
         log.debug("Doing cleanup for old relay %s" % ip)
         del self.cleanup_timers[ip]
-        for call_id in [call_id for call_id, relay in self.sessions.items() if relay == ip]:
+        for call_id in [call_id for call_id, session in self.sessions.items() if session.relay_ip == ip]:
             del self.sessions[call_id]
 
     def shutdown(self):
@@ -418,6 +439,7 @@ class Dispatcher(object):
         socket_path = process.runtime_file(Config.socket_path)
         unlink(socket_path)
         self.opensips_listener = reactor.listenUNIX(socket_path, self.opensips_factory)
+        self.opensips_management = opensips.ManagementInterface()
         self.management_factory = ManagementControlFactory(self)
         management_addr, management_port = Config.listen_management
         if Config.management_use_tls:
