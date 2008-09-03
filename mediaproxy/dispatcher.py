@@ -219,7 +219,7 @@ class RelayServerProtocol(LineOnlyReceiver):
             else:
                 session = self.factory.sessions[stats["call_id"]]
                 if session.h_entry is not None:
-                    if stats["streams"][-1]["status"] != "closed":
+                    if stats["to_tag"] is not None and stats["streams"] and stats["streams"][-1]["status"] != "closed":
                         self.factory.dispatcher.opensips_management.end_dialog(session)
                     stats["dialog_id"] = "%s:%s" % (session.h_entry, session.h_id)
                 self.factory.dispatcher.update_statistics(stats)
