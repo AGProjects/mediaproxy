@@ -187,9 +187,9 @@ class Session(object):
             to_uri = party.sip_uri
             cseq = other.cseq
         if is_final:
-            defer = opensips.update(call_id = self.call_id, from_tag = from_tag, to_tag = to_tag, from_uri = from_uri, to_uri = to_uri, cseq = cseq,  user_agent = party.user_agent, media = party.get_media(use_old_hold), type = type)
+            defer = opensips.update(call_id = self.call_id, from_tag = from_tag, to_tag = to_tag, from_uri = from_uri, to_uri = to_uri, cseq = cseq,  user_agent = party.user_agent, media = party.get_media(use_old_hold), type = type, dialog_id = "12345:67890")
         else:
-            defer = opensips.update(call_id = self.call_id, from_tag = from_tag, from_uri = from_uri, to_uri = to_uri, cseq = cseq,  user_agent = party.user_agent, media = party.get_media(use_old_hold), type = type)
+            defer = opensips.update(call_id = self.call_id, from_tag = from_tag, from_uri = from_uri, to_uri = to_uri, cseq = cseq,  user_agent = party.user_agent, media = party.get_media(use_old_hold), type = type, dialog_id = "12345:67890")
         if is_final:
             if type == "request":
                 party.cseq += 1
