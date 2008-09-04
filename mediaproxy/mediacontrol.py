@@ -191,6 +191,8 @@ class MediaSubStream(object):
 
     def check_create_conntrack(self):
         log.debug("Got traffic information for stream: %s" % self.stream)
+        if self.stream.first_media_time is None:
+            self.stream.first_media_time = time()
         if self.caller.got_remote and self.callee.got_remote:
             self.forwarding_rule = _conntrack.ForwardingRule(self.caller.remote, self.caller.local, self.callee.remote, self.callee.local, self.stream.session.mark)
             self.forwarding_rule.expired_func = self.conntrack_expired
@@ -253,6 +255,8 @@ class MediaStream(object):
         self.rtcp = MediaSubStream(self, self.caller.listener_rtcp, self.callee.listener_rtcp)
         getattr(self, initiating_party).remote_sdp = (media_ip, media_port)
         self.check_hold(initiating_party, direction, media_ip)
+        self.create_time = time()
+        self.first_media_time = None
         self.start_time = None
         self.end_time = None
         self.status = "active"
@@ -513,6 +517,10 @@ class Session(object):
                         stream_info["end_time"] = stats["duration"]
                     else:
                         stream_info["end_time"] = min(int(stream.end_time - self.start_time), stats["duration"])
+            if stream.first_media_time is None:
+                stream_info["pdd"] = None
+            else:
+                stream_info["pdd"] = int((stream.first_media_time - stream.create_time) * 1000)
             stream_info["media_type"] = stream.media_type
             stream_info["caller_codec"] = stream.rtp.caller.codec
             stream_info["callee_codec"] = stream.rtp.callee.codec
