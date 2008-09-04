@@ -219,9 +219,9 @@ class RelayServerProtocol(LineOnlyReceiver):
             else:
                 session = self.factory.sessions[stats["call_id"]]
                 if session.dialog_id is not None:
-                    if stats["to_tag"] is not None and stats["streams"] and stats["streams"][-1]["status"] != "closed":
-                        self.factory.dispatcher.opensips_management.end_dialog(session.dialog_id)
+                    self.factory.dispatcher.opensips_management.end_dialog(session.dialog_id)
                     stats["dialog_id"] = session.dialog_id
+                stats["timed_out"] = True
                 self.factory.dispatcher.update_statistics(stats)
                 del self.factory.sessions[stats["call_id"]]
             return
@@ -242,6 +242,7 @@ class RelayServerProtocol(LineOnlyReceiver):
             except cjson.DecodeError:
                 log.error("Error decoding JSON from relay at %s" % self.ip)
             else:
+                stats["timed_out"] = False
                 self.factory.dispatcher.update_statistics(stats)
                 del self.factory.sessions[stats["call_id"]]
             defer.callback("removed")
