@@ -628,6 +628,15 @@ Inhibitor_dealloc(Inhibitor *self)
     if (self->done_init)
         if ((ct_handle = iptc_init("raw")) != NULL) {
             memset(matchmask, 255, IPTC_FULL_SIZE);
+            // We release all rules to workaround stray rules that may remain in the raw table
+            // after the application crashes without a chance to clean up. This a just a hack
+            // that breaks the API symmetry and prevents multiple Inhibitors for the same ip
+            // and port to coexist (deleting one makes the others irelevant).
+            // A better solution would be to only delete the rule we added and do the cleanup
+            // when the application starts, or to make Inhibitor a singleton for a given ip
+            // and port.
+            // Either way, this hack currently works as we only need to create one Inhibitor
+            // for a given ip/port, but it still makes for a less elegant interface.
             while(iptc_delete_entry("PREROUTING", self->entry, matchmask, &ct_handle));
             if (!iptc_commit(&ct_handle))
                 iptc_free(&ct_handle);
