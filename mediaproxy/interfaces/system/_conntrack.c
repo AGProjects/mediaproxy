@@ -628,7 +628,7 @@ Inhibitor_dealloc(Inhibitor *self)
     if (self->done_init)
         if ((ct_handle = iptc_init("raw")) != NULL) {
             memset(matchmask, 255, IPTC_FULL_SIZE);
-            iptc_delete_entry("PREROUTING", self->entry, matchmask, &ct_handle);
+            while(iptc_delete_entry("PREROUTING", self->entry, matchmask, &ct_handle));
             if (!iptc_commit(&ct_handle))
                 iptc_free(&ct_handle);
         }
