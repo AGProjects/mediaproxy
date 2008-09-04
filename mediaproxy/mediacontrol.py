@@ -520,7 +520,7 @@ class Session(object):
             if stream.first_media_time is None:
                 stream_info["pdd"] = None
             else:
-                stream_info["pdd"] = int((stream.first_media_time - stream.create_time) * 1000)
+                stream_info["pdd"] = stream.first_media_time - stream.create_time
             stream_info["media_type"] = stream.media_type
             stream_info["caller_codec"] = stream.rtp.caller.codec
             stream_info["callee_codec"] = stream.rtp.callee.codec
