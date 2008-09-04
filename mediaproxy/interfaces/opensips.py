@@ -162,7 +162,7 @@ class ManagementInterface(object):
 
     def __RH_end_dialog(self, result):
         if isinstance(result, Failure):
-            log.error("failed to end dialog: %s: %s" % (result.type, str(result.value)))
+            log.error("failed to end dialog: %s" % result.value)
             return False
         return True
 
