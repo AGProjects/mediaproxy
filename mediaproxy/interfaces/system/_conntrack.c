@@ -511,9 +511,9 @@ ExpireWatcher_read(ExpireWatcher *self)
 
     for (rule=forwarding_rules, retval=Py_None; rule!=NULL; rule=rule->next) {
         if (nfct_get_attr_u32(rule->conntrack, ATTR_ORIG_IPV4_SRC) != nfct_get_attr_u32(conntrack, ATTR_ORIG_IPV4_SRC) ||
-            nfct_get_attr_u32(rule->conntrack, ATTR_ORIG_PORT_SRC) != nfct_get_attr_u32(conntrack, ATTR_ORIG_PORT_SRC) ||
+            nfct_get_attr_u16(rule->conntrack, ATTR_ORIG_PORT_SRC) != nfct_get_attr_u16(conntrack, ATTR_ORIG_PORT_SRC) ||
             nfct_get_attr_u32(rule->conntrack, ATTR_DNAT_IPV4) != nfct_get_attr_u32(conntrack, ATTR_REPL_IPV4_SRC) ||
-            nfct_get_attr_u32(rule->conntrack, ATTR_DNAT_PORT) != nfct_get_attr_u32(conntrack, ATTR_REPL_PORT_SRC))
+            nfct_get_attr_u16(rule->conntrack, ATTR_DNAT_PORT) != nfct_get_attr_u16(conntrack, ATTR_REPL_PORT_SRC))
             continue;
 
         // we found a conntrack rule that matches
