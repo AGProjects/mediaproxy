@@ -62,6 +62,28 @@ For the RADIUS accounting module:
 Installation
 ------------
 
+For people running Debian testing or unstable on an i386 architecture there is
+an official public repository provided by AG Projects. To use it, add these
+lines in /etc/apt/sources.list
+
+# AG Projects software
+deb     http://ag-projects.com/debian unstable main
+deb-src http://ag-projects.com/debian unstable main
+
+After that, run:
+
+apt-get update
+apt-get install mediaproxy-dispatcher mediaproxy-relay mediaproxy-web-sessions
+
+to install all the packages, or you can install only the packages you actually
+need on the given system.
+
+In case you want to build your own, please look below to Packaging section.
+
+
+Installing from source
+----------------------
+
 When installing from source, first make sure the above mentioned prerequisites
 are installed. If the distribution you are running has them already packaged,
 you should install the distribution provided packages, else you'll have to
