@@ -155,11 +155,8 @@ class ManagementInterface(object):
     def __init__(self):
         self.pool = UNIXSocketConnectionPool(OpenSIPSConfig.max_connections)
 
-    def __RH_make_bool(self, result):
-        if isinstance(result, Failure):
-            return False
-        return True
-
+    ## Reply handlers __RH_xxx
+    
     def __RH_end_dialog(self, result):
         if isinstance(result, Failure):
             log.error("failed to end dialog: %s" % result.value)
