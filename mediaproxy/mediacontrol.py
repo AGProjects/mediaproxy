@@ -18,6 +18,7 @@ from application.configuration import *
 
 from mediaproxy.interfaces.system import _conntrack
 from mediaproxy import configuration_filename
+from mediaproxy.iptest import is_routable_ip
 
 UDP_TIMEOUT_FILE = "/proc/sys/net/ipv4/netfilter/ip_conntrack_udp_timeout_stream"
 
@@ -34,6 +35,7 @@ class Config(ConfigSection):
     stream_timeout = 90
     on_hold_timeout = 7200
     traffic_sampling_period = 15
+    userspace_transmit_every = 1
 
 configuration = ConfigFile(configuration_filename)
 configuration.read_settings("Relay", Config)
@@ -46,10 +48,26 @@ class StreamListenerProtocol(DatagramProtocol):
 
     def __init__(self):
         self.cb_func = None
+        self.sdp = None
 
     def datagramReceived(self, data, (host, port)):
         if self.cb_func is not None:
             self.cb_func(host, port, data)
+
+    def set_remote_sdp(self, ip, port):
+        if is_routable_ip(ip):
+            self.send_packet_count = 0
+            self.sdp = ip, port
+        else:
+            self.sdp = None
+
+    def send(self, data):
+        host = self.transport.getHost()
+        if self.sdp is not None:
+            ip, port = self.sdp
+            if not self.send_packet_count % Config.userspace_transmit_every:
+                self.transport.write(data, (ip, port))
+            self.send_packet_count +=1
 
 
 class MediaSubParty(object):
@@ -103,6 +121,7 @@ class MediaSubParty(object):
         if not self.got_remote:
             if (host, port) == self.remote:
                 return
+            self.substream.send_data(self, data)
             if self.timer:
                 self.timer.cancel()
                 self.timer = None
@@ -122,7 +141,8 @@ class MediaSubParty(object):
             self.remote = (host, port)
             self.substream.check_create_conntrack()
         else:
-            pass # what to do?
+            if (host, port) == self.remote:
+                self.substream.send_data(self, data)
 
     def cleanup(self):
         if self.timer and self.timer.active():
@@ -199,6 +219,13 @@ class MediaSubStream(object):
             self.caller.stop_block()
             self.callee.stop_block()
 
+    def send_data(self, source, data):
+        if source is self.caller:
+            dest = self.callee
+        else:
+            dest = self.caller
+        dest.listener.protocol.send(data)
+
     def conntrack_expired(self):
         try:
             timeout_wait = int(open(UDP_TIMEOUT_FILE).read())
@@ -221,7 +248,7 @@ class MediaParty(object):
 
     def __init__(self, stream):
         self.manager = stream.session.manager
-        self.remote_sdp = None
+        self._remote_sdp = None
         self.is_on_hold = False
         while True:
             self.listener_rtp = None
@@ -236,6 +263,14 @@ class MediaParty(object):
                 log.warn("Cannot use port pair %d/%d" % self.ports)
             else:
                 break
+
+    def _get_remote_sdp(self):
+        return self._remote_sdp
+
+    def _set_remote_sdp(self, (ip, port)):
+        self._remote_sdp = ip, port
+        self.listener_rtp.protocol.set_remote_sdp(ip, port)
+    remote_sdp = property(_get_remote_sdp, _set_remote_sdp)
 
     def cleanup(self):
         self.listener_rtp.stopListening()
