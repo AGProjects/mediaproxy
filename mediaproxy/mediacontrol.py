@@ -18,7 +18,7 @@ from application.configuration import *
 
 from mediaproxy.interfaces.system import _conntrack
 from mediaproxy import configuration_filename
-from mediaproxy.iptest import is_routable_ip
+from mediaproxy.iputils import is_routable_ip
 
 UDP_TIMEOUT_FILE = "/proc/sys/net/ipv4/netfilter/ip_conntrack_udp_timeout_stream"
 
