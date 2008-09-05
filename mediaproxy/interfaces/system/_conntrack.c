@@ -67,7 +67,8 @@ typedef struct Inhibitor {
     PyObject_HEAD
 
     int done_init;
-    struct ipt_entry *entry;
+    struct ipt_entry *pre_entry;
+    struct ipt_entry *out_entry;
 } Inhibitor;
 
 
@@ -608,7 +609,13 @@ Inhibitor_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     self = (Inhibitor*) type->tp_alloc(type, 0);
     if (self != NULL) {
         self->done_init = 0;
-        if ((self->entry = malloc(IPTC_FULL_SIZE)) == NULL) {
+        if ((self->pre_entry = malloc(IPTC_FULL_SIZE)) == NULL) {
+            Py_DECREF(self);
+            PyErr_NoMemory();
+            return NULL;
+        }
+        if ((self->out_entry = malloc(IPTC_FULL_SIZE)) == NULL) {
+            free(self->pre_entry);
             Py_DECREF(self);
             PyErr_NoMemory();
             return NULL;
@@ -637,12 +644,14 @@ Inhibitor_dealloc(Inhibitor *self)
             // and port.
             // Either way, this hack currently works as we only need to create one Inhibitor
             // for a given ip/port, but it still makes for a less elegant interface.
-            while(iptc_delete_entry("PREROUTING", self->entry, matchmask, &ct_handle));
+            while(iptc_delete_entry("PREROUTING", self->pre_entry, matchmask, &ct_handle));
+            while(iptc_delete_entry("OUTPUT", self->out_entry, matchmask, &ct_handle));
             if (!iptc_commit(&ct_handle))
                 iptc_free(&ct_handle);
         }
 
-    free(self->entry);
+    free(self->pre_entry);
+    free(self->out_entry);
     self->ob_type->tp_free((PyObject*)self);
 }
 
@@ -674,15 +683,15 @@ Inhibitor_init(Inhibitor *self, PyObject *args, PyObject *kwds)
         return -1;
     }
 
-    memset(self->entry, 0, IPTC_FULL_SIZE);
-    self->entry->ip.proto = IPPROTO_UDP;
+    memset(self->pre_entry, 0, IPTC_FULL_SIZE);
+    self->pre_entry->ip.proto = IPPROTO_UDP;
     if (address_string != NULL) {
-        self->entry->ip.dst = address;
-        memset(&self->entry->ip.dmsk, 255, sizeof(struct in_addr));
+        self->pre_entry->ip.dst = address;
+        memset(&self->pre_entry->ip.dmsk, 255, sizeof(struct in_addr));
     }
-    self->entry->target_offset = IPTC_ENTRY_SIZE + IPTC_MATCH_SIZE;
-    self->entry->next_offset = IPTC_FULL_SIZE;
-    match = (void*) self->entry + IPTC_ENTRY_SIZE;
+    self->pre_entry->target_offset = IPTC_ENTRY_SIZE + IPTC_MATCH_SIZE;
+    self->pre_entry->next_offset = IPTC_FULL_SIZE;
+    match = (void*) self->pre_entry + IPTC_ENTRY_SIZE;
     match->u.user.match_size = IPTC_MATCH_SIZE;
     strcpy(match->u.user.name, "udp");
     match_udp = (struct ipt_udp*) &match->data;
@@ -693,12 +702,37 @@ Inhibitor_init(Inhibitor *self, PyObject *args, PyObject *kwds)
     target->u.user.target_size = IPTC_TARGET_SIZE;
     strcpy(target->u.user.name, "NOTRACK");
 
+    memset(self->out_entry, 0, IPTC_FULL_SIZE);
+    self->out_entry->ip.proto = IPPROTO_UDP;
+    if (address_string != NULL) {
+        self->out_entry->ip.src = address;
+        memset(&self->out_entry->ip.smsk, 255, sizeof(struct in_addr));
+    }
+    self->out_entry->target_offset = IPTC_ENTRY_SIZE + IPTC_MATCH_SIZE;
+    self->out_entry->next_offset = IPTC_FULL_SIZE;
+    match = (void*) self->out_entry + IPTC_ENTRY_SIZE;
+    match->u.user.match_size = IPTC_MATCH_SIZE;
+    strcpy(match->u.user.name, "udp");
+    match_udp = (struct ipt_udp*) &match->data;
+    match_udp->spts[0] = match_udp->spts[1] = port;
+    match_udp->dpts[0] = 0;
+    match_udp->dpts[1] = 65535;
+    target = (void*) match + IPTC_MATCH_SIZE;
+    target->u.user.target_size = IPTC_TARGET_SIZE;
+    strcpy(target->u.user.name, "NOTRACK");
+
     if ((ct_handle = iptc_init("raw")) == NULL) {
         PyErr_SetString(Error, iptc_strerror(errno));
         return -1;
     }
 
-    if (!iptc_append_entry("PREROUTING", self->entry, &ct_handle)) {
+    if (!iptc_append_entry("PREROUTING", self->pre_entry, &ct_handle)) {
+        iptc_free(&ct_handle);
+        PyErr_SetString(Error, iptc_strerror(errno));
+        return -1;
+    }
+
+    if (!iptc_append_entry("OUTPUT", self->out_entry, &ct_handle)) {
         iptc_free(&ct_handle);
         PyErr_SetString(Error, iptc_strerror(errno));
         return -1;
