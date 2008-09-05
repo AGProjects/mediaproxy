@@ -72,6 +72,11 @@ lines in /etc/apt/sources.list
 deb     http://ag-projects.com/debian unstable main
 deb-src http://ag-projects.com/debian unstable main
 
+Install AG Projects debian software signing key:
+
+wget http://download.ag-projects.com/agp-debian-gpg.key
+apt-key add agp-debian-gpg.key
+
 After that, run:
 
 apt-get update
