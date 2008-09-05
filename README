@@ -35,6 +35,7 @@ Features
 
  - Scalability of thousands of calls per server limited only by the Linux
    kernel networking layer and network interface bandwidth
+ - Supports multiple chained relays as long as each has a public IP
  - TLS encryption between the relays and dispatcher
  - T.38 fax support
  - Graceful shutdown capability
@@ -43,6 +44,7 @@ Features
  - Real-time sessions statistics
  - Configurable IP and UDP port range
  - Support for any combination of audio and video streams
+ - Ability to use OpenSIPS' MI interface to close a call that did timeout
  - Radius accounting of IP network traffic
  - Database accounting of complete media information including all streams,
    their type, codecs and duration.
