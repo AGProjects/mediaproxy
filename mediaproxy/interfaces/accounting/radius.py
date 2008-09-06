@@ -66,8 +66,11 @@ class Accounting(object):
 class RadiusAccounting(EventQueue, pyrad.client.Client):
 
     def __init__(self):
+        main_config_file = process.config_file(Config.config_file)
+        if main_config_file is None:
+            raise RuntimeError("Cannot find the radius configuration file: `%s'" % Config.config_file)
         try:
-            config = dict(line.rstrip("\n").split(None, 1) for line in open(Config.config_file) if len(line.split(None, 1)) == 2 and not line.startswith("#"))
+            config = dict(line.rstrip("\n").split(None, 1) for line in open(main_config_file) if len(line.split(None, 1)) == 2 and not line.startswith("#"))
             secrets = dict(line.rstrip("\n").split(None, 1) for line in open(config["servers"]) if len(line.split(None, 1)) == 2 and not line.startswith("#"))
             server = config["acctserver"]
             if ":" in server:
