@@ -41,10 +41,20 @@ class DispatcherAddress(datatypes.NetworkAddress):
 class DispatcherManagementAddress(datatypes.NetworkAddress):
     _defaultPort = default_management_port
 
+class AccountingModuleList(datatypes.StringList):
+    _valid_backends = set(('database', 'radius'))
+    
+    def __new__(cls, value):
+        proposed_backends = set(datatypes.StringList.__new__(cls, value))
+        invalid_names = proposed_backends - cls._valid_backends
+        for name in invalid_names:
+            log.warn("Ignoring invalid accounting module name: `%s'" % name)
+        return list(proposed_backends & cls._valid_backends)
+
 
 class Config(ConfigSection):
-    _datatypes = {'listen': DispatcherAddress, 'listen_management': DispatcherManagementAddress, 'management_use_tls': datatypes.Boolean, 'accounting': datatypes.StringList,
-                  'passport': X509NameValidator}
+    _datatypes = {'listen': DispatcherAddress, 'listen_management': DispatcherManagementAddress, 'management_use_tls': datatypes.Boolean,
+                  'accounting': AccountingModuleList, 'passport': X509NameValidator}
     socket_path = "dispatcher.sock"
     listen = DispatcherAddress("any")
     listen_management = DispatcherManagementAddress("any")
