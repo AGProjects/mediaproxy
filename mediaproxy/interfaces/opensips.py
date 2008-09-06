@@ -4,7 +4,6 @@
 """The OpenSIPS Management Interface"""
 
 
-import re
 import socket
 from collections import deque
 from twisted.internet import reactor, defer
