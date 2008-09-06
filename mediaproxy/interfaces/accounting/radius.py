@@ -84,13 +84,13 @@ class RadiusAccounting(EventQueue, pyrad.client.Client):
                 if additional_dictionary:
                     dicts.append(RadiusDictionaryFile(additional_dictionary))
                 else:
-                    log.warn("Could not load additional RADIUS dictionary file: %s" % Config.additional_dictionary)
+                    log.warn("Could not load additional RADIUS dictionary file: `%s'" % Config.additional_dictionary)
             raddict = pyrad.dictionary.Dictionary(*dicts)
             timeout = int(config["radius_timeout"])
             retries = int(config["radius_retries"])
         except Exception, e:
-            log.fatal("Error reading RADIUS configuration file")
-            raise
+            log.fatal("cannot read the RADIUS configuration file")
+            raise RuntimeError(str(e))
         pyrad.client.Client.__init__(self, server, 1812, acctport, secret, raddict)
         self.timeout = timeout
         self.retries = retries
