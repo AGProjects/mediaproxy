@@ -456,8 +456,8 @@ class Dispatcher(object):
         process.signals.add_handler(signal.SIGHUP, self._handle_SIGHUP)
         process.signals.add_handler(signal.SIGINT, self._handle_SIGINT)
         process.signals.add_handler(signal.SIGTERM, self._handle_SIGTERM)
-        for act in self.accounting:
-            act.start()
+        for accounting_module in self.accounting:
+            accounting_module.start()
         reactor.run(installSignalHandlers=False)
 
     def send_command(self, command, headers):
