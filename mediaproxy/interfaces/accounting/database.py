@@ -14,7 +14,7 @@ from application.python.queue import EventQueue
 from application.configuration import *
 
 from sqlobject import SQLObject, connectionForURI, sqlhub
-from sqlobject import StringCol, BLOBCol, DateTimeCol
+from sqlobject import StringCol, BLOBCol, DateTimeCol, DatabaseIndex
 
 from mediaproxy import configuration_filename
 
@@ -34,11 +34,14 @@ configuration.read_settings("Database", Config)
 class MediaSessions(SQLObject):
     class sqlmeta:
         table = Config.sessions_table
-    call_id = StringCol(dbName=Config.callid_column, notNone=True)
-    from_tag = StringCol(dbName=Config.fromtag_column, notNone=True)
-    to_tag = StringCol(dbName=Config.totag_column)
+    call_id = StringCol(length=255, dbName=Config.callid_column, notNone=True)
+    from_tag = StringCol(length=64, dbName=Config.fromtag_column, notNone=True)
+    to_tag = StringCol(length=64, dbName=Config.totag_column, notNone=True)
     start_time = DateTimeCol(dbName=Config.start_time_column, notNone=True)
-    info = BLOBCol(dbName=Config.info_column)
+    info = BLOBCol(length=65535, dbName=Config.info_column)
+    ## Indexes
+    callid_idx = DatabaseIndex('call_id', 'from_tag', 'to_tag', unique=True)
+    start_time_idx = DatabaseIndex('start_time')
 
 sqlhub.processConnection = connectionForURI(Config.dburi)
 
