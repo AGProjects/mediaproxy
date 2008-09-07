@@ -15,6 +15,7 @@ from application.configuration import *
 
 from sqlobject import SQLObject, connectionForURI, sqlhub
 from sqlobject import StringCol, BLOBCol, DateTimeCol, DatabaseIndex
+from sqlobject.dberrors import *
 
 from mediaproxy import configuration_filename
 
@@ -73,4 +74,8 @@ class DatabaseAccounting(EventQueue):
         EventQueue.__init__(self, self.do_accounting)
 
     def do_accounting(self, stats):
-        MediaSessions(call_id=stats["call_id"], from_tag=stats["from_tag"], to_tag=stats["to_tag"], start_time=datetime.fromtimestamp(stats["start_time"]), info=cjson.encode(stats))
+        try:
+            MediaSessions(call_id=stats["call_id"], from_tag=stats["from_tag"], to_tag=stats["to_tag"], start_time=datetime.fromtimestamp(stats["start_time"]), info=cjson.encode(stats))
+        except DatabaseError, e:
+            log.error("failed to insert record into database: %s" % e)
+
