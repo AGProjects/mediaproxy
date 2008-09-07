@@ -34,6 +34,7 @@ configuration.read_settings("Database", Config)
 class MediaSessions(SQLObject):
     class sqlmeta:
         table = Config.sessions_table
+        cacheValues = False
     call_id = StringCol(length=255, dbName=Config.callid_column, notNone=True)
     from_tag = StringCol(length=64, dbName=Config.fromtag_column, notNone=True)
     to_tag = StringCol(length=64, dbName=Config.totag_column, notNone=True)
