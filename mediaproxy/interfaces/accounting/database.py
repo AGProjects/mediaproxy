@@ -75,9 +75,12 @@ class DatabaseAccounting(EventQueue):
         EventQueue.__init__(self, self.do_accounting)
 
     def do_accounting(self, stats):
+        sqlrepr = connection.sqlrepr
+        names  = ', '.join([Config.callid_column, Config.fromtag_column, Config.totag_column, Config.start_time_column, Config.info_column])
+        values = ', '.join((sqlrepr(v) for v in [stats["call_id"], stats["from_tag"], stats["to_tag"], datetime.fromtimestamp(stats["start_time"]), cjson.encode(stats)]))
+        q = """INSERT INTO %s (%s) VALUES (%s)""" % (Config.sessions_table, names, values)
         try:
-            MediaSessions(call_id=stats["call_id"], from_tag=stats["from_tag"], to_tag=stats["to_tag"], start_time=datetime.fromtimestamp(stats["start_time"]), info=cjson.encode(stats))
+            connection.query(q)
         except DatabaseError, e:
             log.error("failed to insert record into database: %s" % e)
-        connection.cache.clear()
 
