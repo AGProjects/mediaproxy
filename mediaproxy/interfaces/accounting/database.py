@@ -79,4 +79,5 @@ class DatabaseAccounting(EventQueue):
             MediaSessions(call_id=stats["call_id"], from_tag=stats["from_tag"], to_tag=stats["to_tag"], start_time=datetime.fromtimestamp(stats["start_time"]), info=cjson.encode(stats))
         except DatabaseError, e:
             log.error("failed to insert record into database: %s" % e)
+        connection.cache.clear()
 
