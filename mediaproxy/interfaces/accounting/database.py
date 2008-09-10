@@ -32,6 +32,11 @@ class Config(ConfigSection):
 configuration = ConfigFile(configuration_filename)
 configuration.read_settings("Database", Config)
 
+
+connection = connectionForURI(Config.dburi)
+sqlhub.processConnection = connection
+
+
 class MediaSessions(SQLObject):
     class sqlmeta:
         table = Config.sessions_table
@@ -46,7 +51,20 @@ class MediaSessions(SQLObject):
     callid_idx = DatabaseIndex('call_id', 'from_tag', 'to_tag', unique=True)
     start_time_idx = DatabaseIndex('start_time')
 
-sqlhub.processConnection = connectionForURI(Config.dburi)
+
+try:
+    MediaSessions.createTable(ifNotExists=True)
+except OperationalError, e:
+    log.error("cannot create the `%s' table: %s" % (Config.sessions_table, e))
+    log.msg("please make sure that the `%s' user has the CREATE and ALTER rights on the `%s' database" % (connection.user, connection.db))
+    log.msg("then restart the dispatcher, or you can create the table yourself using the following definition:")
+    log.msg("----------------- >8 -----------------")
+    sql, constraints = MediaSessions.createTableSQL()
+    statements = ';\n'.join([sql] + constraints) + ';'
+    log.msg(statements)
+    log.msg("----------------- >8 -----------------")
+    #raise RuntimeError(str(e))
+
 
 class Accounting(object):
 
