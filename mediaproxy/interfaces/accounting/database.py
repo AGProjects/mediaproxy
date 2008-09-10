@@ -4,7 +4,6 @@
 
 """Implementation of database accounting"""
 
-from collections import deque
 from datetime import datetime
 import cjson
 
@@ -27,7 +26,6 @@ class Config(ConfigSection):
     totag_column = "to_tag"
     start_time_column = "start_time"
     info_column = "info"
-    pool_size = 1
 
 configuration = ConfigFile(configuration_filename)
 configuration.read_settings("Database", Config)
@@ -69,22 +67,17 @@ except OperationalError, e:
 class Accounting(object):
 
     def __init__(self):
-        self.databases = deque(DatabaseAccounting() for i in range(Config.pool_size))
+        self.database = DatabaseAccounting()
 
     def start(self):
-        for db in self.databases:
-            db.start()
+        self.database.start()
 
     def do_accounting(self, stats):
-        db = self.databases.popleft()
-        db.put(stats)
-        self.databases.append(db)
+        self.database.put(stats)
 
     def stop(self):
-        for db in self.databases:
-            db.stop()
-        for db in self.databases:
-            db.join()
+        self.database.stop()
+        self.database.join()
 
 
 class DatabaseAccounting(EventQueue):
