@@ -139,7 +139,9 @@
 ;accounting =
 
 [TLS]
-; Path to the certificates. If relative, /etc/mediaproxy will be prepended.
+; Path to the certificates. If relative, it will be looked up in both the
+; application directory (for a standalone installation) and /etc/mediaproxy,
+; the former taking precedence if found.
 ;certs_path = tls
 
 ; How often (in seconds) to verify the peer certificate for expiration and
