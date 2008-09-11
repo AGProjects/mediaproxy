@@ -14,9 +14,7 @@ License
 -------
 
 This software is licensed according to the GNU General Public License
-version 2.
-
-See LICENSE file for more details.
+version 2. See LICENSE file for more details.
 
 
 Description
@@ -66,7 +64,7 @@ and fax transmission.
 Architecture
 ------------
 
-MediaProxy is made up of (at least) two components: A dispatcher and a relay.
+MediaProxy consists of a dispatcher and one or more media relays.
 
 The dispatcher component always runs on the same host as OpenSIPS and
 communicates with its mediaproxy module through a UNIX domain socket. The
@@ -161,6 +159,117 @@ Some features that were present in the previous version have been removed:
 
 For information of how to install MediaProxy, please consult the INSTALL
 file.
+
+
+Operation
+---------
+
+Before the relay is run, please make sure that /proc/sys/net/ipv4/ip_forward
+is set to "1".
+
+Both the dispatcher and the relay should be executed with root privileges.
+With no arguments, both applications will automatically fork into the
+background and log to syslog. They can remain in the foreground and log to
+console when given the --no-fork argument.
+
+The relay can be shut down in two ways. When receiving either an INT or TERM
+signal, the relay will terminate all of its sessions immediately and inform
+the dispatcher that those sessions have expired. When given the HUP signal,
+it will not accept any new sessions from the dispatcher and wait for all of
+the running sessions to expire, thus terminating gracefully.
+
+At the very least a set of TLS credentials is required. Sample certificates
+for this are included in the tls/ subdirectory.
+DO NOT USE THESE IN A PRODUCTION ENVIRONMENT, but only for testing purposes.
+
+For more information about TLS certificates and how to generate your own,
+check the tls/README file.
+
+
+Accounting
+----------
+
+MediaProxy is capable to do additional per call accounting with information
+related to the media streams used by the call. MediaProxy has a modular
+interface to the accounting system, allowing for new modules to be easily
+implemented. Currently it supports database and radius backends. Multiple
+backends can be configured and used simultaneously.
+
+Radius accounting
+-----------------
+
+The radius backend logs very basic information about the media streams. The
+limited nature of the logged information is mainly given by the limitations
+imposed by the radius protocol to the data size.
+
+The information sent in the radius packet is shown below:
+
+  Acct-Status-Type = "Update"
+  User-Name = "mediaproxy@default"
+  Acct-Session-Id = call_id
+  Sip-From-Tag = from_tag
+  Sip-To-Tag = to_tag
+  Acct-Session-Time = call duration
+  Acct-Input-Octets = bytes received from caller
+  Acct-Output-Octets = bytes received from callee
+  Sip-User-Agents = caller + callee user agents
+  NAS-IP-Address = media-relay address
+  Sip-Applications = "Audio", "Video", ...
+  Media-Codecs = codecs used by call
+  Media-Info = "timeout" or ""
+  Delay-Time = post dial delay in seconds (time from INVITE to 1st media packet)
+
+
+Database accounting
+-------------------
+
+The database backend logs all the information related to the media streams that
+were created/closed during the whole session. This information is stored as a
+JSON encoded string in a BLOB column in the database, along with the call_id,
+from_tag, to_tag and start_time columns that can be used to retrieve the media
+information for a given call. The database table name and column names are
+fully configurable in the configuration file, in the database section.
+
+The table used to store these records, is automatically created by the media
+dispatcher on startup, if it's not present. For this to happen, the user that
+is configured in the dburi option in the database section, must have the CREATE
+and ALTER rights on the database specified in the same dburi. If this is not
+possible, then the media dispatcher will log an error indicating why it could
+not create the table and also output the table definition that can be used by
+some human operator to manually create the table. However, the recommended
+way is to grant the CREATE and ALTER privileges to the user in the dburi over
+the database specified in the same dburi.
+
+The database module uses SQLObject to access the database, which means it can
+work with a lot of databases, by simply changing the scheme in the dburi.
+Currently the following databases are supported: mysql, postgres, sqlite,
+firebird, maxdb, mssql and sybase.
+
+
+Closing expired calls
+---------------------
+
+Starting with version 2.1.0, MediaProxy supports closing calls for which all
+the media streams did timeout, but for which no BYE was received to close the
+call in the standard way.
+
+This feature will only work, when the OpenSIPS mediaproxy module uses the
+engage_media_proxy() command to start MediaProxy for a given call. In this
+case the mediaproxy module uses the dialog module to keep track of the call
+and can pass the dialog id to the media dispatcher. When a media session is
+expired because all streams did timeout, but no closing request was received
+from the proxy, the media dispatcher will use the dialog id that was received
+from the mediaproxy module, to issue a dlg_end_dlg request into the OpenSIPS'
+MI interface, instructing OpenSIPS to generate the BYEs for the call, closing
+it in a clean way and generating the accounting records.
+
+To use this, the mi_datagram module must be loaded and configured to use a
+UNIX filesystem socket which must also be configured into the OpenSIPS section
+of the MediaProxy configuration as socket_path.
+
+This feature is not available when using the use_media_proxy/end_media_session
+functions in the proxy configuration, because in that case there is no dialog
+that is tracked by the proxy which could be terminated using dlg_end_dlg.
 
 
 Management interface

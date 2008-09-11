@@ -72,7 +72,7 @@ lines in /etc/apt/sources.list
 deb     http://ag-projects.com/debian unstable main
 deb-src http://ag-projects.com/debian unstable main
 
-Install AG Projects debian software signing key:
+Install the AG Projects debian software signing key:
 
 wget http://download.ag-projects.com/agp-debian-gpg.key
 apt-key add agp-debian-gpg.key
@@ -83,7 +83,7 @@ apt-get update
 apt-get install mediaproxy-dispatcher mediaproxy-relay mediaproxy-web-sessions
 
 to install all the packages, or you can install only the packages you actually
-need on the given system.
+need on that specific system.
 
 In case you want to build your own, please look below to Packaging section.
 
@@ -132,7 +132,7 @@ as a system wide package or in a standalone directory.
 ./setup.py build
 ./setup.py install
 
-In the directory where you unpacked MediaProxy.
+in the directory where you unpacked MediaProxy.
 
 2. To install in a standalone directory, unpack MediaProxy to the directory
 where you want it placed. Then change to that directory and run:
@@ -140,7 +140,6 @@ where you want it placed. Then change to that directory and run:
 ./build_inplace
 
 After this MediaProxy components can be run from that directory.
-
 
 In both cases, you can use the Debian startup scripts in the Debian
 subdirectory, mediaproxy-dispatcher.init and mediaproxy-relay.init as
@@ -196,48 +195,27 @@ installed on a given system, its specific sections are ignored, so you only
 need to configure the sections for the installed component(s).
 
 MediaProxy will look for both a local configuration file, which is placed in
-the same directory as the mp-relay and mp-dispather scripts, and a system
-configuration file which is placed in /etc/mediaproxy/
+the same directory as the media-relay and media-dispather scripts, and a
+system configuration file which is placed in /etc/mediaproxy/
 
 Even though a local configuration file can be used in any case, it only makes
 sense to be used in the standalone installation case, where MediaProxy lives
 in its own directory and there is a reason to contain all the MediaProxy
 related files to a single directory.
 
-For system wide installations, where the mp-relay and mp-dispatcher scripts
-reside in /usr/bin or /usr/local/bin, it makes little sense to place a local
-configuration file there, so in this case using the system configuration file
-in /etc/mediaproxy/config.ini is recommended.
+For system wide installations, where the media-relay and media-dispatcher
+scripts reside in /usr/bin or /usr/local/bin, it makes little sense to
+place a local configuration file there, so in this case using the system
+configuration file in /etc/mediaproxy/config.ini is recommended.
 
 When both configuration files are present, both will be read and the settings
 in the local configuration will override the ones in the system configuration.
 
 
-Operation
----------
 
-Before the relay is run, please make sure that /proc/sys/net/ipv4/ip_forward
-is set to "1".
+------------------------------------------------------------------------------
 
-Both the dispatcher and the relay should be executed with root privileges.
-With no arguments, both applications will automatically fork into the
-background and log to syslog. They can remain in the foreground and log to
-console when given the --no-fork argument.
-
-At the very least a set of TLS credentials is required. Sample certificates
-for this are included in the tls/ subdirectory.
-DO NOT USE THESE IN A PRODUCTION ENVIRONMENT, but only for testing purposes.
-
-The relay can be shut down in two ways. When receiving either an INT or TERM
-signal, the relay will terminate all of its sessions immediately and inform
-the dispatcher that those sessions have expired. When given the HUP signal,
-it will not accept any new sessions from the dispatcher and wait for all of
-the running sessions to expire, thus terminating gracefully.
-
-For more information about TLS certificates and how to generate your own,
-check the tls/README file.
-
-
-For more information about the architecture and how MediaProxy operates,
-please consult the README file.
+For information about the MediaProxy architecture, configuring and running the
+dispatcher and the relay, as well as details about the supported features and
+how to use them, please consult the README file.
 
