@@ -19,17 +19,18 @@ private key for the MediaProxy dispatcher. Repeat the same to generate the
 certificate and private key for the MediaProxy relay.
 
 Next export your dispatcher certificate in PEM format to dispatcher.crt (do
-not include the private key in it), and the dispatcher private key also in
-PEM format to dispatcher.key (also do not include the certificate with it
-and select to save it without a passphrase). Repeat the same for the relay,
+not include the private key in it), and the dispatcher private key in PEM
+format to dispatcher.key (also do not include the certificate with it and
+select to save it without a passphrase). Repeat the same for the relay,
 but this time name the file relay.crt and relay.key.
 You also need to export the certificate authority in PEM format to ca.pem as
 well as the CRL list into crl.pem.
 
 Then you can use all the exported certificates and private keys by placing
-them in /etc/mediaproxy/tls/. Additionally you can configure passport entries
-for the dispatcher and the relay in config.ini to perform extra checks on
-the certificates (like for example checking the subject organization or the
+them in /etc/mediaproxy/tls/ (or /path-to-mediaproxy/tls for a standalone
+installation). Additionally you can configure passport entries for the
+dispatcher and the relay in config.ini to perform extra checks on the
+certificates (like for example checking the subject organization or the
 common name) to take advantage of improved security.
 
 The CA, CRL, certificates and private keys must be named like below (names
