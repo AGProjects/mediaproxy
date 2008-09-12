@@ -5,3 +5,9 @@
 - Make traffic calculation more efficient
 - Only log connection state transitions to avoid too much logging in case
   the dispatcher is down and the relay can't reconnect.
+- Allow the NAT address to change during a call to accomodate ISPs that
+  dynamically allocate IP addresses and change them at regular intervals.
+  This has to work even without any signaling support, based on the SSRC
+  field in the RTP media stream. For protection, switching the NAT address
+  should only happen if the old NAT address didn't send anything for a while,
+  while the new NAT has sent a stream with the same SSRC field.
