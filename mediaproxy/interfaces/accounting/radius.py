@@ -116,7 +116,7 @@ class RadiusAccounting(EventQueue, pyrad.client.Client):
             attrs["Media-Info"] = ""
         for stream in stats["streams"]:
             if stream["pdd"] is not None:
-                attrs["Delay-Time"] = int(stream["pdd"])
+                attrs["Acct-Delay-Time"] = int(stream["pdd"])
                 break
         try:
             self.SendPacket(self.CreateAcctPacket(**attrs))
