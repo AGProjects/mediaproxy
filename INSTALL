@@ -31,7 +31,7 @@ In order to build and install, MediaProxy has the following requirements:
    Distribution provided kernel images should normally provide of all these
    features as modules. The Debian kernel images have all these features
    available and can be used out of the box.
- - libnetfilter-conntrack
+ - libnetfilter-conntrack (at least version 0.0.89)
    Most of the Linux distributions separate a library package into runtime
    and development packages. To build MediaProxy, the development version
    is needed (it usually has a -dev suffix in the package name).
