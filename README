@@ -212,12 +212,12 @@ The information sent in the radius packet is shown below:
   Acct-Session-Time = call duration
   Acct-Input-Octets = bytes received from caller
   Acct-Output-Octets = bytes received from callee
-  Sip-User-Agents = caller + callee user agents
   NAS-IP-Address = media-relay address
+  Sip-User-Agents = caller + callee user agents
   Sip-Applications = "Audio", "Video", ...
-  Media-Codecs = codecs used by call
+  Media-Codecs = codecs used by streams (comma separated)
   Media-Info = "timeout" or ""
-  Delay-Time = post dial delay in seconds (time from INVITE to 1st media packet)
+  Acct-Delay-Time = post dial delay (seconds from INVITE to 1st media packet)
 
 
 Database accounting
