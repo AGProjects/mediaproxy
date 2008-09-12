@@ -1,4 +1,4 @@
-mediaproxy (2.0.4) unstable; urgency=low
+mediaproxy (2.1.0) unstable; urgency=low
 
   * Mention libnetfilter-conntrack in the installation requirements section
   * Added note about using distribution provided kernel images
@@ -16,8 +16,45 @@ mediaproxy (2.0.4) unstable; urgency=low
   * Updated debian standards version
   * Rephrased description in manual pages and debian control file
   * Restructured and improved documentation to better describe how to install
+  * Improved dictionary parsing in RADIUS accounting module
+  * Update support section in readme
+  * Added management interface for OpenSIPS
+  * Fix for relay cleanup timer when dispatcher is restarted
+  * Modified dispatcher to store dialog_id for sessions and use the OpenSIPS
+    management interface to send BYEs when a session did timeout
+  * Added dialog_id value to test scripts
+  * Simplified parsing of headers received from OpenSIPs in dispatcher
+  * Fixed ExpireWatcher port comparison to be done as a 16-bit unsigned int
+  * Remove all matching iptables entries on Inhibitor dealloc in order to
+    remove stray entries that are leftover after crashes
+  * Added per-stream post-dial delay to the session statistics
+  * Record the post dial delay from the first stream into radius accounting
+  * Added note to INSTALL about official Debian repositories from AG Projects
+  * Added note to INSTALL about where to find the changelog
+  * Updated the feature list in README with the latest additions
+  * Fixed regression from 1.x that prevented chaining of mediaproxies
+  * Ignore invalid accounting module names in the configuration and log an
+    error about them instead of raising an exception
+  * Gracefully report the errors that occur while reading the radius
+    configuration file and then exit, instead of throwing an exception
+  * The radius configuration file may be relative to the config directory
+  * Do not cache database inserted rows to avoid the need to clean the cache
+    or otherwise have an ever increasing application memory footprint
+  * Capture and report database errors when inserting statistics records
+  * Use MyISAM for the media_sessions table
+  * Improved the database accounting speed about 3 times using raw queries
+  * Create the table for database accounting on startup if it doesn't exist
+  * Removed pool_size database option and use a single database connection
+  * Reworded the tls README a bit for clarity
+  * Added OpenSIPS section to the config.ini.sample
+  * Added documentation sections for accounting and closing expired calls
+  * Added minimum version dependency for libnetfilter-conntrack in INSTALL
+  * Encode applications and codecs from all streams, not only the first one,
+    in the radius accounting backend
+  * Log the post-dial delay in radius accounting as Acct-Delay-Time
+  * Capture and log radius exceptions
 
- -- Dan Pascu <dan@ag-projects.com>  Wed, 27 Aug 2008 12:02:04 +0300
+ -- Dan Pascu <dan@ag-projects.com>  Fri, 12 Sep 2008 18:53:08 +0300
 
 mediaproxy (2.0.3) unstable; urgency=low
 
