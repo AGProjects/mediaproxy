@@ -11,6 +11,10 @@ Home page: http://www.ag-projects.com/MediaProxy.html
 
 For the list of changes between revisions please consult debian/changelog
 
+For information about the MediaProxy architecture, configuring and running
+the dispatcher and the relay, as well as details about the supported
+features and how to use them, please consult the README file.
+
 
 Prerequisites
 -------------
@@ -167,7 +171,7 @@ then unpack MediaProxy and in the directory where it was unpacked run:
 
 debuild
 
-If can safely ignore the pgp signing error at the end of the build process,
+You can safely ignore the pgp signing error at the end of the build process,
 that is only because you do not have the pgp key for the person who is listed
 as maintainer for the package. The packages are build fine even if they are
 not signed.
@@ -187,12 +191,12 @@ Configuration file
 ------------------
 
 The configuration file is named config.ini and a config.ini.sample file is
-provided in the source. You can copy config.ini.sample to config.ini and
-modify it to suit your needs. The sample configuration file is commented and
-self-explanatory. Both the dispatcher and the relay read their configuration
-from the same file but from different sections. If either of them is not
-installed on a given system, its specific sections are ignored, so you only
-need to configure the sections for the installed component(s).
+provided in the source tree. You can copy config.ini.sample to config.ini
+and modify it to suit your needs. The sample configuration file is commented
+and self-explanatory. Both the dispatcher and the relay read their
+configuration from the same file but from different sections. If either of
+them is not installed on a given system, its specific sections are ignored,
+so you only need to configure the sections for the installed component(s).
 
 MediaProxy will look for both a local configuration file, which is placed in
 the same directory as the media-relay and media-dispather scripts, and a
@@ -210,12 +214,4 @@ configuration file in /etc/mediaproxy/config.ini is recommended.
 
 When both configuration files are present, both will be read and the settings
 in the local configuration will override the ones in the system configuration.
-
-
-
-------------------------------------------------------------------------------
-
-For information about the MediaProxy architecture, configuring and running the
-dispatcher and the relay, as well as details about the supported features and
-how to use them, please consult the README file.
 
