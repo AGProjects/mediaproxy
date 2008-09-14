@@ -12,7 +12,7 @@ mediaproxy (2.1.0) unstable; urgency=low
   * Added synthetic test script to test provisional responses from two
     different PSTN gateways with varying to tags
   * Enhanced kernel version parsing to support non-standard named kernels
-    (i.e. major.minor.revsion.extra)
+    (i.e. major.minor.revision.extra)
   * Updated debian standards version
   * Rephrased description in manual pages and debian control file
   * Restructured and improved documentation to better describe how to install
