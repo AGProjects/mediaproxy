@@ -287,9 +287,9 @@ sessions : This will have the dispatcher query all of its connected relays
            one line with a JSON encoded dictionary containing session
            information.
 
-summary : This will have the dispatcher present a summary of each of its
-          connected relays. The results are returned as a JSON encoded
-          dictionary, one line per relay.
+summary  : This will have the dispatcher present a summary of each of its
+           connected relays. The results are returned as a JSON encoded
+           dictionary, one line per relay.
 
 
 Free support

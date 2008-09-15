@@ -191,12 +191,12 @@ Configuration file
 ------------------
 
 The configuration file is named config.ini and a config.ini.sample file is
-provided in the source tree. You can copy config.ini.sample to config.ini
-and modify it to suit your needs. The sample configuration file is commented
-and self-explanatory. Both the dispatcher and the relay read their
-configuration from the same file but from different sections. If either of
-them is not installed on a given system, its specific sections are ignored,
-so you only need to configure the sections for the installed component(s).
+provided in the source. You can copy config.ini.sample to config.ini and
+modify it to suit your needs. The sample configuration file is commented and
+self-explanatory. Both the dispatcher and the relay read their configuration
+from the same file but from different sections. If either of them is not
+installed on a given system, its specific sections are ignored, so you only
+need to configure the sections for the installed component(s).
 
 MediaProxy will look for both a local configuration file, which is placed in
 the same directory as the media-relay and media-dispather scripts, and a
