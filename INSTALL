@@ -176,8 +176,8 @@ that is only because you do not have the pgp key for the person who is listed
 as maintainer for the package. The packages are build fine even if they are
 not signed.
 
-After building them is done, you can find the .deb packages in the parent
-directory, from where you can install them using dpkg:
+After building them, you can find the .deb packages in the parent directory,
+from where you can install them using dpkg:
 
 cd ../
 dpkg -i mediaproxy-*.deb
