@@ -126,7 +126,7 @@ for each of them in the directories where they were unpacked.
 It should be noted that this only needs to be done for the packages that are
 not provided already by your distribution, otherwise it is recommended to use
 the distribution provided packages unless they do not meet the minimum version
-requirements mentioned above of it they exhibit problems at runtime.
+requirements mentioned above or if they exhibit problems at runtime.
 
 After all the prerequisites are installed, MediaProxy can be installed either
 as a system wide package or in a standalone directory.
