@@ -76,7 +76,6 @@ class MediaSubParty(object):
         self.substream = substream
         self.listener = listener
         self.listener.protocol.cb_func = self.got_data
-        self.inhibitor = None
         self.remote = None
         host = self.listener.protocol.transport.getHost()
         self.local = (host.host, host.port)
@@ -89,7 +88,6 @@ class MediaSubParty(object):
         self.reset(True)
 
     def reset(self, expire):
-        self.start_block()
         self.got_remote = False
         if self.timer and self.timer.active():
             self.timer.cancel()
@@ -109,13 +107,6 @@ class MediaSubParty(object):
             self.timer.cancel()
         if not self.got_remote:
             self.timer = reactor.callLater(Config.stream_timeout, self.substream.expired, "no traffic timeout", Config.stream_timeout)
-
-    def start_block(self):
-        if self.inhibitor is None:
-            self.inhibitor = _conntrack.Inhibitor(self.local[1])
-
-    def stop_block(self):
-        self.inhibitor = None
 
     def got_data(self, host, port, data):
         if not self.got_remote:
@@ -148,7 +139,6 @@ class MediaSubParty(object):
         if self.timer and self.timer.active():
             self.timer.cancel()
         self.timer = None
-        self.stop_block()
         self.listener.protocol.cb_func = None
         self.substream = None
 
@@ -203,10 +193,8 @@ class MediaSubStream(object):
     def reset(self, party):
         if party == "caller":
             self.caller.reset(True)
-            self.callee.start_block()
         else:
             self.callee.reset(True)
-            self.caller.start_block()
         self._stop_relaying()
 
     def check_create_conntrack(self):
@@ -216,8 +204,6 @@ class MediaSubStream(object):
         if self.caller.got_remote and self.callee.got_remote:
             self.forwarding_rule = _conntrack.ForwardingRule(self.caller.remote, self.caller.local, self.callee.remote, self.callee.local, self.stream.session.mark)
             self.forwarding_rule.expired_func = self.conntrack_expired
-            self.caller.stop_block()
-            self.callee.stop_block()
 
     def send_data(self, source, data):
         if source is self.caller:

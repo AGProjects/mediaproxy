@@ -63,14 +63,6 @@ typedef struct ExpireWatcher {
     struct nfct_handle *ct_handle;
 } ExpireWatcher;
 
-typedef struct Inhibitor {
-    PyObject_HEAD
-
-    int done_init;
-    struct ipt_entry *pre_entry;
-    struct ipt_entry *out_entry;
-} Inhibitor;
-
 
 static PyObject *Error;
 
@@ -161,6 +153,49 @@ ForwardingRule_dealloc(ForwardingRule *self)
 }
 
 
+static void
+create_inhibitor_rule(struct ipt_entry *entry, struct in_addr src_address, int src_port, struct in_addr dst_address, int dst_port)
+{
+    struct ipt_entry_match *match;
+    struct ipt_udp *match_udp;
+    struct ipt_entry_target *target;
+
+    memset(entry, 0, IPTC_FULL_SIZE);
+    entry->ip.proto = IPPROTO_UDP;
+    entry->ip.src = src_address;
+    memset(&entry->ip.smsk, 255, sizeof(struct in_addr));
+    entry->ip.dst = dst_address;
+    memset(&entry->ip.dmsk, 255, sizeof(struct in_addr));
+    entry->target_offset = IPTC_ENTRY_SIZE + IPTC_MATCH_SIZE;
+    entry->next_offset = IPTC_FULL_SIZE;
+    match = (void*) entry + IPTC_ENTRY_SIZE;
+    match->u.user.match_size = IPTC_MATCH_SIZE;
+    strcpy(match->u.user.name, "udp");
+    match_udp = (struct ipt_udp*) &match->data;
+    match_udp->spts[0] = match_udp->spts[1] = src_port;
+    match_udp->dpts[0] = match_udp->dpts[1] = dst_port;
+    target = (void*) match + IPTC_MATCH_SIZE;
+    target->u.user.target_size = IPTC_TARGET_SIZE;
+    strcpy(target->u.user.name, "NOTRACK");
+}
+
+
+static void
+remove_inhibitor_rules(struct ipt_entry *caller_inhibitor_entry, struct ipt_entry *callee_inhibitor_entry)
+{
+    iptc_handle_t ipt_handle;
+    unsigned char matchmask[IPTC_FULL_SIZE];
+
+    if ((ipt_handle = iptc_init("raw")) != NULL) {
+        memset(matchmask, 255, IPTC_FULL_SIZE);
+        iptc_delete_entry("PREROUTING", caller_inhibitor_entry, matchmask, &ipt_handle);
+        iptc_delete_entry("PREROUTING", callee_inhibitor_entry, matchmask, &ipt_handle);
+        if (!iptc_commit(&ipt_handle))
+            iptc_free(&ipt_handle);
+    }
+}
+
+
 static int
 ForwardingRule_init(ForwardingRule *self, PyObject *args, PyObject *kwds)
 {
@@ -169,6 +204,11 @@ ForwardingRule_init(ForwardingRule *self, PyObject *args, PyObject *kwds)
     int port[4], i, result;
     unsigned int timeout = DEFAULT_TIMEOUT, mark = 0;
     struct nfct_handle *ct_handle;
+    char caller_inhibitor_buf[IPTC_FULL_SIZE];
+    struct ipt_entry *caller_inhibitor_entry = (struct ipt_entry *) caller_inhibitor_buf;
+    char callee_inhibitor_buf[IPTC_FULL_SIZE];
+    struct ipt_entry *callee_inhibitor_entry = (struct ipt_entry *) callee_inhibitor_buf;
+    iptc_handle_t ipt_handle;
 
     if (self->done_init)
         return 0;
@@ -197,10 +237,37 @@ ForwardingRule_init(ForwardingRule *self, PyObject *args, PyObject *kwds)
         }
     }
 
+    create_inhibitor_rule(caller_inhibitor_entry, address[CALLER_REMOTE], port[CALLER_REMOTE], address[CALLER_LOCAL], port[CALLER_LOCAL]);
+    create_inhibitor_rule(callee_inhibitor_entry, address[CALLEE_REMOTE], port[CALLEE_REMOTE], address[CALLEE_LOCAL], port[CALLEE_LOCAL]);
+
+    if ((ipt_handle = iptc_init("raw")) == NULL) {
+        PyErr_SetString(Error, iptc_strerror(errno));
+        return -1;
+    }
+
+    if (!iptc_append_entry("PREROUTING", caller_inhibitor_entry, &ipt_handle)) {
+        iptc_free(&ipt_handle);
+        PyErr_SetString(Error, iptc_strerror(errno));
+        return -1;
+    }
+
+    if (!iptc_append_entry("PREROUTING", callee_inhibitor_entry, &ipt_handle)) {
+        iptc_free(&ipt_handle);
+        PyErr_SetString(Error, iptc_strerror(errno));
+        return -1;
+    }
+
+    if (!iptc_commit(&ipt_handle)) {
+        iptc_free(&ipt_handle);
+        PyErr_SetString(Error, iptc_strerror(errno));
+        return -1;
+    }
+
     Py_BEGIN_ALLOW_THREADS
     ct_handle = nfct_open(CONNTRACK, 0);
     Py_END_ALLOW_THREADS
     if (ct_handle == NULL) {
+        remove_inhibitor_rules(caller_inhibitor_entry, callee_inhibitor_entry);
         PyErr_SetString(Error, strerror(errno));
         return -1;
     }
@@ -235,9 +302,12 @@ ForwardingRule_init(ForwardingRule *self, PyObject *args, PyObject *kwds)
     Py_END_ALLOW_THREADS
 
     if (result < 0) {
+        remove_inhibitor_rules(caller_inhibitor_entry, callee_inhibitor_entry);
         PyErr_SetString(Error, strerror(errno));
         return -1;
     }
+
+    remove_inhibitor_rules(caller_inhibitor_entry, callee_inhibitor_entry);
 
     if (forwarding_rules != NULL) {
         self->next = forwarding_rules;
@@ -601,197 +671,6 @@ static PyTypeObject ExpireWatcher_Type = {
 };
 
 
-static PyObject*
-Inhibitor_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
-{
-    Inhibitor *self;
-
-    self = (Inhibitor*) type->tp_alloc(type, 0);
-    if (self != NULL) {
-        self->done_init = 0;
-        if ((self->pre_entry = malloc(IPTC_FULL_SIZE)) == NULL) {
-            Py_DECREF(self);
-            PyErr_NoMemory();
-            return NULL;
-        }
-        if ((self->out_entry = malloc(IPTC_FULL_SIZE)) == NULL) {
-            free(self->pre_entry);
-            Py_DECREF(self);
-            PyErr_NoMemory();
-            return NULL;
-        }
-    }
-
-    return (PyObject*) self;
-}
-
-
-static void
-Inhibitor_dealloc(Inhibitor *self)
-{
-    iptc_handle_t ct_handle;
-    unsigned char matchmask[IPTC_FULL_SIZE];
-
-    if (self->done_init)
-        if ((ct_handle = iptc_init("raw")) != NULL) {
-            memset(matchmask, 255, IPTC_FULL_SIZE);
-            // We release all rules to workaround stray rules that may remain in the raw table
-            // after the application crashes without a chance to clean up. This a just a hack
-            // that breaks the API symmetry and prevents multiple Inhibitors for the same ip
-            // and port to coexist (deleting one makes the others irelevant).
-            // A better solution would be to only delete the rule we added and do the cleanup
-            // when the application starts, or to make Inhibitor a singleton for a given ip
-            // and port.
-            // Either way, this hack currently works as we only need to create one Inhibitor
-            // for a given ip/port, but it still makes for a less elegant interface.
-            while(iptc_delete_entry("PREROUTING", self->pre_entry, matchmask, &ct_handle));
-            while(iptc_delete_entry("OUTPUT", self->out_entry, matchmask, &ct_handle));
-            if (!iptc_commit(&ct_handle))
-                iptc_free(&ct_handle);
-        }
-
-    free(self->pre_entry);
-    free(self->out_entry);
-    self->ob_type->tp_free((PyObject*)self);
-}
-
-
-static int
-Inhibitor_init(Inhibitor *self, PyObject *args, PyObject *kwds)
-{
-    struct in_addr address;
-    iptc_handle_t ct_handle;
-    struct ipt_entry_match *match;
-    struct ipt_udp *match_udp;
-    struct ipt_entry_target *target;
-    static char *keywords[] = {"port", "ip", NULL};
-    char *address_string = NULL;
-    int port;
-
-    if (self->done_init)
-        return 0;
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "i|s:Inhibitor", keywords, &port, &address_string))
-        return -1;
-
-    if (port < 0 || port > 65535) {
-        PyErr_SetString(PyExc_ValueError, "UDP port should be between 0 and 65535");
-        return -1;
-    }
-    if ((address_string != NULL) && !inet_aton(address_string, &address)) {
-        PyErr_Format(PyExc_ValueError, "Invalid IP address: %s", address_string);
-        return -1;
-    }
-
-    memset(self->pre_entry, 0, IPTC_FULL_SIZE);
-    self->pre_entry->ip.proto = IPPROTO_UDP;
-    if (address_string != NULL) {
-        self->pre_entry->ip.dst = address;
-        memset(&self->pre_entry->ip.dmsk, 255, sizeof(struct in_addr));
-    }
-    self->pre_entry->target_offset = IPTC_ENTRY_SIZE + IPTC_MATCH_SIZE;
-    self->pre_entry->next_offset = IPTC_FULL_SIZE;
-    match = (void*) self->pre_entry + IPTC_ENTRY_SIZE;
-    match->u.user.match_size = IPTC_MATCH_SIZE;
-    strcpy(match->u.user.name, "udp");
-    match_udp = (struct ipt_udp*) &match->data;
-    match_udp->spts[0] = 0;
-    match_udp->spts[1] = 65535;
-    match_udp->dpts[0] = match_udp->dpts[1] = port;
-    target = (void*) match + IPTC_MATCH_SIZE;
-    target->u.user.target_size = IPTC_TARGET_SIZE;
-    strcpy(target->u.user.name, "NOTRACK");
-
-    memset(self->out_entry, 0, IPTC_FULL_SIZE);
-    self->out_entry->ip.proto = IPPROTO_UDP;
-    if (address_string != NULL) {
-        self->out_entry->ip.src = address;
-        memset(&self->out_entry->ip.smsk, 255, sizeof(struct in_addr));
-    }
-    self->out_entry->target_offset = IPTC_ENTRY_SIZE + IPTC_MATCH_SIZE;
-    self->out_entry->next_offset = IPTC_FULL_SIZE;
-    match = (void*) self->out_entry + IPTC_ENTRY_SIZE;
-    match->u.user.match_size = IPTC_MATCH_SIZE;
-    strcpy(match->u.user.name, "udp");
-    match_udp = (struct ipt_udp*) &match->data;
-    match_udp->spts[0] = match_udp->spts[1] = port;
-    match_udp->dpts[0] = 0;
-    match_udp->dpts[1] = 65535;
-    target = (void*) match + IPTC_MATCH_SIZE;
-    target->u.user.target_size = IPTC_TARGET_SIZE;
-    strcpy(target->u.user.name, "NOTRACK");
-
-    if ((ct_handle = iptc_init("raw")) == NULL) {
-        PyErr_SetString(Error, iptc_strerror(errno));
-        return -1;
-    }
-
-    if (!iptc_append_entry("PREROUTING", self->pre_entry, &ct_handle)) {
-        iptc_free(&ct_handle);
-        PyErr_SetString(Error, iptc_strerror(errno));
-        return -1;
-    }
-
-    if (!iptc_append_entry("OUTPUT", self->out_entry, &ct_handle)) {
-        iptc_free(&ct_handle);
-        PyErr_SetString(Error, iptc_strerror(errno));
-        return -1;
-    }
-
-    if (!iptc_commit(&ct_handle)) {
-        iptc_free(&ct_handle);
-        PyErr_SetString(Error, iptc_strerror(errno));
-        return -1;
-    }
-
-    self->done_init = 1;
-    return 0;
-}
-
-
-static PyTypeObject Inhibitor_Type = {
-    PyObject_HEAD_INIT(NULL)
-    0,                                   /* ob_size */
-    "mediaproxy.interfaces.system._conntrack.Inhibitor", /* tp_name */
-    sizeof(Inhibitor),                   /* tp_basicsize */
-    0,                                   /* tp_itemsize */
-    (destructor) Inhibitor_dealloc,      /* tp_dealloc */
-    0,                                   /* tp_print */
-    0,                                   /* tp_getattr */
-    0,                                   /* tp_setattr */
-    0,                                   /* tp_compare */
-    0,                                   /* tp_repr */
-    0,                                   /* tp_as_number */
-    0,                                   /* tp_as_sequence */
-    0,                                   /* tp_as_mapping */
-    0,                                   /* tp_hash */
-    0,                                   /* tp_call */
-    0,                                   /* tp_str */
-    0,                                   /* tp_getattro */
-    0,                                   /* tp_setattro */
-    0,                                   /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
-    "Inhibit the connection tracking system for the given target", /* tp_doc */
-    0,                                   /* tp_traverse */
-    0,                                   /* tp_clear */
-    0,                                   /* tp_richcompare */
-    0,                                   /* tp_weaklistoffset */
-    0,                                   /* tp_iter */
-    0,                                   /* tp_iternext */
-    0,                                   /* tp_methods */
-    0,                                   /* tp_members */
-    0,                                   /* tp_getset */
-    0,                                   /* tp_base */
-    0,                                   /* tp_dict */
-    0,                                   /* tp_descr_get */
-    0,                                   /* tp_descr_set */
-    0,                                   /* tp_dictoffset */
-    (initproc) Inhibitor_init,           /* tp_init */
-    0,                                   /* tp_alloc */
-    Inhibitor_new,                       /* tp_new */
-};
-
-
 static PyMethodDef _conntrack_methods[] = {
     { NULL }  /* Sentinel */
 };
@@ -813,8 +692,6 @@ init_conntrack(void)
         return;
     if (PyType_Ready(&ExpireWatcher_Type) < 0)
         return;
-    if (PyType_Ready(&Inhibitor_Type) < 0)
-        return;
 
     module = Py_InitModule3("mediaproxy.interfaces.system._conntrack", _conntrack_methods, "Low level connection tracking manipulation for MediaProxy");
 
@@ -831,8 +708,6 @@ init_conntrack(void)
     PyModule_AddObject(module, "ForwardingRule", (PyObject*) &ForwardingRule_Type);
     Py_INCREF(&ExpireWatcher_Type);
     PyModule_AddObject(module, "ExpireWatcher", (PyObject*) &ExpireWatcher_Type);
-    Py_INCREF(&Inhibitor_Type);
-    PyModule_AddObject(module, "Inhibitor", (PyObject*) &Inhibitor_Type);
 
     // Module version (the MODULE_VERSION macro is defined by setup.py)
     PyModule_AddStringConstant(module, "__version__", string(MODULE_VERSION));
