@@ -66,7 +66,7 @@ typedef struct ExpireWatcher {
 
 static PyObject *Error;
 
-static ForwardingRule *forwarding_rules = NULL;
+static ForwardingRule *forwarding_rules[65536];
 
 
 static int
@@ -131,12 +131,7 @@ ForwardingRule_dealloc(ForwardingRule *self)
     struct nfct_handle *ct_handle;
 
     if (self->is_active) {
-        if (self->prev == NULL)
-            forwarding_rules = self->next;
-        else
-            self->prev->next = self->next;
-        if (self->next != NULL)
-            self->next->prev = self->prev;
+        forwarding_rules[ntohs(nfct_get_attr_u16(self->conntrack, ATTR_ORIG_PORT_DST))] = NULL;
 
         Py_BEGIN_ALLOW_THREADS
         ct_handle = nfct_open(CONNTRACK, 0);
@@ -309,11 +304,7 @@ ForwardingRule_init(ForwardingRule *self, PyObject *args, PyObject *kwds)
 
     remove_inhibitor_rules(caller_inhibitor_entry, callee_inhibitor_entry);
 
-    if (forwarding_rules != NULL) {
-        self->next = forwarding_rules;
-        forwarding_rules->prev = self;
-    }
-    forwarding_rules = self;
+    forwarding_rules[port[CALLER_LOCAL]] = self;
     self->is_active = 1;
     self->done_init = 1;
     return 0;
@@ -550,7 +541,7 @@ ExpireWatcher_read(ExpireWatcher *self)
 {
     struct nf_conntrack *conntrack;
     ForwardingRule *rule;
-    PyObject *retval;
+    PyObject *retval = Py_None;
     int result, i;
 
     if (nfct_callback_register(self->ct_handle, NFCT_T_ALL, conntrack_callback, &conntrack)) {
@@ -580,27 +571,20 @@ ExpireWatcher_read(ExpireWatcher *self)
         return Py_None;
     }
 
-    for (rule=forwarding_rules, retval=Py_None; rule!=NULL; rule=rule->next) {
-        if (nfct_get_attr_u32(rule->conntrack, ATTR_ORIG_IPV4_SRC) != nfct_get_attr_u32(conntrack, ATTR_ORIG_IPV4_SRC) ||
-            nfct_get_attr_u16(rule->conntrack, ATTR_ORIG_PORT_SRC) != nfct_get_attr_u16(conntrack, ATTR_ORIG_PORT_SRC) ||
-            nfct_get_attr_u32(rule->conntrack, ATTR_DNAT_IPV4) != nfct_get_attr_u32(conntrack, ATTR_REPL_IPV4_SRC) ||
-            nfct_get_attr_u16(rule->conntrack, ATTR_DNAT_PORT) != nfct_get_attr_u16(conntrack, ATTR_REPL_PORT_SRC))
-            continue;
+    if ((rule = forwarding_rules[ntohs(nfct_get_attr_u16(conntrack, ATTR_ORIG_PORT_DST))]) != NULL)
+        if (nfct_get_attr_u32(rule->conntrack, ATTR_ORIG_IPV4_SRC) == nfct_get_attr_u32(conntrack, ATTR_ORIG_IPV4_SRC) &&
+            nfct_get_attr_u16(rule->conntrack, ATTR_ORIG_PORT_SRC) == nfct_get_attr_u16(conntrack, ATTR_ORIG_PORT_SRC) &&
+            nfct_get_attr_u32(rule->conntrack, ATTR_DNAT_IPV4) == nfct_get_attr_u32(conntrack, ATTR_REPL_IPV4_SRC) &&
+            nfct_get_attr_u16(rule->conntrack, ATTR_DNAT_PORT) == nfct_get_attr_u16(conntrack, ATTR_REPL_PORT_SRC)) {
 
-        // we found a conntrack rule that matches
-        rule->is_active = 0;
-        if (rule->prev == NULL)
-            forwarding_rules = rule->next;
-        else
-            rule->prev->next = rule->next;
-        if (rule->next != NULL)
-            rule->next->prev = rule->prev;
-        for (i = 1; i < 5; i++)
-            rule->counter[ForwardingRule_get_attr_types[i].counter_index] = nfct_get_attr_u32(conntrack, ForwardingRule_get_attr_types[i].type);
+            /* we found a conntrack rule that matches */
+            forwarding_rules[ntohs(nfct_get_attr_u16(conntrack, ATTR_ORIG_PORT_DST))] = NULL;
+            rule->is_active = 0;
+            for (i = 1; i < 5; i++)
+                rule->counter[ForwardingRule_get_attr_types[i].counter_index] = nfct_get_attr_u32(conntrack, ForwardingRule_get_attr_types[i].type);
 
-        retval = (PyObject*) rule;
-        break;
-    }
+            retval = (PyObject*) rule;
+        }
 
     nfct_destroy(conntrack);
 
@@ -687,6 +671,8 @@ init_conntrack(void)
         return;
     }
     iptc_free(&handle);
+
+    memset(forwarding_rules, 0, sizeof(ForwardingRule *) * 65536);
 
     if (PyType_Ready(&ForwardingRule_Type) < 0)
         return;
