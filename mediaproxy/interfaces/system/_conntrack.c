@@ -149,7 +149,7 @@ ForwardingRule_dealloc(ForwardingRule *self)
 
 
 static void
-create_inhibitor_rule(struct ipt_entry *entry, struct in_addr src_address, int src_port, struct in_addr dst_address, int dst_port)
+init_inhibitor_rule(struct ipt_entry *entry, struct in_addr src_address, int src_port, struct in_addr dst_address, int dst_port)
 {
     struct ipt_entry_match *match;
     struct ipt_udp *match_udp;
@@ -232,8 +232,8 @@ ForwardingRule_init(ForwardingRule *self, PyObject *args, PyObject *kwds)
         }
     }
 
-    create_inhibitor_rule(caller_inhibitor_entry, address[CALLER_REMOTE], port[CALLER_REMOTE], address[CALLER_LOCAL], port[CALLER_LOCAL]);
-    create_inhibitor_rule(callee_inhibitor_entry, address[CALLEE_REMOTE], port[CALLEE_REMOTE], address[CALLEE_LOCAL], port[CALLEE_LOCAL]);
+    init_inhibitor_rule(caller_inhibitor_entry, address[CALLER_REMOTE], port[CALLER_REMOTE], address[CALLER_LOCAL], port[CALLER_LOCAL]);
+    init_inhibitor_rule(callee_inhibitor_entry, address[CALLEE_REMOTE], port[CALLEE_REMOTE], address[CALLEE_LOCAL], port[CALLEE_LOCAL]);
 
     if ((ipt_handle = iptc_init("raw")) == NULL) {
         PyErr_SetString(Error, iptc_strerror(errno));
