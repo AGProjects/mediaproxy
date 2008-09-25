@@ -115,8 +115,10 @@ remove_inhibitor_rules(struct ipt_entry *caller_inhibitor_entry, struct ipt_entr
 
     if ((ipt_handle = iptc_init("raw")) != NULL) {
         memset(matchmask, 255, IPTC_FULL_SIZE);
-        iptc_delete_entry("PREROUTING", caller_inhibitor_entry, matchmask, &ipt_handle);
-        iptc_delete_entry("PREROUTING", callee_inhibitor_entry, matchmask, &ipt_handle);
+        // We release all rules to workaround stray rules that may remain in the
+        // raw table after the application crashes without a chance to clean up.
+        while(iptc_delete_entry("PREROUTING", caller_inhibitor_entry, matchmask, &ipt_handle));
+        while(iptc_delete_entry("PREROUTING", callee_inhibitor_entry, matchmask, &ipt_handle));
         if (!iptc_commit(&ipt_handle))
             iptc_free(&ipt_handle);
     }
