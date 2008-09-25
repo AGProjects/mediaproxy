@@ -69,6 +69,7 @@ static PyObject *Error;
 static ForwardingRule *forwarding_rules[65536];
 
 
+
 static int
 conntrack_callback(enum nf_conntrack_msg_type type, struct nf_conntrack *ct, void *data)
 {
@@ -77,6 +78,50 @@ conntrack_callback(enum nf_conntrack_msg_type type, struct nf_conntrack *ct, voi
     *found_conntrack = nfct_clone(ct);
     return NFCT_CB_STOP;
 }
+
+
+static void
+init_inhibitor_rule(struct ipt_entry *entry, struct in_addr src_address, int src_port, struct in_addr dst_address, int dst_port)
+{
+    struct ipt_entry_match *match;
+    struct ipt_udp *match_udp;
+    struct ipt_entry_target *target;
+
+    memset(entry, 0, IPTC_FULL_SIZE);
+    entry->ip.proto = IPPROTO_UDP;
+    entry->ip.src = src_address;
+    memset(&entry->ip.smsk, 255, sizeof(struct in_addr));
+    entry->ip.dst = dst_address;
+    memset(&entry->ip.dmsk, 255, sizeof(struct in_addr));
+    entry->target_offset = IPTC_ENTRY_SIZE + IPTC_MATCH_SIZE;
+    entry->next_offset = IPTC_FULL_SIZE;
+    match = (void*) entry + IPTC_ENTRY_SIZE;
+    match->u.user.match_size = IPTC_MATCH_SIZE;
+    strcpy(match->u.user.name, "udp");
+    match_udp = (struct ipt_udp*) &match->data;
+    match_udp->spts[0] = match_udp->spts[1] = src_port;
+    match_udp->dpts[0] = match_udp->dpts[1] = dst_port;
+    target = (void*) match + IPTC_MATCH_SIZE;
+    target->u.user.target_size = IPTC_TARGET_SIZE;
+    strcpy(target->u.user.name, "NOTRACK");
+}
+
+
+static void
+remove_inhibitor_rules(struct ipt_entry *caller_inhibitor_entry, struct ipt_entry *callee_inhibitor_entry)
+{
+    iptc_handle_t ipt_handle;
+    unsigned char matchmask[IPTC_FULL_SIZE];
+
+    if ((ipt_handle = iptc_init("raw")) != NULL) {
+        memset(matchmask, 255, IPTC_FULL_SIZE);
+        iptc_delete_entry("PREROUTING", caller_inhibitor_entry, matchmask, &ipt_handle);
+        iptc_delete_entry("PREROUTING", callee_inhibitor_entry, matchmask, &ipt_handle);
+        if (!iptc_commit(&ipt_handle))
+            iptc_free(&ipt_handle);
+    }
+}
+
 
 
 static int
@@ -145,49 +190,6 @@ ForwardingRule_dealloc(ForwardingRule *self)
     ForwardingRule_clear(self);
     nfct_destroy(self->conntrack);
     self->ob_type->tp_free((PyObject*)self);
-}
-
-
-static void
-init_inhibitor_rule(struct ipt_entry *entry, struct in_addr src_address, int src_port, struct in_addr dst_address, int dst_port)
-{
-    struct ipt_entry_match *match;
-    struct ipt_udp *match_udp;
-    struct ipt_entry_target *target;
-
-    memset(entry, 0, IPTC_FULL_SIZE);
-    entry->ip.proto = IPPROTO_UDP;
-    entry->ip.src = src_address;
-    memset(&entry->ip.smsk, 255, sizeof(struct in_addr));
-    entry->ip.dst = dst_address;
-    memset(&entry->ip.dmsk, 255, sizeof(struct in_addr));
-    entry->target_offset = IPTC_ENTRY_SIZE + IPTC_MATCH_SIZE;
-    entry->next_offset = IPTC_FULL_SIZE;
-    match = (void*) entry + IPTC_ENTRY_SIZE;
-    match->u.user.match_size = IPTC_MATCH_SIZE;
-    strcpy(match->u.user.name, "udp");
-    match_udp = (struct ipt_udp*) &match->data;
-    match_udp->spts[0] = match_udp->spts[1] = src_port;
-    match_udp->dpts[0] = match_udp->dpts[1] = dst_port;
-    target = (void*) match + IPTC_MATCH_SIZE;
-    target->u.user.target_size = IPTC_TARGET_SIZE;
-    strcpy(target->u.user.name, "NOTRACK");
-}
-
-
-static void
-remove_inhibitor_rules(struct ipt_entry *caller_inhibitor_entry, struct ipt_entry *callee_inhibitor_entry)
-{
-    iptc_handle_t ipt_handle;
-    unsigned char matchmask[IPTC_FULL_SIZE];
-
-    if ((ipt_handle = iptc_init("raw")) != NULL) {
-        memset(matchmask, 255, IPTC_FULL_SIZE);
-        iptc_delete_entry("PREROUTING", caller_inhibitor_entry, matchmask, &ipt_handle);
-        iptc_delete_entry("PREROUTING", callee_inhibitor_entry, matchmask, &ipt_handle);
-        if (!iptc_commit(&ipt_handle))
-            iptc_free(&ipt_handle);
-    }
 }
 
 
