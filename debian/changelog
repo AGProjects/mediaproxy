@@ -1,3 +1,16 @@
+mediaproxy (2.2.0) unstable; urgency=low
+
+  * Clarified debian installation example regarding the testing distribution
+  * Fixed wording and some typos in the documentation
+  * Fixed to_tag not being sent in some cases in synthetic tests
+  * Removed Inhibitor object and integrated its functionality into the init
+    method of ForwardingRule, to improve the session setup efficiency
+  * Changed the internal ForwardingRule linked list to a static array
+  * Improved the session setup efficiency by 2 orders of magnitude
+  * Removed start_time column from database accounting table
+
+ -- Dan Pascu <dan@ag-projects.com>  Fri, 26 Sep 2008 20:59:29 +0300
+
 mediaproxy (2.1.0) unstable; urgency=low
 
   * Mention libnetfilter-conntrack in the installation requirements section
