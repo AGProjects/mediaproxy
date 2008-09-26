@@ -231,7 +231,7 @@ were created/closed during the whole session. This information is stored as a
 JSON encoded string in a BLOB column in the database, along with the call_id,
 from_tag, to_tag and start_time columns that can be used to retrieve the media
 information for a given call. The database table name and column names are
-fully configurable in the configuration file, in the database section.
+fully configurable in the database section of the configuration file.
 
 The table used to store these records, is automatically created by the media
 dispatcher on startup, if it's not present. For this to happen, the user that
