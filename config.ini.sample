@@ -158,12 +158,10 @@
 ; Name for the table.
 ;sessions_table = media_sessions
 
-; Name for the columns. start_time is a datetime column and info is a blob.
-; the other columns are strings
+; Column names. Columns are strings except for info which is a BLOB
 ;callid_column = call_id
 ;fromtag_column = from_tag
 ;totag_column = to_tag
-;start_time_column = start_time
 ;info_column = info
 
 [Radius]

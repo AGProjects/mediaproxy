@@ -4,7 +4,6 @@
 
 """Implementation of database accounting"""
 
-from datetime import datetime
 import cjson
 
 from application import log
@@ -13,10 +12,11 @@ from application.python.queue import EventQueue
 from application.configuration import *
 
 from sqlobject import SQLObject, connectionForURI, sqlhub
-from sqlobject import StringCol, BLOBCol, DateTimeCol, DatabaseIndex
+from sqlobject import StringCol, BLOBCol, DatabaseIndex
 from sqlobject.dberrors import *
 
 from mediaproxy import configuration_filename
+
 
 class Config(ConfigSection):
     dburi = "mysql://mediaproxy:CHANGEME@localhost/mediaproxy"
@@ -24,7 +24,6 @@ class Config(ConfigSection):
     callid_column = "call_id"
     fromtag_column = "from_tag"
     totag_column = "to_tag"
-    start_time_column = "start_time"
     info_column = "info"
 
 configuration = ConfigFile(configuration_filename)
@@ -43,11 +42,9 @@ class MediaSessions(SQLObject):
     call_id = StringCol(length=255, dbName=Config.callid_column, notNone=True)
     from_tag = StringCol(length=64, dbName=Config.fromtag_column, notNone=True)
     to_tag = StringCol(length=64, dbName=Config.totag_column, notNone=True)
-    start_time = DateTimeCol(dbName=Config.start_time_column)
     info = BLOBCol(length=65535, dbName=Config.info_column)
     ## Indexes
     callid_idx = DatabaseIndex('call_id', 'from_tag', 'to_tag', unique=True)
-    start_time_idx = DatabaseIndex('start_time')
 
 
 try:
@@ -87,12 +84,8 @@ class DatabaseAccounting(EventQueue):
 
     def do_accounting(self, stats):
         sqlrepr = connection.sqlrepr
-        if stats["start_time"] is not None:
-            start_time = datetime.fromtimestamp(stats["start_time"])
-        else:
-            start_time = None
-        names  = ', '.join([Config.callid_column, Config.fromtag_column, Config.totag_column, Config.start_time_column, Config.info_column])
-        values = ', '.join((sqlrepr(v) for v in [stats["call_id"], stats["from_tag"], stats["to_tag"], start_time, cjson.encode(stats)]))
+        names  = ', '.join([Config.callid_column, Config.fromtag_column, Config.totag_column, Config.info_column])
+        values = ', '.join((sqlrepr(v) for v in [stats["call_id"], stats["from_tag"], stats["to_tag"], cjson.encode(stats)]))
         q = """INSERT INTO %s (%s) VALUES (%s)""" % (Config.sessions_table, names, values)
         try:
             connection.query(q)
