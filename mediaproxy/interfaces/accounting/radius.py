@@ -94,6 +94,8 @@ class RadiusAccounting(EventQueue, pyrad.client.Client):
         pyrad.client.Client.__init__(self, server, 1812, acctport, secret, raddict)
         self.timeout = timeout
         self.retries = retries
+        if "bindaddr" in config and config["bindaddr"] != "*":
+            self.bind((config["bindaddr"], 0))
         EventQueue.__init__(self, self.do_accounting)
 
     def do_accounting(self, stats):
