@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from distutils.core import setup, Extension
+from distutils.core import setup as _setup, Extension
 import sys
 import re
 
@@ -9,6 +9,16 @@ import mediaproxy
 # Get the title and description from README
 readme = open('README').read()
 title, description = re.findall(r'^\s*([^\n]+)\s+(.*)$', readme, re.DOTALL)[0]
+
+
+def setup(*args, **kwargs):
+    """Mangle setup to ignore media-relay on non-linux platforms"""
+    if sys.platform != 'linux2':
+        print "WARNING: skipping the media relay component as this is a non-linux platform"
+        kwargs.pop('ext_modules', None)
+        kwargs['scripts'].remove('media-relay')
+    _setup(*args, **kwargs)
+
 
 setup(name         = "mediaproxy",
       version      = mediaproxy.__version__,
