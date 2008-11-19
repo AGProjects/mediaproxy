@@ -19,7 +19,7 @@ from mediaproxy import configuration_filename
 
 
 class Config(ConfigSection):
-    dburi = "mysql://mediaproxy:CHANGEME@localhost/mediaproxy"
+    dburi = ""
     sessions_table = "media_sessions"
     callid_column = "call_id"
     fromtag_column = "from_tag"
@@ -29,6 +29,8 @@ class Config(ConfigSection):
 configuration = ConfigFile(configuration_filename)
 configuration.read_settings("Database", Config)
 
+if not Config.dburi:
+    raise RuntimeError("Database accounting is enabled, but the database URI is not specified in config.ini")
 
 connection = connectionForURI(Config.dburi)
 sqlhub.processConnection = connection
