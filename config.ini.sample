@@ -100,8 +100,12 @@
 ; port of 25061.
 ;listen_management = 0.0.0.0
 
-; Whether or not to use TLS on the management interface. Note that the TLS
-; credentials for the relay connections will be re-used for this connection.
+; Whether or not to use TLS on the management interface. Note that the same
+; TLS credentials are used for both the relay and the management interface
+; connections.
+;
+; Default value is yes.
+;
 ;management_use_tls = yes
 
 ; Specify extra checks to be performed on the relay TLS credentials before
