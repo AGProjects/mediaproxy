@@ -54,7 +54,7 @@ class AccountingModuleList(datatypes.StringList):
 
 class Config(ConfigSection):
     _datatypes = {'listen': DispatcherAddress, 'listen_management': DispatcherManagementAddress, 'management_use_tls': datatypes.Boolean,
-                  'accounting': AccountingModuleList, 'passport': X509NameValidator}
+                  'accounting': AccountingModuleList, 'passport': X509NameValidator, 'management_passport': X509NameValidator}
     socket_path = "dispatcher.sock"
     listen = DispatcherAddress("any")
     listen_management = DispatcherManagementAddress("any")
@@ -63,6 +63,7 @@ class Config(ConfigSection):
     management_use_tls = True
     accounting = []
     passport = None
+    management_passport = None
 
 
 configuration = ConfigFile(configuration_filename)
@@ -125,6 +126,13 @@ class OpenSIPSControlProtocol(ControlProtocol):
 
 class ManagementControlProtocol(ControlProtocol):
     description = "Management interface client"
+
+    def connectionMade(self):
+        if Config.management_use_tls and Config.management_passport is not None:
+            peer_cert = self.transport.getPeerCertificate()
+            if not Config.management_passport.accept(peer_cert):
+                self.transport.loseConnection(CertificateSecurityError('peer certificate not accepted'))
+                return
 
     def lineReceived(self, line):
         if line in ["quit", "exit"]:

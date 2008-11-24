@@ -145,6 +145,18 @@
 ;
 ;passport = None
 
+; This option is similar to passport above, but applies to the management
+; interface connections instead of relay connections. It specifies extra
+; checks to be performed on the TLS credentials suplied by an entity that
+; connects to the management interface. Please consult passport above for
+; a detailed description of the possible values for this option.
+;
+; If management_use_tls is false, this option is ignored.
+;
+; Default value is None.
+;
+;management_passport = None
+
 ; Timeout value in second for individual relays. When a command is sent from
 ; the dispatcher to a relay it will wait this amount of seconds for a reply.
 ; The default is 5 seconds.
