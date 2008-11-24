@@ -539,9 +539,9 @@ class Session(object):
                     else:
                         stream_info["end_time"] = min(int(stream.end_time - self.start_time), stats["duration"])
             if stream.first_media_time is None:
-                stream_info["pdd"] = None
+                stream_info["post_dial_delay"] = None
             else:
-                stream_info["pdd"] = stream.first_media_time - stream.create_time
+                stream_info["post_dial_delay"] = stream.first_media_time - stream.create_time
             stream_info["media_type"] = stream.media_type
             stream_info["caller_codec"] = stream.rtp.caller.codec
             stream_info["callee_codec"] = stream.rtp.callee.codec
