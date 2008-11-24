@@ -12,6 +12,7 @@
 ;  - An IP address. The relay will connect directly to this address.
 ;  Both the SRV and hostname lookups will be periodically refreshed (see
 ;  "dns_check_interval" below).
+;
 ;dispatchers = example.com 1.2.3.4:12345
 
 ; Specify extra checks to be performed on the dispatcher TLS credentials before
@@ -33,7 +34,10 @@
 ; identity checks need to be performed, use the keyword None. If passport
 ; is None, then only the certificate signature is verified agains the
 ; certificate authority in tls/ca.pem (signature is always verified even
-; when passport is None). Default value is None.
+; when passport is None).
+;
+; Default value is None.
+;
 ;passport = None
 
 ; The host IP address used for relaying streams. The default for this value
@@ -48,6 +52,7 @@
 ; The default range is 50000:60000. You should allocate 4 times the number of
 ; streams you plan for the relay to handle simultaneously. The default range
 ; having 10000 ports, is able to handle up to 2500 streams.
+;
 ;port_range = 50000:60000
 
 ; The amount of time to wait for a stream in a new SDP offer to start sending
@@ -58,18 +63,22 @@
 ; conntrack rule expires when no traffic is received) is controlled by a kernel
 ; setting that defaults to 180 seconds and can be adjusted in:
 ;     /proc/sys/net/ipv4/netfilter/ip_conntrack_udp_timeout_stream
+;
 ;stream_timeout = 90
 
 ; Amount of time a call can be on hold before it is declared expired by the
-; relay. The default is 7200 seconds (2 hours).
+; relay. The default value is 7200 seconds (2 hours).
+;
 ;on_hold_timeout = 7200
 
 ; How often to check in DNS if the SRV and A records for the dispatcher have
-; changed. Interval is in seconds and default value is 60 seconds.
+; changed. Interval is in seconds and the default value is 60 seconds.
+;
 ;dns_check_interval = 60
 
 ; If the relay cannot connect to a dispatcher is should retry after this
 ; amount of seconds. The default value is 10 seconds.
+;
 ;reconnect_delay = 10
 
 ; How often to sample the aggregate ammount of data processed by the relay, in
@@ -77,6 +86,7 @@
 ; value is expressed in seconds and the default value is 15 seconds.
 ; Use 0 to disable it in case you have to many streams processed by the relay
 ; and it warns you in syslog that gathering this information takes too long.
+;
 ;traffic_sampling_period = 15
 
 
@@ -84,12 +94,14 @@
 ; Local socket on which to communicate with OpenSIPS. The OpenSIPS mediaproxy
 ; module should be configured to connect to this socket. If a relative path,
 ; /var/run/mediaproxy will be prepended. Default value is dispatcher.sock.
+;
 ;socket_path = dispatcher.sock
 
 ; Listen address for incoming connections from the relays. The format is
 ; "ip[:port]". If the ip is "0.0.0.0" or the keyword "any", the dispatcher
 ; will listen on all interfaces of this host. If the port is not specified,
 ; the dispatcher will listen on the default port of 25060.
+;
 ;listen = 0.0.0.0
 
 ; Listen address for incoming management interface connections. Clients can
@@ -98,6 +110,7 @@
 ; keyword "any", the dispatcher will listen on all interfaces of this host.
 ; If the port is not specified, the dispatcher will listen on the default
 ; port of 25061.
+;
 ;listen_management = 0.0.0.0
 
 ; Whether or not to use TLS on the management interface. Note that the same
@@ -127,12 +140,15 @@
 ; need to be performed, use the keyword None. If passport is None, then only
 ; the certificate signature is verified agains the certificate authority in
 ; tls/ca.pem (signature is always verified even when passport is None).
+;
 ; Default value is None.
+;
 ;passport = None
 
 ; Timeout value in second for individual relays. When a command is sent from
 ; the dispatcher to a relay it will wait this amount of seconds for a reply.
 ; The default is 5 seconds.
+;
 ;relay_timeout = 5
 
 ; A comma separated list of accounting backends that will be used to save
@@ -140,16 +156,19 @@
 ; Currently 2 backends are available: "radius" and "database". If enabled
 ; they can be configured below in their respective sections. The default
 ; is to use no accounting backend.
+;
 ;accounting =
 
 [TLS]
 ; Path to the certificates. If relative, it will be looked up in both the
 ; application directory (for a standalone installation) and /etc/mediaproxy,
 ; the former taking precedence if found.
+;
 ;certs_path = tls
 
 ; How often (in seconds) to verify the peer certificate for expiration and
 ; revocation. Default value is 300 seconds (5 minutes)
+;
 ;verify_interval = 300
 
 
@@ -163,6 +182,7 @@
 ;sessions_table = media_sessions
 
 ; Column names. Columns are strings except for info which is a BLOB
+;
 ;callid_column = call_id
 ;fromtag_column = from_tag
 ;totag_column = to_tag
@@ -173,6 +193,7 @@
 
 ; OpenSIPS RADIUS configuration file. All RADIUS cofiguration parameters will
 ; be read from this file, including dictionary files.
+;
 ;config_file = /etc/opensips/radius/client.conf
 
 ; Additional dictionary file with MediaProxy specific attributes.
@@ -187,5 +208,6 @@
 ; Maximum number of connections to open with OpenSIPS' mi_datagram socket.
 ; Please note that connections will be opened on a need basis depending on
 ; load, but never more than the number configured below.
+;
 ;max_connections = 10
 
