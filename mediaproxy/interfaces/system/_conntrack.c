@@ -365,7 +365,6 @@ ForwardingRule_get_attr(ForwardingRule *self, void *closure)
             return NULL;
         attr = nfct_get_attr_u32(conntrack, type->type);
         nfct_destroy(conntrack);
-        return Py_BuildValue("I", attr);
     } else {
         attr = (type->counter_index>=0 ? self->counter[type->counter_index] : 0);
     }
