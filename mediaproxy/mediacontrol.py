@@ -572,7 +572,7 @@ class SessionManager(Logger):
     def _measure_speed(self):
         start_time = time()
         total_bytes = 0
-        new_totals = dict((call_id, sum(sum(getattr(getattr(stream, substream), party) for party in ["caller_bytes", "callee_bytes"] for substream in ["rtp", "rtcp"]) for stream in set(sum(session.streams.values(), [])))) for call_id, session in self.sessions.iteritems())
+        new_totals = dict((call_id, sum(sum(getattr(getattr(stream, substream), party) for party in ["caller_bytes", "callee_bytes"] for substream in ["rtp", "rtcp"]) for stream in set(chain(*session.streams.itervalues())))) for call_id, session in self.sessions.iteritems())
         for key, total in new_totals.iteritems():
             total_bytes += total - self.totals.get(key, 0)
         self.bps_relayed = 8 * total_bytes / Config.traffic_sampling_period
@@ -676,7 +676,7 @@ class SessionManager(Logger):
     def get_stream_count(self):
         stream_count = {}
         for session in self.sessions.itervalues():
-            for stream in set(sum(session.streams.values(), [])):
+            for stream in set(chain(*session.streams.itervalues())):
                 if stream.is_alive:
                     stream_count[stream.media_type] = stream_count.get(stream.media_type, 0) + 1
         return stream_count
