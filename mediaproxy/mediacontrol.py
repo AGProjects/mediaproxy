@@ -335,7 +335,7 @@ class MediaStream(object):
         getattr(self, party).remote_sdp = (media_ip, media_port)
 
     def substream_expired(self, substream, reason, timeout_wait):
-        # This will cause any re-occuronce of the same traffic to be forwarded again
+        # This will cause any re-occurence of the same traffic to be forwarded again
         if substream is self.rtcp:
             substream.caller.reset(False)
             substream.callee.reset(False)
