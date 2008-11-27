@@ -80,9 +80,7 @@ class MediaSubParty(object):
         host = self.listener.protocol.transport.getHost()
         self.local = (host.host, host.port)
         self.bytes = 0
-        self.bytes_rtcp = 0
         self.packets = 0
-        self.packets_rtcp = 0
         self.timer = None
         self.codec = "Unknown"
         self.reset(True)
