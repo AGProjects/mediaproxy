@@ -4,6 +4,8 @@
 
 from time import time
 from collections import deque
+from operator import attrgetter
+from itertools import chain
 
 from zope.interface import implements
 from twisted.internet import reactor
@@ -481,13 +483,6 @@ class Session(object):
                 for stream in self.streams[cseq]:
                     stream.cleanup()
 
-    def get_totals(self, party, stat_type):
-        retval = {}
-        var_name = "%s_%s" % (party, stat_type)
-        for stream in set(sum(self.streams.values(), [])):
-            retval[stream.media_type] = retval.get(stream.media_type, 0) + getattr(stream.rtp, var_name) + getattr(stream.rtcp, var_name)
-        return retval
-
     def stream_expired(self, stream):
         active_streams = set()
         for cseq in [self.previous_cseq, self.cseq]:
@@ -508,53 +503,54 @@ class Session(object):
 
     @property
     def statistics(self):
-        stats = {}
-        for party in ["caller", "callee"]:
-            for stat_type in ["bytes", "packets"]:
-                stats["%s_%s" % (party, stat_type)] = self.get_totals(party, stat_type)
-        for attr in ["call_id", "from_tag", "from_uri", "to_tag", "to_uri", "duration", "start_time"]:
-            stats[attr] = getattr(self, attr)
-        for attr in ["caller_ua", "callee_ua"]:
-            ua = getattr(self, attr)
-            if ua is None:
-                stats[attr] = "Unknown"
-            else:
-                stats[attr] = ua
-        streams = stats["streams"] = []
-        for stream in sorted(set(sum(self.streams.values(), [])), key=lambda x: getattr(x, "start_time")):
-            stream_info = {}
+        all_streams = set(chain(*self.streams.itervalues()))
+        media_types = set(s.media_type for s in all_streams)
+        attributes = ('call_id', 'from_tag', 'from_uri', 'to_tag', 'to_uri', 'start_time', 'duration')
+        stats = dict((name, getattr(self, name)) for name in attributes)
+        stats['caller_ua'] = self.caller_ua or 'Unknown'
+        stats['callee_ua'] = self.callee_ua or 'Unknown'
+        stats['caller_bytes'] = dict((t, 0) for t in media_types)
+        stats['callee_bytes'] = dict((t, 0) for t in media_types)
+        stats['caller_packets'] = dict((t, 0) for t in media_types)
+        stats['callee_packets'] = dict((t, 0) for t in media_types)
+        stats['streams'] = streams = []
+        stream_attributes = ('media_type', 'status', 'timeout_wait')
+        for stream in sorted(all_streams, key=attrgetter('start_time')):
+            info = dict((name, getattr(stream, name)) for name in stream_attributes)
+            info['caller_codec'] = stream.rtp.caller.codec
+            info['callee_codec'] = stream.rtp.callee.codec
             if stream.start_time is None:
-                stream_info["start_time"] = stream_info["end_time"] = None
+                info['start_time'] = info['end_time'] = None
             elif self.start_time is None:
-                stream_info["start_time"] = stream_info["end_time"] = 0
+                info['start_time'] = info['end_time'] = 0
             else:
-                stream_info["start_time"] = max(int(stream.start_time - self.start_time), 0)
-                if stream.status == "rejected":
-                    stream_info["end_time"] = stream_info["start_time"]
+                info['start_time'] = max(int(stream.start_time - self.start_time), 0)
+                if stream.status == 'rejected':
+                    info['end_time'] = info['start_time']
                 else:
                     if stream.end_time is None:
-                        stream_info["end_time"] = stats["duration"]
+                        info['end_time'] = stats['duration']
                     else:
-                        stream_info["end_time"] = min(int(stream.end_time - self.start_time), stats["duration"])
+                        info['end_time'] = min(int(stream.end_time - self.start_time), self.duration)
             if stream.first_media_time is None:
-                stream_info["post_dial_delay"] = None
+                info['post_dial_delay'] = None
             else:
-                stream_info["post_dial_delay"] = stream.first_media_time - stream.create_time
-            stream_info["media_type"] = stream.media_type
-            stream_info["caller_codec"] = stream.rtp.caller.codec
-            stream_info["callee_codec"] = stream.rtp.callee.codec
-            stream_info["status"] = stream.status
-            stream_info["timeout_wait"] = stream.timeout_wait
-            for party in ["caller", "callee"]:
-                subparty = getattr(stream.rtp, party)
-                stream_info["%s_local" % party] = "%s:%d" % subparty.local
-                if subparty.got_remote:
-                    stream_info["%s_remote" % party] = "%s:%d" % subparty.remote
-                else:
-                    stream_info["%s_remote" % party] = "Unknown"
-                bytes_var = "%s_bytes" % party
-                stream_info[bytes_var] = getattr(stream.rtp, bytes_var)
-            streams.append(stream_info)
+                info['post_dial_delay'] = stream.first_media_time - stream.create_time
+            caller = stream.rtp.caller
+            callee = stream.rtp.callee
+            info['caller_local'] = '%s:%d' % caller.local
+            info['callee_local'] = '%s:%d' % callee.local
+            info['caller_remote'] = caller.got_remote and ('%s:%d' % caller.remote) or 'Unknown'
+            info['callee_remote'] = callee.got_remote and ('%s:%d' % callee.remote) or 'Unknown'
+            info['caller_bytes'] = stream.rtp.caller_bytes + stream.rtcp.caller_bytes
+            info['callee_bytes'] = stream.rtp.callee_bytes + stream.rtcp.callee_bytes
+            info['caller_packets'] = stream.rtp.caller_packets + stream.rtcp.caller_packets
+            info['callee_packets'] = stream.rtp.callee_packets + stream.rtcp.callee_packets
+            stats['caller_bytes'][stream.media_type] += info['caller_bytes']
+            stats['callee_bytes'][stream.media_type] += info['callee_bytes']
+            stats['caller_packets'][stream.media_type] += info['caller_packets']
+            stats['callee_packets'][stream.media_type] += info['callee_packets']
+            streams.append(info)
         return stats
 
 
