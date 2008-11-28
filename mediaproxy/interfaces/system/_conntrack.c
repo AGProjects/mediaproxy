@@ -373,6 +373,31 @@ ForwardingRule_get_attr(ForwardingRule *self, void *closure)
 }
 
 
+static PyObject*
+ForwardingRule_get_counters(ForwardingRule *self, void *closure)
+{
+    uint32_t caller_bytes, callee_bytes, caller_packets, callee_packets;
+    struct nf_conntrack *conntrack;
+
+    if (self->is_active) {
+        if ((conntrack = ForwardingRule_get_conntrack(self)) == NULL)
+            return NULL;
+        caller_bytes = nfct_get_attr_u32(conntrack, ATTR_ORIG_COUNTER_BYTES);
+        callee_bytes = nfct_get_attr_u32(conntrack, ATTR_REPL_COUNTER_BYTES);
+        caller_packets = nfct_get_attr_u32(conntrack, ATTR_ORIG_COUNTER_PACKETS);
+        callee_packets = nfct_get_attr_u32(conntrack, ATTR_REPL_COUNTER_PACKETS);
+        nfct_destroy(conntrack);
+    } else {
+        caller_bytes = self->counter[CALLER_BYTES];
+        callee_bytes = self->counter[CALLEE_BYTES];
+        caller_packets = self->counter[CALLER_PACKETS];
+        callee_packets = self->counter[CALLEE_PACKETS];
+    }
+
+    return Py_BuildValue("{s:i,s:i,s:i,s:i}", "caller_bytes", caller_bytes, "callee_bytes", callee_bytes, "caller_packets", caller_packets, "callee_packets", callee_packets);
+}
+
+
 static int
 ForwardingRule_set_timeout(ForwardingRule *self, PyObject *value, void *closure)
 {
@@ -431,12 +456,13 @@ static ForwardingRule_get_attr_type ForwardingRule_get_attr_types[] = {
 
 
 static PyGetSetDef ForwardingRule_getseters[] = {
-    { "timeout", (getter) ForwardingRule_get_attr, (setter) ForwardingRule_set_timeout, "timeout value", &ForwardingRule_get_attr_types[0] },
-    { "caller_packets", (getter) ForwardingRule_get_attr, 0, "caller packet count", &ForwardingRule_get_attr_types[1] },
-    { "caller_bytes",   (getter) ForwardingRule_get_attr, 0, "caller byte count",   &ForwardingRule_get_attr_types[2] },
-    { "callee_packets", (getter) ForwardingRule_get_attr, 0, "callee packet count", &ForwardingRule_get_attr_types[3] },
-    { "callee_bytes",   (getter) ForwardingRule_get_attr, 0, "callee byte count",   &ForwardingRule_get_attr_types[4] },
-    { NULL }  /* Sentinel */
+    {"timeout", (getter) ForwardingRule_get_attr, (setter) ForwardingRule_set_timeout, "timeout value", &ForwardingRule_get_attr_types[0]},
+    {"caller_packets", (getter) ForwardingRule_get_attr, 0, "caller packet count", &ForwardingRule_get_attr_types[1]},
+    {"caller_bytes",   (getter) ForwardingRule_get_attr, 0, "caller byte count",   &ForwardingRule_get_attr_types[2]},
+    {"callee_packets", (getter) ForwardingRule_get_attr, 0, "callee packet count", &ForwardingRule_get_attr_types[3]},
+    {"callee_bytes",   (getter) ForwardingRule_get_attr, 0, "callee byte count",   &ForwardingRule_get_attr_types[4]},
+    {"counters",       (getter) ForwardingRule_get_counters, 0, "rule counters",   NULL},
+    {NULL}  /* Sentinel */
 };
 
 
