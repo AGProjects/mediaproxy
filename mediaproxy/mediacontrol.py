@@ -45,6 +45,38 @@ configuration.read_settings("Relay", Config)
 if Config.relay_ip is None:
     raise RuntimeError("Could not determine default host IP; either add default route or specify relay IP manually")
 
+
+class Address(object):
+    """Representation of an endpoint address"""
+    def __init__(self, host, port, in_use=True):
+        self.host = host
+        self.port = port
+        self.in_use = self.__nonzero__() and in_use
+    def __len__(self):
+        return 2
+    def __nonzero__(self):
+        return None not in (self.host, self.port)
+    def __getitem__(self, index):
+        return (self.host, self.port)[index]
+    def __contains__(self, item):
+        return item in (self.host, self.port)
+    def __iter__(self):
+        yield self.host
+        yield self.port
+    def __str__(self):
+        return self.__nonzero__() and ("%s:%d" % (self.host, self.port)) or "Unknown"
+    def __repr__(self):
+        return "%s(%r, %r, in_use=%r)" % (self.__class__.__name__, self.host, self.port, self.in_use)
+    def forget(self):
+        self.host, self.port, self.in_use = None, None, False
+    @property
+    def unknown(self):
+        return None in (self.host, self.port)
+    @property
+    def obsolete(self):
+        return self.__nonzero__() and not self.in_use
+
+
 class StreamListenerProtocol(DatagramProtocol):
     noisy = False
 
@@ -78,9 +110,9 @@ class MediaSubParty(object):
         self.substream = substream
         self.listener = listener
         self.listener.protocol.cb_func = self.got_data
-        self.remote = None
+        self.remote = Address(None, None)
         host = self.listener.protocol.transport.getHost()
-        self.local = (host.host, host.port)
+        self.local = Address(host.host, host.port)
         self.bytes = 0
         self.packets = 0
         self.timer = None
@@ -88,14 +120,14 @@ class MediaSubParty(object):
         self.reset(True)
 
     def reset(self, expire):
-        self.got_remote = False
         if self.timer and self.timer.active():
             self.timer.cancel()
         if expire:
             self.timer = reactor.callLater(Config.stream_timeout, self.substream.expired, "no traffic timeout", Config.stream_timeout)
+            self.remote.in_use = False # keep remote address around but mark it as obsolete
         else:
             self.timer = None
-            self.remote = None
+            self.remote.forget() # completely forget about the remote address
 
     def before_hold(self):
         if self.timer and self.timer.active():
@@ -105,12 +137,16 @@ class MediaSubParty(object):
     def after_hold(self):
         if self.timer and self.timer.active():
             self.timer.cancel()
-        if not self.got_remote:
+        if not self.remote.in_use:
             self.timer = reactor.callLater(Config.stream_timeout, self.substream.expired, "no traffic timeout", Config.stream_timeout)
 
     def got_data(self, host, port, data):
-        if not self.got_remote:
-            if (host, port) == self.remote:
+        if (host, port) == tuple(self.remote):
+            if self.remote.obsolete:
+                return
+            self.substream.send_data(self, data)
+        else:
+            if self.remote.in_use:
                 return
             self.substream.send_data(self, data)
             if self.timer:
@@ -128,12 +164,9 @@ class MediaSubParty(object):
                         self.codec = rtp_payloads[pt]
                     else:
                         self.codec = "Unknown(%d)" % pt
-            self.got_remote = True
-            self.remote = (host, port)
+            self.remote.host, self.remote.port = host, port
+            self.remote.in_use = True
             self.substream.check_create_conntrack()
-        else:
-            if (host, port) == self.remote:
-                self.substream.send_data(self, data)
 
     def cleanup(self):
         if self.timer and self.timer.active():
@@ -201,7 +234,7 @@ class MediaSubStream(object):
         log.debug("Got traffic information for stream: %s" % self.stream)
         if self.stream.first_media_time is None:
             self.stream.first_media_time = time()
-        if self.caller.got_remote and self.callee.got_remote:
+        if self.caller.remote.in_use and self.callee.remote.in_use:
             self.forwarding_rule = _conntrack.ForwardingRule(self.caller.remote, self.caller.local, self.callee.remote, self.callee.local, self.stream.session.mark)
             self.forwarding_rule.expired_func = self.conntrack_expired
 
@@ -296,14 +329,10 @@ class MediaStream(object):
             dst = "%s:%d" % self.callee.remote_sdp
         if self.callee.is_on_hold:
             dst += " ON HOLD"
-        for val, sub_party in zip(["src_rtp", "src_rtcp", "dst_rtp", "dst_rtcp"], [self.rtp.caller, self.rtcp.caller, self.rtp.callee, self.rtcp.callee]):
-            if sub_party.got_remote:
-                exec("%s = '%s:%d'" % ((val,) + sub_party.remote))
-            else:
-                exec("%s = 'Unknown'" % val)
-        src_local = "%s:%d" % self.rtp.caller.local
-        dst_local = "%s:%d" % self.rtp.callee.local
-        return "(%s) %s (RTP: %s, RTCP: %s) <-> %s <-> %s <-> %s (RTP: %s, RTCP: %s)" % (self.media_type, src, src_rtp, src_rtcp, src_local, dst_local, dst, dst_rtp, dst_rtcp)
+        rtp = self.rtp
+        rtcp = self.rtcp
+        return "(%s) %s (RTP: %s, RTCP: %s) <-> %s <-> %s <-> %s (RTP: %s, RTCP: %s)" % (
+            self.media_type, src, rtp.caller.remote, rtcp.caller.remote, rtp.caller.local, rtp.callee.local, dst, rtp.callee.remote, rtcp.callee.remote)
 
     @property
     def is_on_hold(self):
@@ -471,9 +500,9 @@ class Session(object):
             pos = 1
         cseq = max(key for key in self.streams.keys() if key[pos] == cseq)
         if is_downstream:
-            retval = [(stream.status in ["active", "on hold"]) and stream.rtp.callee.local or (stream.rtp.callee.local[0], 0) for stream in self.streams[cseq]]
+            retval = [(stream.status in ["active", "on hold"]) and tuple(stream.rtp.callee.local) or (stream.rtp.callee.local.host, 0) for stream in self.streams[cseq]]
         else:
-            retval = [(stream.status in ["active", "on hold"]) and stream.rtp.caller.local or (stream.rtp.caller.local[0], 0) for stream in self.streams[cseq]]
+            retval = [(stream.status in ["active", "on hold"]) and tuple(stream.rtp.caller.local) or (stream.rtp.caller.local.host, 0) for stream in self.streams[cseq]]
         return retval
 
     def cleanup(self):
@@ -538,10 +567,10 @@ class Session(object):
                 info['post_dial_delay'] = stream.first_media_time - stream.create_time
             caller = stream.rtp.caller
             callee = stream.rtp.callee
-            info['caller_local'] = '%s:%d' % caller.local
-            info['callee_local'] = '%s:%d' % callee.local
-            info['caller_remote'] = caller.got_remote and ('%s:%d' % caller.remote) or 'Unknown'
-            info['callee_remote'] = callee.got_remote and ('%s:%d' % callee.remote) or 'Unknown'
+            info['caller_local'] = str(caller.local)
+            info['callee_local'] = str(callee.local)
+            info['caller_remote'] = str(caller.remote)
+            info['callee_remote'] = str(callee.remote)
             info['caller_bytes'] = stream.rtp.caller_bytes + stream.rtcp.caller_bytes
             info['callee_bytes'] = stream.rtp.callee_bytes + stream.rtcp.callee_bytes
             info['caller_packets'] = stream.rtp.caller_packets + stream.rtcp.caller_packets
