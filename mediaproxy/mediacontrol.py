@@ -18,8 +18,8 @@ from application import log
 from application.system import default_host_ip
 from application.configuration import *
 
-from mediaproxy.interfaces.system import _conntrack
 from mediaproxy import configuration_filename
+from mediaproxy.interfaces.system import _conntrack
 from mediaproxy.iputils import is_routable_ip
 
 UDP_TIMEOUT_FILE = "/proc/sys/net/ipv4/netfilter/ip_conntrack_udp_timeout_stream"
@@ -69,7 +69,7 @@ class StreamListenerProtocol(DatagramProtocol):
             ip, port = self.sdp
             if not self.send_packet_count % Config.userspace_transmit_every:
                 self.transport.write(data, (ip, port))
-            self.send_packet_count +=1
+            self.send_packet_count += 1
 
 
 class MediaSubParty(object):
