@@ -104,8 +104,8 @@ class RadiusAccounting(EventQueue, pyrad.client.Client):
         attrs["User-Name"] = "mediaproxy@default"
         attrs["Acct-Session-Id"] = stats["call_id"]
         attrs["Acct-Session-Time"] = stats["duration"]
-        attrs["Acct-Input-Octets"] = sum(stats["caller_bytes"].itervalues())
-        attrs["Acct-Output-Octets"] = sum(stats["callee_bytes"].itervalues())
+        attrs["Acct-Input-Octets"] = sum(stream_stats['caller_bytes'] for stream_stats in stats['streams'])
+        attrs["Acct-Output-Octets"] = sum(stream_stats['callee_bytes'] for stream_stats in stats['streams'])
         attrs["Sip-From-Tag"] = stats["from_tag"]
         attrs["Sip-To-Tag"] = stats["to_tag"]
         attrs["NAS-IP-Address"] = stats["streams"][0]["caller_local"].split(":")[0]

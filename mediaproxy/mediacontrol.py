@@ -522,10 +522,6 @@ class Session(object):
         stats = dict((name, getattr(self, name)) for name in attributes)
         stats['caller_ua'] = self.caller_ua or 'Unknown'
         stats['callee_ua'] = self.callee_ua or 'Unknown'
-        stats['caller_bytes'] = dict((t, 0) for t in media_types)
-        stats['callee_bytes'] = dict((t, 0) for t in media_types)
-        stats['caller_packets'] = dict((t, 0) for t in media_types)
-        stats['callee_packets'] = dict((t, 0) for t in media_types)
         stats['streams'] = streams = []
         stream_attributes = ('media_type', 'status', 'timeout_wait')
         for stream in sorted(all_streams, key=attrgetter('start_time')):
@@ -556,10 +552,6 @@ class Session(object):
             info['callee_local'] = str(callee.local)
             info['caller_remote'] = str(caller.remote)
             info['callee_remote'] = str(callee.remote)
-            stats['caller_bytes'][stream.media_type] += info['caller_bytes']
-            stats['callee_bytes'][stream.media_type] += info['callee_bytes']
-            stats['caller_packets'][stream.media_type] += info['caller_packets']
-            stats['callee_packets'][stream.media_type] += info['callee_packets']
             streams.append(info)
         return stats
 
