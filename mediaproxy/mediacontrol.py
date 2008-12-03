@@ -197,6 +197,7 @@ class MediaSubStream(object):
 
     @property
     def counters(self):
+        """Accumulated counters from all the forwarding rules the stream had"""
         if self.forwarding_rule is None:
             return self._counters
         else:
