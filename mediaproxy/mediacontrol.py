@@ -77,6 +77,18 @@ class Address(object):
         return self.__nonzero__() and not self.in_use
 
 
+class Counters(dict):
+    def __add__(self, other):
+        n = Counters(self)
+        for k, v in other.iteritems():
+            n[k] += v
+        return n
+    def __iadd__(self, other):
+        for k, v in other.iteritems():
+            self[k] += v
+        return self
+
+
 class StreamListenerProtocol(DatagramProtocol):
     noisy = False
 
@@ -113,8 +125,6 @@ class MediaSubParty(object):
         self.remote = Address(None, None)
         host = self.listener.protocol.transport.getHost()
         self.local = Address(host.host, host.port)
-        self.bytes = 0
-        self.packets = 0
         self.timer = None
         self.codec = "Unknown"
         self.reset(True)
@@ -183,44 +193,18 @@ class MediaSubStream(object):
         self.forwarding_rule = None
         self.caller = MediaSubParty(self, listener_caller)
         self.callee = MediaSubParty(self, listener_callee)
+        self._counters = Counters(caller_bytes=0, callee_bytes=0, caller_packets=0, callee_packets=0)
 
     @property
-    def caller_bytes(self):
+    def counters(self):
         if self.forwarding_rule is None:
-            return self.caller.bytes
+            return self._counters
         else:
-            return self.caller.bytes + self.forwarding_rule.caller_bytes
-
-    @property
-    def caller_packets(self):
-        if self.forwarding_rule is None:
-            return self.caller.packets
-        else:
-            return self.caller.packets + self.forwarding_rule.caller_packets
-
-    @property
-    def callee_bytes(self):
-        if self.forwarding_rule is None:
-            return self.callee.bytes
-        else:
-            return self.callee.bytes + self.forwarding_rule.callee_bytes
-
-    @property
-    def callee_packets(self):
-        if self.forwarding_rule is None:
-            return self.callee.packets
-        else:
-            return self.callee.packets + self.forwarding_rule.callee_packets
-
-    def _update_counters(self):
-        self.caller.bytes += self.forwarding_rule.caller_bytes
-        self.caller.packets += self.forwarding_rule.caller_packets
-        self.callee.bytes += self.forwarding_rule.callee_bytes
-        self.callee.packets += self.forwarding_rule.callee_packets
+            return self._counters + self.forwarding_rule.counters
 
     def _stop_relaying(self):
         if self.forwarding_rule is not None:
-            self._update_counters()
+            self._counters += self.forwarding_rule.counters
             self.forwarding_rule = None
 
     def reset(self, party):
@@ -567,14 +551,11 @@ class Session(object):
                 info['post_dial_delay'] = stream.first_media_time - stream.create_time
             caller = stream.rtp.caller
             callee = stream.rtp.callee
+            info.update(stream.rtp.counters + stream.rtcp.counters)
             info['caller_local'] = str(caller.local)
             info['callee_local'] = str(callee.local)
             info['caller_remote'] = str(caller.remote)
             info['callee_remote'] = str(callee.remote)
-            info['caller_bytes'] = stream.rtp.caller_bytes + stream.rtcp.caller_bytes
-            info['callee_bytes'] = stream.rtp.callee_bytes + stream.rtcp.callee_bytes
-            info['caller_packets'] = stream.rtp.caller_packets + stream.rtcp.caller_packets
-            info['callee_packets'] = stream.rtp.callee_packets + stream.rtcp.callee_packets
             stats['caller_bytes'][stream.media_type] += info['caller_bytes']
             stats['callee_bytes'][stream.media_type] += info['callee_bytes']
             stats['caller_packets'][stream.media_type] += info['caller_packets']
@@ -601,7 +582,7 @@ class SessionManager(Logger):
     def _measure_speed(self):
         start_time = time()
         total_bytes = 0
-        new_totals = dict((call_id, sum(sum(getattr(getattr(stream, substream), party) for party in ["caller_bytes", "callee_bytes"] for substream in ["rtp", "rtcp"]) for stream in set(chain(*session.streams.itervalues())))) for call_id, session in self.sessions.iteritems())
+        new_totals = dict((call_id, sum(sum(v for k, v in (stream.rtp.counters+stream.rtcp.counters).iteritems() if k in ('caller_bytes', 'callee_bytes')) for stream in set(chain(*session.streams.itervalues())))) for call_id, session in self.sessions.iteritems())
         for key, total in new_totals.iteritems():
             total_bytes += total - self.totals.get(key, 0)
         self.bps_relayed = 8 * total_bytes / Config.traffic_sampling_period
