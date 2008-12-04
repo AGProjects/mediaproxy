@@ -37,6 +37,7 @@ from application import log
 from application.configuration import *
 from application.configuration.datatypes import IPAddress
 from application.process import process
+from application.system import default_host_ip
 
 from mediaproxy.tls import X509Credentials, X509NameValidator
 from mediaproxy.headers import DecodingDict, DecodingError
@@ -76,8 +77,9 @@ class PortRange(object):
 
 
 class Config(ConfigSection):
-    _datatypes = {'dispatchers': DispatcherAddressList, 'port_range': PortRange, 'passport': X509NameValidator}
+    _datatypes = {'dispatchers': DispatcherAddressList, 'relay_ip': IPAddress, 'port_range': PortRange, 'passport': X509NameValidator}
     dispatchers = []
+    relay_ip = default_host_ip
     port_range = PortRange("50000:60000")
     dns_check_interval = 60
     reconnect_delay = 10
@@ -313,16 +315,13 @@ class MediaRelay(MediaRelayBase):
 
     def got_command(self, dispatcher, command, headers):
         if command == "summary":
-            summary = {}
-            summary["version"] = version
-            summary["session_count"] = len(self.session_manager.sessions)
-            if self.shutting_down:
-                summary["status"] = "halting"
-            else:
-                summary["status"] = "ok"
-            summary["bps_relayed"] = self.session_manager.bps_relayed
-            summary["stream_count"] = self.session_manager.get_stream_count()
-            summary["uptime"] = int(time() - self.start_time)
+            summary = {'ip'            : Config.relay_ip,
+                       'version'       : version,
+                       'status'        : self.shutting_down and 'halting' or 'ok',
+                       'uptime'        : int(time() - self.start_time),
+                       'session_count' : len(self.session_manager.sessions),
+                       'stream_count'  : self.session_manager.get_stream_count(),
+                       'bps_relayed'   : self.session_manager.bps_relayed}
             return cjson.encode(summary)
         elif command == "sessions":
             return cjson.encode(self.session_manager.get_statistics())

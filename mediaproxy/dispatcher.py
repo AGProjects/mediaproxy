@@ -392,29 +392,24 @@ class RelayFactory(Factory):
         return defer
 
     def get_summary(self):
-        defer = DeferredList([relay.send_command("summary", []).addCallback(self._got_summary, ip).addErrback(self._summary_error, ip) for ip, relay in self.relays.iteritems()])
+        defer = DeferredList([relay.send_command("summary", []).addErrback(self._summary_error, ip) for ip, relay in self.relays.iteritems()])
         defer.addCallback(self._got_summaries)
         return defer
 
-    def _got_summary(self, summary, ip):
-        summary = cjson.decode(summary)
-        summary["ip"] = ip
-        return summary
-
     def _summary_error(self, failure, ip):
         log.error("Error processing query at relay %s: %s" % (ip, failure.value))
-        return dict(status="error", ip=ip)
+        return cjson.encode(dict(status="error", ip=ip))
 
     def _got_summaries(self, results):
-        return "\r\n".join([cjson.encode(result) for succeeded, result in results if succeeded] + [''])
+        return "[%s]" % ', '.join(result for succeeded, result in results if succeeded)
 
     def get_statistics(self):
-        defer = DeferredList([relay.send_command("sessions", []).addCallback(lambda stats: cjson.decode(stats)) for relay in self.relays.itervalues()])
+        defer = DeferredList([relay.send_command("sessions", []) for relay in self.relays.itervalues()])
         defer.addCallback(self._got_statistics)
         return defer
 
     def _got_statistics(self, results):
-        return "\r\n".join([cjson.encode(session) for session in sum([stats for succeeded, stats in results if succeeded], [])] + [''])
+        return "[%s]" % ', '.join(result[1:-1] for succeeded, result in results if succeeded and result!='[]')
 
     def connection_lost(self, ip):
         del self.relays[ip]
