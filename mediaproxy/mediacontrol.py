@@ -653,9 +653,8 @@ class SessionManager(Logger):
             return None
         log.debug("removing session %s" % session)
         session.cleanup()
-        dispatcher = session.dispatcher
         del self.sessions[key]
-        reactor.callLater(0, self.relay.remove_session, dispatcher)
+        reactor.callLater(0, self.relay.remove_session, session.dispatcher)
         return session
 
     def session_expired(self, call_id, from_tag):
@@ -666,11 +665,10 @@ class SessionManager(Logger):
             log.warn("A session expired that was no longer present on the relay")
             return
         log.debug("expired session %s" % session)
-        dispatcher = session.dispatcher
         session.cleanup()
         del self.sessions[key]
         self.relay.session_expired(session)
-        self.relay.remove_session(dispatcher)
+        self.relay.remove_session(session.dispatcher)
 
     def get_statistics(self):
         return [session.statistics for session in self.sessions.itervalues()]
