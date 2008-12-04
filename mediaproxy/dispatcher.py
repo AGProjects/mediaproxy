@@ -194,7 +194,7 @@ class RelayError(Exception):
 
 class RelayServerProtocol(LineOnlyReceiver):
     noisy = False
-    MAX_LENGTH = 1024 * 1024
+    MAX_LENGTH = 4096*1024 ## (4MB)
 
     def __init__(self):
         self.commands = {}
