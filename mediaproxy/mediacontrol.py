@@ -153,7 +153,7 @@ class MediaSubParty(object):
         if self.timer and self.timer.active():
             self.timer.cancel()
         if expire:
-            self.timer = reactor.callLater(Config.stream_timeout, self.substream.expired, "no traffic timeout", Config.stream_timeout)
+            self.timer = reactor.callLater(Config.stream_timeout, self.substream.expired, "no-traffic timeout", Config.stream_timeout)
             self.remote.in_use = False # keep remote address around but mark it as obsolete
         else:
             self.timer = None
@@ -168,7 +168,7 @@ class MediaSubParty(object):
         if self.timer and self.timer.active():
             self.timer.cancel()
         if not self.remote.in_use:
-            self.timer = reactor.callLater(Config.stream_timeout, self.substream.expired, "no traffic timeout", Config.stream_timeout)
+            self.timer = reactor.callLater(Config.stream_timeout, self.substream.expired, "no-traffic timeout", Config.stream_timeout)
 
     def got_data(self, host, port, data):
         if (host, port) == tuple(self.remote):
