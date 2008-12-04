@@ -87,6 +87,24 @@ class Counters(dict):
         for k, v in other.iteritems():
             self[k] += v
         return self
+    @property
+    def caller_bytes(self):
+        return self['caller_bytes']
+    @property
+    def callee_bytes(self):
+        return self['callee_bytes']
+    @property
+    def caller_packets(self):
+        return self['caller_packets']
+    @property
+    def callee_packets(self):
+        return self['callee_packets']
+    @property
+    def relayed_bytes(self):
+        return self['caller_bytes'] + self['callee_bytes']
+    @property
+    def relayed_packets(self):
+        return self['caller_packets'] + self['callee_packets']
 
 
 class StreamListenerProtocol(DatagramProtocol):
@@ -320,6 +338,10 @@ class MediaStream(object):
             self.media_type, src, rtp.caller.remote, rtcp.caller.remote, rtp.caller.local, rtp.callee.local, dst, rtp.callee.remote, rtcp.callee.remote)
 
     @property
+    def counters(self):
+        return self.rtp.counters + self.rtcp.counters
+
+    @property
     def is_on_hold(self):
         return self.caller.is_on_hold or self.callee.is_on_hold
 
@@ -516,6 +538,10 @@ class Session(object):
             return 0
 
     @property
+    def relayed_bytes(self):
+        return sum(stream.counters.relayed_bytes for stream in set(chain(*self.streams.itervalues())))
+
+    @property
     def statistics(self):
         all_streams = set(chain(*self.streams.itervalues()))
         media_types = set(s.media_type for s in all_streams)
@@ -566,7 +592,8 @@ class SessionManager(Logger):
         self.bad_ports = deque()
         self.sessions = {}
         self.watcher = _conntrack.ExpireWatcher()
-        self.totals = {}
+        self.active_byte_counter = 0 # relayed byte counter for sessions active during last speed measurement
+        self.closed_byte_counter = 0 # relayed byte counter for sessions closed after last speed measurement
         self.bps_relayed = 0
         if Config.traffic_sampling_period > 0:
             self.speed_timer = reactor.callLater(Config.traffic_sampling_period, self._measure_speed)
@@ -574,12 +601,10 @@ class SessionManager(Logger):
 
     def _measure_speed(self):
         start_time = time()
-        total_bytes = 0
-        new_totals = dict((call_id, sum(sum(v for k, v in (stream.rtp.counters+stream.rtcp.counters).iteritems() if k in ('caller_bytes', 'callee_bytes')) for stream in set(chain(*session.streams.itervalues())))) for call_id, session in self.sessions.iteritems())
-        for key, total in new_totals.iteritems():
-            total_bytes += total - self.totals.get(key, 0)
-        self.bps_relayed = 8 * total_bytes / Config.traffic_sampling_period
-        self.totals = new_totals
+        current_byte_counter = sum(session.relayed_bytes for session in self.sessions.itervalues())
+        self.bps_relayed = 8 * (current_byte_counter + self.closed_byte_counter - self.active_byte_counter) / Config.traffic_sampling_period
+        self.active_byte_counter = current_byte_counter
+        self.closed_byte_counter = 0
         self.speed_timer = reactor.callLater(Config.traffic_sampling_period, self._measure_speed)
         us_taken = int((time() - start_time) * 1000000)
         if us_taken > 10000:
@@ -653,6 +678,7 @@ class SessionManager(Logger):
             return None
         log.debug("removing session %s" % session)
         session.cleanup()
+        self.closed_byte_counter += session.relayed_bytes
         del self.sessions[key]
         reactor.callLater(0, self.relay.remove_session, session.dispatcher)
         return session
@@ -666,6 +692,7 @@ class SessionManager(Logger):
             return
         log.debug("expired session %s" % session)
         session.cleanup()
+        self.closed_byte_counter += session.relayed_bytes
         del self.sessions[key]
         self.relay.session_expired(session)
         self.relay.remove_session(session.dispatcher)
