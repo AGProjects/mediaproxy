@@ -21,6 +21,8 @@ from application.configuration import *
 from mediaproxy import configuration_filename
 from mediaproxy.interfaces.system import _conntrack
 from mediaproxy.iputils import is_routable_ip
+from mediaproxy.scheduler import RecurrentCall, KeepRunning
+
 
 UDP_TIMEOUT_FILE = "/proc/sys/net/ipv4/netfilter/ip_conntrack_udp_timeout_stream"
 
@@ -596,7 +598,9 @@ class SessionManager(Logger):
         self.closed_byte_counter = 0 # relayed byte counter for sessions closed after last speed measurement
         self.bps_relayed = 0
         if Config.traffic_sampling_period > 0:
-            self.speed_timer = reactor.callLater(Config.traffic_sampling_period, self._measure_speed)
+            self.speed_calculator = RecurrentCall(Config.traffic_sampling_period, self._measure_speed)
+        else:
+            self.speed_calculator = None
         reactor.addReader(self)
 
     def _measure_speed(self):
@@ -605,10 +609,10 @@ class SessionManager(Logger):
         self.bps_relayed = 8 * (current_byte_counter + self.closed_byte_counter - self.active_byte_counter) / Config.traffic_sampling_period
         self.active_byte_counter = current_byte_counter
         self.closed_byte_counter = 0
-        self.speed_timer = reactor.callLater(Config.traffic_sampling_period, self._measure_speed)
         us_taken = int((time() - start_time) * 1000000)
         if us_taken > 10000:
             log.warn("Aggregate speed calculation time exceeded 10ms: %d us for %d sessions" % (us_taken, len(self.sessions)))
+        return KeepRunning
 
     # implemented for IReadDescriptor
     def fileno(self):
@@ -709,8 +713,7 @@ class SessionManager(Logger):
         return stream_count
 
     def cleanup(self):
-        if Config.traffic_sampling_period > 0:
-            if self.speed_timer.active():
-                self.speed_timer.cancel()
+        if self.speed_calculator is not None:
+            self.speed_calculator.cancel()
         for key in self.sessions.keys():
             self.session_expired(*key)
