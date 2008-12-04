@@ -700,10 +700,18 @@ class SessionManager(Logger):
         self.relay.session_expired(session)
         self.relay.remove_session(session.dispatcher)
 
-    def get_statistics(self):
+    def cleanup(self):
+        if self.speed_calculator is not None:
+            self.speed_calculator.cancel()
+        for key in self.sessions.keys():
+            self.session_expired(*key)
+
+    @property
+    def statistics(self):
         return [session.statistics for session in self.sessions.itervalues()]
 
-    def get_stream_count(self):
+    @property
+    def stream_count(self):
         stream_count = {}
         for session in self.sessions.itervalues():
             for stream in set(chain(*session.streams.itervalues())):
@@ -711,8 +719,3 @@ class SessionManager(Logger):
                     stream_count[stream.media_type] = stream_count.get(stream.media_type, 0) + 1
         return stream_count
 
-    def cleanup(self):
-        if self.speed_calculator is not None:
-            self.speed_calculator.cancel()
-        for key in self.sessions.keys():
-            self.session_expired(*key)

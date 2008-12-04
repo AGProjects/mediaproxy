@@ -320,11 +320,11 @@ class MediaRelay(MediaRelayBase):
                        'status'        : self.shutting_down and 'halting' or 'ok',
                        'uptime'        : int(time() - self.start_time),
                        'session_count' : len(self.session_manager.sessions),
-                       'stream_count'  : self.session_manager.get_stream_count(),
+                       'stream_count'  : self.session_manager.stream_count,
                        'bps_relayed'   : self.session_manager.bps_relayed}
             return cjson.encode(summary)
         elif command == "sessions":
-            return cjson.encode(self.session_manager.get_statistics())
+            return cjson.encode(self.session_manager.statistics)
         elif command == "update":
             local_media = self.session_manager.update_session(dispatcher, **headers)
             if local_media is None:
