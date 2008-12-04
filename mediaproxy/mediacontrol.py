@@ -574,7 +574,7 @@ class Session(object):
                 info['post_dial_delay'] = stream.first_media_time - stream.create_time
             caller = stream.rtp.caller
             callee = stream.rtp.callee
-            info.update(stream.rtp.counters + stream.rtcp.counters)
+            info.update(stream.counters)
             info['caller_local'] = str(caller.local)
             info['callee_local'] = str(callee.local)
             info['caller_remote'] = str(caller.remote)
