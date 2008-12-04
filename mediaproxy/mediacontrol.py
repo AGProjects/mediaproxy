@@ -546,7 +546,6 @@ class Session(object):
     @property
     def statistics(self):
         all_streams = set(chain(*self.streams.itervalues()))
-        media_types = set(s.media_type for s in all_streams)
         attributes = ('call_id', 'from_tag', 'from_uri', 'to_tag', 'to_uri', 'start_time', 'duration')
         stats = dict((name, getattr(self, name)) for name in attributes)
         stats['caller_ua'] = self.caller_ua or 'Unknown'
