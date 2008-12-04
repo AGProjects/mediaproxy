@@ -612,11 +612,10 @@ class SessionManager(Logger):
         self.ports.append(ports)
 
     # called by higher level
-    def _find_session_key(self, call_id, from_tag, kw_rest):
+    def _find_session_key(self, call_id, from_tag, to_tag):
         key_from = (call_id, from_tag)
         if key_from in self.sessions:
             return key_from
-        to_tag = kw_rest.get("to_tag")
         if to_tag:
             key_to = (call_id, to_tag)
             if key_to in self.sessions:
@@ -624,7 +623,7 @@ class SessionManager(Logger):
 
     def update_session(self, dispatcher, call_id, from_tag, from_uri, to_uri, cseq, user_agent, media, type, **kw_rest):
         to_tag = kw_rest.get("to_tag")
-        key = self._find_session_key(call_id, from_tag, kw_rest)
+        key = self._find_session_key(call_id, from_tag, to_tag)
         if key:
             session = self.sessions[key]
             log.debug("updating existing session %s" % session)
@@ -646,7 +645,7 @@ class SessionManager(Logger):
         return retval
 
     def remove_session(self, call_id, from_tag, **kw_rest):
-        key = self._find_session_key(call_id, from_tag, kw_rest)
+        key = self._find_session_key(call_id, from_tag, kw_rest.get("to_tag"))
         try:
             session = self.sessions[key]
         except KeyError:
