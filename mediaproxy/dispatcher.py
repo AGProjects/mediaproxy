@@ -59,7 +59,7 @@ class Config(ConfigSection):
     listen = DispatcherAddress("any")
     listen_management = DispatcherManagementAddress("any")
     relay_timeout = 5
-    cleanup_timeout = 3600
+    cleanup_dead_relays_after = 3600
     management_use_tls = True
     accounting = []
     passport = None
@@ -316,7 +316,7 @@ class RelayFactory(Factory):
             self.sessions = {}
             self.cleanup_timers = {}
         else:
-            self.cleanup_timers = dict((ip, reactor.callLater(Config.cleanup_timeout, self._do_cleanup, ip)) for ip in set(session.relay_ip for session in self.sessions.itervalues()))
+            self.cleanup_timers = dict((ip, reactor.callLater(Config.cleanup_dead_relays_after, self._do_cleanup, ip)) for ip in set(session.relay_ip for session in self.sessions.itervalues()))
         unlink(state_file)
 
     def buildProtocol(self, addr):
@@ -418,7 +418,7 @@ class RelayFactory(Factory):
             if len(self.relays) == 0:
                 self.defer.callback(None)
         else:
-            self.cleanup_timers[ip] = reactor.callLater(Config.cleanup_timeout, self._do_cleanup, ip)
+            self.cleanup_timers[ip] = reactor.callLater(Config.cleanup_dead_relays_after, self._do_cleanup, ip)
 
     def _do_cleanup(self, ip):
         log.debug("Doing cleanup for old relay %s" % ip)
