@@ -1,27 +1,27 @@
 <?
 class MediaSessions {
+
     /*
        connect to a mediaproxy dispatcher
        get media sessions and display them
 
     */
 
-	var $dispatcher_port = 25061;
+    var $dispatcher_port = 25061;
     var $sessions        = array();
     var $relays          = array();
     var $timeout         = 3;
 
-    function MediaSessions ($dispatcher='',$filters=array(),$allowedDomains=array()) {
+    function MediaSessions ($dispatcher='',$allowedDomains=array(),$filters=array()) {
 
-		global $userAgentImages;
-        require("config/phone_images.php");
+        if (!strlen($dispatcher)) return false;
+
+        global $userAgentImages;
+        require_once("phone_images.php");
+        $this->userAgentImages = $userAgentImages;
 
         $this->filters = $filters;
         $this->allowedDomains  = $allowedDomains;
-
-		$this->userAgentImages = $userAgentImages;
-
-        if (!strlen($dispatcher)) return false;
 
         list($ip,$port) = explode(":",$dispatcher);
 
@@ -29,7 +29,7 @@ class MediaSessions {
 
         if ($port) $this->dispatcher_port = $port;
 
-        return $this->getSessions($this->dispatcher_ip,$this->dispatcher_port);
+        return $this->getSessions();
 
     }
 
@@ -39,57 +39,42 @@ class MediaSessions {
         if (!$this->dispatcher_port) return false;
 
         if ($fp = fsockopen ($this->dispatcher_ip, $this->dispatcher_port, $errno, $errstr, $this->timeout)) {
+            printf ("<p>Connected to MediaProxy2 dispatcher %s:%s",$this->dispatcher_ip, $this->dispatcher_port);
 
             if (!count($this->allowedDomains)) {
                fputs($fp, "summary\r\n");
-   
-               while (!feof($fp)) {
-                   $line  = fgets($fp);
-   
-                   if (preg_match("/^\r\n/",$line)) {
-                       break;
-                   }
-   
-                   $this->relays[] = json_decode($line);
-               }
-			}
+               $line  = fgets($fp);
+               $this->relays = json_decode($line);
+            }
 
             fputs($fp, "sessions\r\n");
+            $line = fgets($fp);
 
-            while (!feof($fp)) {
-            	$line = fgets($fp);
+			$_sessions=json_decode($line);
 
-                $this->sessions_json[] = $line;
-
-                if (preg_match("/^\r\n/",$line)) {
-                    break;
-                }
-
-				$line=json_decode($line);
-
-                if (count($this->allowedDomains)) {
-                    list($user1,$domain1)=explode("@",$line->from_uri);
-                    list($user2,$domain2)=explode("@",$line->to_uri);
+            if (count($this->allowedDomains)) {
+                foreach ($_sessions as $_session) {
+                    list($user1,$domain1)=explode("@",$_session->from_uri);
+                    list($user2,$domain2)=explode("@",$_session->to_uri);
                     if (!in_array($domain1,$this->allowedDomains) && !in_array($domain2,$this->allowedDomains)) {
                         continue;
                     }
-                }
 
-                if (strlen($this->filters['user'])) {
-                	$user=$this->filters['user'];
-                    if (preg_match("/$user/",$line->from_uri) ||
-                        preg_match("/$user/",$line->to_uri)
-                        ) {
-                		$this->sessions[] = $line;
+                   	if (strlen($this->filters['user'])) {
+                        $user=$this->filters['user'];
+                        if (preg_match("/$user/",$_session->from_uri) ||
+                            preg_match("/$user/",$_session->to_uri)
+                                                                   ) {
+                            $this->sessions[] = $_session;
+                        }
                     }
-
-                } else {
-                	$this->sessions[] = $line;
                 }
-
+            } else {
+                $this->sessions = $_sessions;
             }
 
-        	fclose($fp);
+
+            fclose($fp);
             return true;
 
         } else {
@@ -99,6 +84,7 @@ class MediaSessions {
     }
 
     function showSearch() {
+        if (!count($this->sessions)) return;
         printf ("<form method=post action=%s>
         <input type=text name=user value='%s'>
         <input type=submit value='Search callers'>
@@ -169,31 +155,27 @@ class MediaSessions {
     }
 
     function showFooter() {
-        print "<a href=http://www.ag-projects.com><img src=images/PoweredbyAGProjects.gif border=0></a>";
-    	print "
-        </body>
-        </html>
-        ";
     }
 
     function show() {
 
-		$this->showHeader();
+        $this->showHeader();
 
-        print "<h1>Media sessions</h1>";
+        print "<h3>Media sessions</h3>";
 
-		$this->showSearch();
+        $this->showSearch();
 
         if (!count($this->allowedDomains)) {
-	        $this->showRelays();
+            $this->showRelays();
         }
 
         $this->showSessions();
 
-		$this->showFooter();
+        $this->showFooter();
     }
 
     function showRelays() {
+        if (!count($this->sessions)) return;
 
         print "
         <table border=0 class=border cellpadding=2 cellspacing=0>
@@ -219,13 +201,13 @@ class MediaSessions {
 
         foreach ($this->relays as $relay) {
 
-			unset($media_types);
+            unset($media_types);
 
             foreach ($relay->stream_count as $key => $value) {
                 $media_types++;
             }
 
-			if ($media_types > 1) {
+            if ($media_types > 1) {
                 $streams = "<table border=0>";
     
                 foreach ($relay->stream_count as $key => $value) {
@@ -235,12 +217,12 @@ class MediaSessions {
                 $streams .= "</table>";
             } else {
                 foreach ($relay->stream_count as $key => $value) {
-                	$streams=sprintf("%s %s",$key,$value);
+                    $streams=sprintf("%s %s",$key,$value);
                 }
             }
 
-        	printf ("
-          	<tr class=border align=right>
+            printf ("
+              <tr class=border align=right>
                 <td class=border>%d</td>
                 <td class=bordertb width=10px></td>
                 <td class=bordertb>%s</td>
@@ -277,6 +259,7 @@ class MediaSessions {
     }
 
     function showSessions () {
+        if (!count($this->sessions)) return;
         print "
         <table border=0 cellpadding=2 cellspacing=0 class=border>
          <tr valign=bottom bgcolor=black>
@@ -440,6 +423,5 @@ class MediaSessions {
     
         return "unknown.png";
     }
-
 }
 ?>

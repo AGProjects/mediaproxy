@@ -1,4 +1,8 @@
 <?
 # The address of the Media Proxy dispatcher
 $dispatcher = "undefined";
+
+# Optional access list of domains for which sessions are displayed
+# $allowedDomains = array('example.com','customer.com');
+
 ?>

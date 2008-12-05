@@ -29,7 +29,7 @@ require("library/media_sessions.php");
 
 $filters=array('user'=>$_REQUEST['user']);
 
-$MediaSessions = new MediaSessions($dispatcher,$filters);
+$MediaSessions = new MediaSessions($dispatcher,$allowedDomains,$filters);
 $MediaSessions->show();
 
 ?>
