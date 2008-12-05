@@ -59,7 +59,7 @@ class Config(ConfigSection):
     listen = DispatcherAddress("any")
     listen_management = DispatcherManagementAddress("any")
     relay_timeout = 5
-    cleanup_dead_relays_after = 3600
+    cleanup_dead_relays_after = 43200 # 12 hours
     management_use_tls = True
     accounting = []
     passport = None
