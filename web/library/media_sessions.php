@@ -24,6 +24,8 @@ class MediaSessions {
         }
         require_once($userAgentImagesFile);
 
+        $this->userAgentImages = $userAgentImages;
+
         $this->filters = $filters;
         $this->allowedDomains  = $allowedDomains;
 
