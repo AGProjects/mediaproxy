@@ -10,6 +10,9 @@ import signal
 import cPickle as pickle
 import cjson
 
+from itertools import ifilter
+from time import time
+
 for name in ('epollreactor', 'kqreactor', 'pollreactor', 'selectreactor'):
     try:    __import__('twisted.internet.%s' % name, globals(), locals(), fromlist=[name]).install()
     except: continue
@@ -30,6 +33,7 @@ from application.system import unlink
 from mediaproxy import configuration_filename, default_dispatcher_port, default_management_port
 from mediaproxy.tls import X509Credentials, X509NameValidator
 from mediaproxy.interfaces import opensips
+from mediaproxy.scheduler import RecurrentCall, KeepRunning
 
 
 log.msg("Twisted is using %s" % reactor.__module__.rsplit('.', 1)[-1])
@@ -60,6 +64,7 @@ class Config(ConfigSection):
     listen_management = DispatcherManagementAddress("any")
     relay_timeout = 5
     cleanup_dead_relays_after = 43200 # 12 hours
+    cleanup_expired_sessions_after = 86400 # 24 hours
     management_use_tls = True
     accounting = []
     passport = None
@@ -235,13 +240,17 @@ class RelayServerProtocol(LineOnlyReceiver):
             except cjson.DecodeError:
                 log.error("Error decoding JSON from relay at %s" % self.ip)
             else:
-                session = self.factory.sessions[stats["call_id"]]
-                if session.dialog_id is not None and stats["to_tag"] is not None:
-                    self.factory.dispatcher.opensips_management.end_dialog(session.dialog_id)
+                call_id = stats['call_id']
+                session = self.factory.sessions[call_id]
+                log.msg("session with call_id %s from relay %s did timeout" % (call_id, session.relay_ip))
                 stats["dialog_id"] = session.dialog_id
                 stats["timed_out"] = True
                 self.factory.dispatcher.update_statistics(stats)
-                del self.factory.sessions[stats["call_id"]]
+                if session.dialog_id is not None and stats["to_tag"] is not None:
+                    self.factory.dispatcher.opensips_management.end_dialog(session.dialog_id)
+                    session.expire_time = time()
+                else:
+                    del self.factory.sessions[call_id]
             return
         try:
             command, defer, timer = self.commands.pop(first)
@@ -260,11 +269,12 @@ class RelayServerProtocol(LineOnlyReceiver):
             except cjson.DecodeError:
                 log.error("Error decoding JSON from relay at %s" % self.ip)
             else:
-                session = self.factory.sessions[stats["call_id"]]
+                call_id = stats['call_id']
+                session = self.factory.sessions[call_id]
                 stats["dialog_id"] = session.dialog_id
                 stats["timed_out"] = False
                 self.factory.dispatcher.update_statistics(stats)
-                del self.factory.sessions[stats["call_id"]]
+                del self.factory.sessions[call_id]
             defer.callback("removed")
         else: # update command
             defer.callback(rest)
@@ -299,6 +309,7 @@ class RelaySession(object):
     def __init__(self, relay_ip, command_headers):
         self.relay_ip = relay_ip
         self.dialog_id = DialogID(command_headers.get('dialog_id'))
+        self.expire_time = None
 
 
 class RelayFactory(Factory):
@@ -318,6 +329,15 @@ class RelayFactory(Factory):
         else:
             self.cleanup_timers = dict((ip, reactor.callLater(Config.cleanup_dead_relays_after, self._do_cleanup, ip)) for ip in set(session.relay_ip for session in self.sessions.itervalues()))
         unlink(state_file)
+        self.expired_cleaner = RecurrentCall(600, self._remove_expired_sessions)
+
+    def _remove_expired_sessions(self):
+        now, limit = time(), Config.cleanup_expired_sessions_after
+        obsolete = [k for k, s in ifilter(lambda (k, s): s.expire_time and (now-s.expire_time>=limit), self.sessions.iteritems())]
+        if obsolete:
+            [self.sessions.pop(call_id) for call_id in obsolete]
+            log.warn("found %d expired sessions which were not removed during the last %d hours" % (len(obsolete), round(limit/3600.0)))
+        return KeepRunning
 
     def buildProtocol(self, addr):
         ip = addr.host
@@ -354,12 +374,14 @@ class RelayFactory(Factory):
             call_id = parsed_headers["call_id"]
         except KeyError:
             raise RelayError("Missing call_id header")
-        if call_id in self.sessions:
-            relay = self.sessions[call_id].relay_ip
+        session = self.sessions.get(call_id, None)
+        if session and session.expire_time is None:
+            relay = session.relay_ip
             if relay not in self.relays:
                 raise RelayError("Relay for this session (%s) is no longer connected" % relay)
             return self.relays[relay].send_command(command, headers)
-        elif command == "update":
+        ## We do not have a session for this call_id or the session is already expired
+        if command == "update":
             preferred_relay = parsed_headers.get("media_relay")
             if preferred_relay is not None:
                 try_relays = [protocol for protocol in self.relays.itervalues() if protocol.ip == preferred_relay]
@@ -372,6 +394,10 @@ class RelayFactory(Factory):
             defer = self._try_next(try_relays, command, headers)
             defer.addCallback(self._add_session, try_relays, call_id, parsed_headers)
             return defer
+        elif command == 'remove' and session:
+            ## This is the remove we received for an expired session for which we triggered dialog termination
+            del self.sessions[call_id]
+            return 'removed'
         else:
             raise RelayError("Non-update command received from OpenSIPS for unknown session")
 
