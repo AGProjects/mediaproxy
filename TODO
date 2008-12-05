@@ -1,3 +1,18 @@
++ Make speed measurement inexpensive by using an iptables rule counter
++ Filter the result of the sessions command and return at most 50 entries
+  ordered by some criteria (like most recent first). Also add a new command
+  in the relay to report back all active sessions (only their call_id) to
+  allow the dispatcher to purge obsolete sessions when a relay reconnects
+  with it, as the sessions command will no longer return all sessions and
+  is also very expensive as it returns a lot more information than
+  necessary, including stream counters which are very expensive to gather.
+  Define some ordering rules for the selection here and also define what
+  fields to search with the filter that is provided (from/to/callid...)
++ Add a new command to the dispatcher to terminate a session. This should
+  be available for any session that has a dialog_id and should allow the
+  media sessions web interface to terminate a dialog by clicking a button
+  In result the dispatcher should trigger dialog termination.
+
 - Lawful intercept for RTP media
 - Selection of mediaproxy based on proximity
 - Add ability to relay to restart on the fly without losing the sessions
