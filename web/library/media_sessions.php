@@ -17,8 +17,12 @@ class MediaSessions {
         if (!strlen($dispatcher)) return false;
 
         global $userAgentImages;
-        require_once("phone_images.php");
-        $this->userAgentImages = $userAgentImages;
+        global $userAgentImagesFile;
+
+        if (!isset($userAgentImagesFile)) {
+            $userAgentImagesFile="phone_images.php";
+        }
+        require_once($userAgentImagesFile);
 
         $this->filters = $filters;
         $this->allowedDomains  = $allowedDomains;
