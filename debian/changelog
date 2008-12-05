@@ -8,8 +8,19 @@ mediaproxy (2.2.0) unstable; urgency=low
   * Changed the internal ForwardingRule linked list to a static array
   * Improved the session setup efficiency by 2 orders of magnitude
   * Removed start_time column from database accounting table
+  * Renamed pdd to post_dial_delay in media statistics
+  * Added management_passport option to the dispatcher
+  * Made getting statistics more efficient
+  * Added code to get all conntrack rule counters at once for efficiency
+  * Improved statistics gathering speed more than 2 times
+  * Removed redundant top level counters in stats
+  * Made speed measurement accurate regarding sessions closed between probes
+  * Use constant interval scheduler for better accuracy in speed measurement
+  * Return single line json blobs for summary and sessions
+  * Always add dialog_id to session statistics
+  * Fixed interaction between dispatcher and opensips for expired sessions
 
- -- Dan Pascu <dan@ag-projects.com>  Fri, 26 Sep 2008 20:59:29 +0300
+ -- Dan Pascu <dan@ag-projects.com>  Sat, 06 Dec 2008 01:54:47 +0200
 
 mediaproxy (2.1.0) unstable; urgency=low
 
