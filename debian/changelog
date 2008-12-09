@@ -1,3 +1,9 @@
+mediaproxy (2.2.1) unstable; urgency=low
+
+  * Fixed logic to handle replies from relay to dispatcher on error cases
+
+ -- Dan Pascu <dan@ag-projects.com>  Tue, 09 Dec 2008 09:16:57 +0200
+
 mediaproxy (2.2.0) unstable; urgency=low
 
   * Clarified debian installation example regarding the testing distribution
