@@ -1,3 +1,9 @@
+mediaproxy (2.2.2) unstable; urgency=low
+
+  * Added minimum pyrad version dependency
+
+ -- Dan Pascu <dan@ag-projects.com>  Tue, 09 Dec 2008 12:27:35 +0200
+
 mediaproxy (2.2.1) unstable; urgency=low
 
   * Fixed logic to handle replies from relay to dispatcher on error cases
