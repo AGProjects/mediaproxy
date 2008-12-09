@@ -105,10 +105,10 @@ else:
 
 class RelayClientProtocol(LineOnlyReceiver):
     noisy = False
-    required_headers = {"update": ["call_id", "from_tag", "from_uri", "to_uri", "cseq", "user_agent", "media", "type"],
-                        "remove": ["call_id", "from_tag"],
-                        "summary": [],
-                        "sessions": []}
+    required_headers = {'update': set(['call_id', 'from_tag', 'from_uri', 'to_uri', 'cseq', 'user_agent', 'media', 'type']),
+                        'remove': set(['call_id', 'from_tag']),
+                        'summary': set(),
+                        'sessions': set()}
 
     def __init__(self):
         self.command = None
@@ -135,30 +135,33 @@ class RelayClientProtocol(LineOnlyReceiver):
                 self.headers = DecodingDict()
             else:
                 log.error("Unknown command: %s" % command)
+                self.transport.write("%s error\r\n" % seq)
         elif line == "":
-            for header in self.required_headers[self.command]:
-                if header not in self.headers:
-                    log.error('Required header "%s" for command "%s" not found' % (header, self.command))
-                    return
             try:
-                try:
-                    response = self.factory.parent.got_command(self.factory.host, self.command, self.headers)
-                except:
-                    traceback.print_exc()
+                missing_headers = self.required_headers[self.command].difference(self.headers)
+                if missing_headers:
+                    for header in missing_headers:
+                        log.error("Missing mandatory header '%s' from '%s' command" % (header, self.command))
                     response = "error"
+                else:
+                    try:
+                        response = self.factory.parent.got_command(self.factory.host, self.command, self.headers)
+                    except:
+                        log.err()
+                        response = "error"
             finally:
-                if response:
-                    self.transport.write("%s %s\r\n" % (self.seq, response))
+                self.transport.write("%s %s\r\n" % (self.seq, response))
                 self.command = None
         else:
             try:
                 name, value = line.split(": ", 1)
             except ValueError:
                 log.error("Unable to parse header: %s" % line)
-            try:
-                self.headers[name] = value
-            except DecodingError, e:
-                log.error("Could not decode header: %s" % e)
+            else:
+                try:
+                    self.headers[name] = value
+                except DecodingError, e:
+                    log.error("Could not decode header: %s" % e)
 
 
 class DispatcherConnectingFactory(ClientFactory):
