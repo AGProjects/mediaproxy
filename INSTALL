@@ -61,7 +61,7 @@ For the database accounting module:
 
 For the RADIUS accounting module:
 
- - pyrad
+ - pyrad (at least 1.1)
    http://www.wiggy.net/code/pyrad/
 
 
