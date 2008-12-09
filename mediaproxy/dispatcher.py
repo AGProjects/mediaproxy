@@ -30,7 +30,7 @@ from application.process import process
 from application.configuration import *
 from application.system import unlink
 
-from mediaproxy import configuration_filename, default_dispatcher_port, default_management_port
+from mediaproxy import configuration_filename, default_dispatcher_port, default_management_port, __version__
 from mediaproxy.tls import X509Credentials, X509NameValidator
 from mediaproxy.interfaces import opensips
 from mediaproxy.scheduler import RecurrentCall, KeepRunning
@@ -148,6 +148,8 @@ class ManagementControlProtocol(ControlProtocol):
         elif line == "sessions":
             defer = self.factory.dispatcher.relay_factory.get_statistics()
             self._add_callbacks(defer)
+        elif line == "version":
+            self.reply(__version__)
         else:
             log.error("Unknown command on management interface: %s" % line)
             self.reply("error")
