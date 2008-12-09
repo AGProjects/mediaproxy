@@ -1,3 +1,10 @@
+mediaproxy (2.2.3) unstable; urgency=low
+
+  * Publish software version as part of the network identity
+  * Added version command on the dispatcher management interface
+
+ -- Dan Pascu <dan@ag-projects.com>  Tue, 09 Dec 2008 19:19:47 +0200
+
 mediaproxy (2.2.2) unstable; urgency=low
 
   * Added minimum pyrad version dependency
