@@ -4,8 +4,6 @@
 
 """SIP Thor backend"""
 
-from twisted.internet import reactor
-
 from application import log
 from application.configuration import *
 from application.system import default_host_ip
