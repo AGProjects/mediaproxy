@@ -7,7 +7,6 @@
 
 import cjson
 import signal
-import traceback
 import resource
 import re
 from time import time
