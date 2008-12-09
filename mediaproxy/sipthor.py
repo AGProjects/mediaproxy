@@ -18,7 +18,7 @@ from thor.eventservice import EventServiceClient, ThorEvent
 from thor.tls import X509Credentials
 
 from mediaproxy.relay import SRVMediaRelayBase
-from mediaproxy import configuration_filename, default_dispatcher_port
+from mediaproxy import configuration_filename, default_dispatcher_port, __version__
 
 
 class SIPThorDomain(str):
@@ -46,7 +46,7 @@ class SIPThorMediaRelayBase(EventServiceClient, SRVMediaRelayBase):
     topics = ["Thor.Members"]
 
     def __init__(self):
-        self.node = GenericThorEntity(ThorNetworkConfig.node_ip, ["media_relay"])
+        self.node = GenericThorEntity(ThorNetworkConfig.node_ip, ["media_relay"], version=__version__)
         self.presence_message = ThorEvent('Thor.Presence', self.node.id)
         self.shutdown_message = ThorEvent('Thor.Leave', self.node.id)
         credentials = X509Credentials(cert_name='relay')
@@ -81,3 +81,4 @@ class SIPThorMediaRelayBase(EventServiceClient, SRVMediaRelayBase):
 
     def shutdown(self, kill_sessions):
         raise NotImplementedError()
+
