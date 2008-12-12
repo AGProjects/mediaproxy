@@ -73,9 +73,10 @@ class RadiusAccounting(EventQueue, pyrad.client.Client):
             config = dict(line.rstrip("\n").split(None, 1) for line in open(main_config_file) if len(line.split(None, 1)) == 2 and not line.startswith("#"))
             secrets = dict(line.rstrip("\n").split(None, 1) for line in open(config["servers"]) if len(line.split(None, 1)) == 2 and not line.startswith("#"))
             server = config["acctserver"]
-            if ":" in server:
+            try:
                 server, acctport = server.split(":")
-            else:
+                acctport = int(acctport)
+            except ValueError:
                 acctport = 1813
             secret = secrets[server]
             dicts = [RadiusDictionaryFile(config["dictionary"])]
