@@ -490,7 +490,7 @@ class Session(object):
                     party_info.remote_sdp = (media_ip, media_port)
                     log.debug("Got initial answer from %s for stream: %s" % (party, stream))
                 else:
-                    if party_info.remote_sdp[1] != media_port or (media_ip != "0.0.0.0" and party_info.remote_sdp[0] != media_ip):
+                    if party_info.remote_sdp[1] != media_port or (party_info.remote_sdp[0] != media_ip != '0.0.0.0'):
                         stream.reset(party, media_ip, media_port)
                         log.debug("Updated %s for stream: %s" % (party, stream))
                     else:
