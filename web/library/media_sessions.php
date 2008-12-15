@@ -181,8 +181,6 @@ class MediaSessions {
     }
 
     function showRelays() {
-        if (!count($this->sessions)) return;
-
         print "
         <table border=0 class=border cellpadding=2 cellspacing=0>
           <tr bgcolor=#c0c0c0 class=border align=right>
