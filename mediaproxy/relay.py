@@ -41,6 +41,7 @@ from application.system import default_host_ip
 from mediaproxy.tls import X509Credentials, X509NameValidator
 from mediaproxy.headers import DecodingDict, DecodingError
 from mediaproxy.mediacontrol import SessionManager
+from mediaproxy.scheduler import RecurrentCall, KeepRunning
 from mediaproxy import __version__ as version, configuration_filename, default_dispatcher_port
 
 IP_FORWARD_FILE = "/proc/sys/net/ipv4/ip_forward"
@@ -198,6 +199,7 @@ class DispatcherConnectingFactory(ClientFactory):
 class SRVMediaRelayBase(object):
 
     def __init__(self):
+        self.srv_monitor = RecurrentCall(Config.dns_check_interval, self._do_lookup)
         self._do_lookup()
 
     def _do_lookup(self):
@@ -212,6 +214,7 @@ class SRVMediaRelayBase(object):
                 defers.append(succeed((addr, port)))
         defer = DeferredList(defers)
         defer.addCallback(self._cb_got_all)
+        return KeepRunning
 
     def _cb_got_srv(self, (answers, auth, add), port):
         for answer in answers:
@@ -228,12 +231,8 @@ class SRVMediaRelayBase(object):
         log.error("Could not resolve neither SRV nor A record for '%s'" % addr)
 
     def _cb_got_all(self, results):
-        self._do_update([result[1] for result in results if result[0] and result[1] is not None])
         if not self.shutting_down:
-            reactor.callLater(Config.dns_check_interval, self._do_lookup)
-
-    def _do_update(self, dispatchers):
-        if not self.shutting_down:
+            dispatchers = [result[1] for result in results if result[0] and result[1] is not None]
             self.update_dispatchers(dispatchers)
 
     def update_dispatchers(self, dispatchers):
@@ -393,6 +392,7 @@ class MediaRelay(MediaRelayBase):
     def shutdown(self, kill_sessions):
         if not self.shutting_down:
             self.shutting_down = True
+            self.srv_monitor.cancel()
             if len(self.dispatcher_connectors) + len(self.old_connectors) == 0:
                 self._shutdown()
             else:

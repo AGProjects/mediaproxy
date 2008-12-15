@@ -55,14 +55,14 @@ class SIPThorMediaRelayBase(EventServiceClient, SRVMediaRelayBase):
         SRVMediaRelayBase.__init__(self)
 
     def handle_event(self, event):
-        sip_proxy_ips = [node.ip for node in ThorEntities(event.message, role="sip_proxy")]
-        self.sipthor_dispatchers = [(ip, default_dispatcher_port) for ip in sip_proxy_ips]
         if not self.shutting_down:
+            sip_proxy_ips = [node.ip for node in ThorEntities(event.message, role="sip_proxy")]
+            self.sipthor_dispatchers = [(ip, default_dispatcher_port) for ip in sip_proxy_ips]
             self.update_dispatchers(self.sipthor_dispatchers + self.additional_dispatchers)
 
-    def _do_update(self, dispatchers):
-        self.additional_dispatchers = dispatchers
+    def _cb_got_all(self, results):
         if not self.shutting_down:
+            self.additional_dispatchers = [result[1] for result in results if result[0] and result[1] is not None]
             self.update_dispatchers(self.sipthor_dispatchers + self.additional_dispatchers)
 
     def update_dispatchers(self, dispatchers):
