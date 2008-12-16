@@ -666,11 +666,7 @@ class SessionManager(Logger):
             is_caller_cseq = True
             session = self.sessions[(call_id, from_tag)] = Session(self, dispatcher, call_id, from_tag, from_uri, to_tag, to_uri, cseq, user_agent, media, is_downstream, is_caller_cseq)
             log.debug("created new session %s" % session)
-        retval = session.get_local_media(is_downstream, cseq, is_caller_cseq)
-        for index, (media_type, media_ip, media_port, media_direction) in enumerate(media):
-            if media_ip == "0.0.0.0":
-                retval[index] = ("0.0.0.0", retval[index][1])
-        return retval
+        return session.get_local_media(is_downstream, cseq, is_caller_cseq)
 
     def remove_session(self, call_id, from_tag, to_tag=None, **kw):
         key = self._find_session_key(call_id, from_tag, to_tag)
