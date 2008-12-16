@@ -650,6 +650,9 @@ class SessionManager(Logger):
                 return key_to
         return None
 
+    def has_session(self, call_id, from_tag, to_tag=None, **kw):
+        return any((call_id, tag) in self.sessions for tag in (from_tag, to_tag) if tag is not None)
+
     def update_session(self, dispatcher, call_id, from_tag, from_uri, to_uri, cseq, user_agent, media, type, to_tag=None, **kw):
         key = self._find_session_key(call_id, from_tag, to_tag)
         if key:
@@ -659,12 +662,11 @@ class SessionManager(Logger):
             is_caller_cseq = (session.from_tag == from_tag)
             session.update_media(cseq, to_tag, user_agent, media, is_downstream, is_caller_cseq)
         else:
-            if not self.relay.add_session(dispatcher):
-                log.debug("cannot add new session, MediaProxy relay is shutting down")
-                return None
             is_downstream = type == "request"
             is_caller_cseq = True
-            session = self.sessions[(call_id, from_tag)] = Session(self, dispatcher, call_id, from_tag, from_uri, to_tag, to_uri, cseq, user_agent, media, is_downstream, is_caller_cseq)
+            session = Session(self, dispatcher, call_id, from_tag, from_uri, to_tag, to_uri, cseq, user_agent, media, is_downstream, is_caller_cseq)
+            self.sessions[(call_id, from_tag)] = session
+            self.relay.add_session(dispatcher)
             log.debug("created new session %s" % session)
         return session.get_local_media(is_downstream, cseq, is_caller_cseq)
 

@@ -335,11 +335,12 @@ class MediaRelay(MediaRelayBase):
         elif command == "sessions":
             return cjson.encode(self.session_manager.statistics)
         elif command == "update":
+            if self.graceful_shutdown or self.shutting_down:
+                if not self.session_manager.has_session(**headers):
+                    log.debug("cannot add new session: media-relay is shutting down")
+                    return 'halting'
             local_media = self.session_manager.update_session(dispatcher, **headers)
-            if local_media is None:
-                return "halting"
-            else:
-                return " ".join([local_media[0][0]] + [str(media[1]) for media in local_media])
+            return " ".join([local_media[0][0]] + [str(media[1]) for media in local_media])
         else: # remove
             session = self.session_manager.remove_session(**headers)
             if session is None:
@@ -357,11 +358,7 @@ class MediaRelay(MediaRelayBase):
             log.warn("dispatcher for expired session is no longer online, statistics are lost!")
 
     def add_session(self, dispatcher):
-        if self.shutting_down or self.graceful_shutdown:
-            return False
-        else:
-            self.dispatcher_session_count[dispatcher] = self.dispatcher_session_count.get(dispatcher, 0) + 1
-            return True
+        self.dispatcher_session_count[dispatcher] = self.dispatcher_session_count.get(dispatcher, 0) + 1
 
     def remove_session(self, dispatcher):
         self.dispatcher_session_count[dispatcher] -= 1
