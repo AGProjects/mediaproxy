@@ -649,8 +649,7 @@ class SessionManager(Logger):
             if key_to in self.sessions:
                 return key_to
 
-    def update_session(self, dispatcher, call_id, from_tag, from_uri, to_uri, cseq, user_agent, media, type, **kw_rest):
-        to_tag = kw_rest.get("to_tag")
+    def update_session(self, dispatcher, call_id, from_tag, from_uri, to_uri, cseq, user_agent, media, type, to_tag=None, **kw):
         key = self._find_session_key(call_id, from_tag, to_tag)
         if key:
             session = self.sessions[key]
@@ -672,8 +671,8 @@ class SessionManager(Logger):
                 retval[index] = ("0.0.0.0", retval[index][1])
         return retval
 
-    def remove_session(self, call_id, from_tag, **kw_rest):
-        key = self._find_session_key(call_id, from_tag, kw_rest.get("to_tag"))
+    def remove_session(self, call_id, from_tag, to_tag=None, **kw):
+        key = self._find_session_key(call_id, from_tag, to_tag)
         try:
             session = self.sessions[key]
         except KeyError:
