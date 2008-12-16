@@ -1,3 +1,24 @@
+mediaproxy (2.3.0) unstable; urgency=low
+
+  * Fixed bug that prevented the dispatcher from trying the next relay in
+    the list, when a relay was unavailable or unusable
+  * Read acctport from the radius config file to an integer not to a string
+  * Fixed a bug that prevented a call on hold to be resumed in certain cases
+  * Don't close the media session when on hold and the contrack rule expires
+  * Enhanced graceful shutdown logic and made it reliable:
+    - keep all dispatcher connections active until all sessions are gone
+    - continue to update the list of active dispatchers
+  * Changed function signatures to simplify access to the to_tag argument
+  * Never return 0.0.0.0 as the IP address to OpenSIPS
+  * Fixed a bug with incorrect session counting when errors happen while
+    creating a new session, which could result in connections with obsolete
+    dispatchers being kept open indefinitely
+  * Made web page display relay summaries even when there are no sessions
+  * Fixed web page to show correct stream counts when there are no sessions
+  * Added minimum version build dependendency for libnetfilter-conntrack-dev
+
+ -- Dan Pascu <dan@ag-projects.com>  Tue, 16 Dec 2008 19:35:15 +0200
+
 mediaproxy (2.2.3) unstable; urgency=low
 
   * Publish software version as part of the network identity
