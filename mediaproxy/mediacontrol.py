@@ -648,6 +648,7 @@ class SessionManager(Logger):
             key_to = (call_id, to_tag)
             if key_to in self.sessions:
                 return key_to
+        return None
 
     def update_session(self, dispatcher, call_id, from_tag, from_uri, to_uri, cseq, user_agent, media, type, to_tag=None, **kw):
         key = self._find_session_key(call_id, from_tag, to_tag)
