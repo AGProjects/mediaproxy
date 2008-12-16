@@ -246,20 +246,20 @@ class SRVMediaRelayBase(object):
 
     def _handle_SIGHUP(self, *args):
         log.msg("Received SIGHUP, shutting down after all sessions have expired.")
-        reactor.callFromThread(self.shutdown, False)
+        reactor.callFromThread(self.shutdown, graceful=True)
 
     def _handle_SIGINT(self, *args):
         if process._daemon:
             log.msg("Received SIGINT, shutting down.")
         else:
             log.msg("Received KeyboardInterrupt, exiting.")
-        reactor.callFromThread(self.shutdown, True)
+        reactor.callFromThread(self.shutdown)
 
     def _handle_SIGTERM(self, *args):
         log.msg("Received SIGTERM, shutting down.")
-        reactor.callFromThread(self.shutdown, True)
+        reactor.callFromThread(self.shutdown)
 
-    def shutdown(self, kill_sessions):
+    def shutdown(self, graceful=False):
         raise NotImplementedError()
 
     def on_shutdown(self):
@@ -298,8 +298,16 @@ class MediaRelay(MediaRelayBase):
         self.dispatcher_connectors = {}
         self.old_connectors = {}
         self.shutting_down = False
+        self.graceful_shutdown = False
         self.start_time = time()
         MediaRelayBase.__init__(self)
+
+    @property
+    def status(self):
+        if self.graceful_shutdown or self.shutting_down:
+            return 'halting'
+        else:
+            return 'active'
 
     def update_dispatchers(self, dispatchers):
         dispatchers = set(dispatchers)
@@ -318,7 +326,7 @@ class MediaRelay(MediaRelayBase):
         if command == "summary":
             summary = {'ip'            : Config.relay_ip,
                        'version'       : version,
-                       'status'        : self.shutting_down and 'halting' or 'ok',
+                       'status'        : self.status,
                        'uptime'        : int(time() - self.start_time),
                        'session_count' : len(self.session_manager.sessions),
                        'stream_count'  : self.session_manager.stream_count,
@@ -349,7 +357,7 @@ class MediaRelay(MediaRelayBase):
             log.warn("dispatcher for expired session is no longer online, statistics are lost!")
 
     def add_session(self, dispatcher):
-        if self.shutting_down:
+        if self.shutting_down or self.graceful_shutdown:
             return False
         else:
             self.dispatcher_session_count[dispatcher] = self.dispatcher_session_count.get(dispatcher, 0) + 1
@@ -359,7 +367,9 @@ class MediaRelay(MediaRelayBase):
         self.dispatcher_session_count[dispatcher] -= 1
         if self.dispatcher_session_count[dispatcher] == 0:
             del self.dispatcher_session_count[dispatcher]
-        if dispatcher in self.old_connectors:
+        if self.graceful_shutdown and not self.dispatcher_session_count:
+            self.shutdown()
+        elif dispatcher in self.old_connectors:
             self._check_disconnect(dispatcher)
 
     def _check_disconnect(self, dispatcher):
@@ -389,7 +399,11 @@ class MediaRelay(MediaRelayBase):
                     self._shutdown()
             return False
 
-    def shutdown(self, kill_sessions):
+    def shutdown(self, graceful=False):
+        if graceful:
+            self.graceful_shutdown = True
+            if self.dispatcher_session_count:
+                return
         if not self.shutting_down:
             self.shutting_down = True
             self.srv_monitor.cancel()
@@ -397,7 +411,6 @@ class MediaRelay(MediaRelayBase):
                 self._shutdown()
             else:
                 self.update_dispatchers([])
-        if kill_sessions:
             self.session_manager.cleanup()
 
     def on_shutdown(self):
