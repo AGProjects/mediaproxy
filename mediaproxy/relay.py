@@ -178,7 +178,8 @@ class DispatcherConnectingFactory(ClientFactory):
 
     def clientConnectionFailed(self, connector, reason):
         log.error('Could not connect to dispatcher at %(host)s:%(port)d (retrying in %%d seconds): %%s' % connector.__dict__ % (Config.reconnect_delay, reason.value))
-        self.delayed = reactor.callLater(Config.reconnect_delay, connector.connect)
+        if self.parent.connector_needs_reconnect(connector):
+            self.delayed = reactor.callLater(Config.reconnect_delay, connector.connect)
 
     def clientConnectionLost(self, connector, reason):
         if reason.type != ConnectionDone:
