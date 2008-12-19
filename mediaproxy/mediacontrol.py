@@ -221,11 +221,17 @@ class MediaSubStream(object):
         if self.forwarding_rule is None:
             return self._counters
         else:
-            return self._counters + self.forwarding_rule.counters
+            try:
+                return self._counters + self.forwarding_rule.counters
+            except _conntrack.Error:
+                return self._counters
 
     def _stop_relaying(self):
         if self.forwarding_rule is not None:
-            self._counters += self.forwarding_rule.counters
+            try:
+                self._counters += self.forwarding_rule.counters
+            except _conntrack.Error:
+                pass
             self.forwarding_rule = None
 
     def reset(self, party):
