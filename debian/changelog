@@ -1,3 +1,14 @@
+mediaproxy (2.3.1) unstable; urgency=low
+
+  * Changed info column in media_sessions to mediumblob to avoid truncation
+  * Added missing minimum version dependencies in the debian control file
+  * Fixed reconnect logic between relay and dispacther to handle the case
+    when a dispatcher is removed while the connection to it has failed
+  * Handle exception caused by a race condition when accessing counters from
+    a ForwardingRule that has expired but has not yet been acknowledged
+
+ -- Dan Pascu <dan@ag-projects.com>  Sat, 20 Dec 2008 03:51:27 +0200
+
 mediaproxy (2.3.0) unstable; urgency=low
 
   * Fixed bug that prevented the dispatcher from trying the next relay in
