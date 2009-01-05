@@ -229,7 +229,7 @@ class SRVMediaRelayBase(object):
 
     def _eb_no_dns(self, failure, addr):
         failure.trap(DNSNameError, DNSQueryRefusedError)
-        log.error("Could not resolve neither SRV nor A record for '%s'" % addr)
+        log.error("Could resolve neither SRV nor A record for '%s'" % addr)
 
     def _cb_got_all(self, results):
         if not self.shutting_down:
