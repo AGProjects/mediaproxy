@@ -376,7 +376,7 @@ class MediaRelay(MediaRelayBase):
             old_state = connector.state
             connector.factory.cancel_delayed()
             connector.disconnect()
-            if old_state != "connected":
+            if old_state == "disconnected":
                 del self.old_connectors[dispatcher]
                 if self.shutting_down and len(self.dispatcher_connectors) + len(self.old_connectors) == 0:
                     self._shutdown()
