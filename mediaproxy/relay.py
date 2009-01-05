@@ -22,13 +22,13 @@ try:    from twisted.internet import epollreactor; epollreactor.install()
 except: raise RuntimeError("mandatory epoll reactor support is missing from the twisted framework")
 
 from twisted.protocols.basic import LineOnlyReceiver
-from twisted.internet.error import ConnectionDone
+from twisted.internet.error import ConnectionDone, DNSLookupError
 from twisted.internet.protocol import ClientFactory
 from twisted.internet.defer import DeferredList, succeed
 from twisted.internet import reactor
 from twisted.names import dns
 from twisted.names.client import lookupService
-from twisted.names.error import DNSNameError, DNSQueryRefusedError
+from twisted.names.error import DomainError
 
 from gnutls.errors import CertificateError, CertificateSecurityError
 
@@ -221,14 +221,14 @@ class SRVMediaRelayBase(object):
         for answer in answers:
             if answer.type == dns.SRV and answer.payload and answer.payload.target != dns.Name("."):
                 return str(answer.payload.target), port
-        raise DNSNameError
+        raise DomainError
 
     def _eb_no_srv(self, failure, addr, port):
-        failure.trap(DNSNameError, DNSQueryRefusedError)
+        failure.trap(DomainError)
         return reactor.resolve(addr).addCallback(lambda host: (host, port)).addErrback(self._eb_no_dns, addr)
 
     def _eb_no_dns(self, failure, addr):
-        failure.trap(DNSNameError, DNSQueryRefusedError)
+        failure.trap(DNSLookupError)
         log.error("Could resolve neither SRV nor A record for '%s'" % addr)
 
     def _cb_got_all(self, results):
