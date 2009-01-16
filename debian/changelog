@@ -1,3 +1,11 @@
+mediaproxy (2.3.2) unstable; urgency=low
+
+  * Improved exception handling for DNS SRV lookups
+  * Fixed exception caused by removing the dispatcher twice on shutdown
+  * Fixed bug with preferred relay being considered last instead of first
+
+ -- Dan Pascu <dan@ag-projects.com>  Fri, 16 Jan 2009 12:51:08 +0200
+
 mediaproxy (2.3.1) unstable; urgency=low
 
   * Changed info column in media_sessions to mediumblob to avoid truncation
