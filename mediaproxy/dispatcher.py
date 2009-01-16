@@ -10,6 +10,7 @@ import signal
 import cPickle as pickle
 import cjson
 
+from collections import deque
 from itertools import ifilter
 from time import time
 
@@ -385,14 +386,14 @@ class RelayFactory(Factory):
         ## We do not have a session for this call_id or the session is already expired
         if command == "update":
             preferred_relay = parsed_headers.get("media_relay")
+            try_relays = deque(protocol for protocol in self.relays.itervalues() if protocol.ready and protocol.ip != preferred_relay)
+            random.shuffle(try_relays)
             if preferred_relay is not None:
-                try_relays = [protocol for protocol in self.relays.itervalues() if protocol.ip == preferred_relay]
-                other_relays = [protocol for protocol in self.relays.itervalues() if protocol.ready and protocol.ip != preferred_relay]
-                random.shuffle(other_relays)
-                try_relays.extend(other_relays)
-            else:
-                try_relays = [protocol for protocol in self.relays.itervalues() if protocol.ready]
-                random.shuffle(try_relays)
+                protocol = self.relays.get(preferred_relay)
+                if protocol is not None and protocol.ready:
+                    try_relays.appendleft(protocol)
+                else:
+                    log.warn("user requested media_relay %s is not available" % preferred_relay)
             defer = self._try_next(try_relays, command, headers)
             defer.addCallback(self._add_session, try_relays, call_id, parsed_headers)
             return defer
@@ -404,19 +405,19 @@ class RelayFactory(Factory):
             raise RelayError("Non-update command received from OpenSIPS for unknown session")
 
     def _add_session(self, result, try_relays, call_id, parsed_headers):
-        self.sessions[call_id] = RelaySession(try_relays[-1].ip, parsed_headers)
+        self.sessions[call_id] = RelaySession(try_relays[0].ip, parsed_headers)
         return result
 
     def _relay_error(self, failure, try_relays, command, headers):
         failure.trap(RelayError)
-        failed_relay = try_relays.pop()
+        failed_relay = try_relays.popleft()
         log.warn("Relay at %s returned error: %s" % (failed_relay.ip, failure.value))
         return self._try_next(try_relays, command, headers)
 
     def _try_next(self, try_relays, command, headers):
         if len(try_relays) == 0:
             raise RelayError("No suitable relay found")
-        defer = try_relays[-1].send_command(command, headers)
+        defer = try_relays[0].send_command(command, headers)
         defer.addErrback(self._relay_error, try_relays, command, headers)
         return defer
 
