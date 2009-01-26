@@ -91,7 +91,7 @@ class RadiusAccounting(EventQueue, pyrad.client.Client):
             retries = int(config["radius_retries"])
         except Exception, e:
             log.fatal("cannot read the RADIUS configuration file")
-            raise RuntimeError(str(e))
+            raise
         pyrad.client.Client.__init__(self, server, 1812, acctport, secret, raddict)
         self.timeout = timeout
         self.retries = retries
