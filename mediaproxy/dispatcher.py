@@ -208,7 +208,8 @@ class RelayServerProtocol(LineOnlyReceiver):
         self.commands = {}
         self.ready = True
         self.sequence_number = 0
-    
+        self.authenticated = False
+
     def send_command(self, command, headers):
         log.debug('Issuing "%s" command to relay at %s' % (command, self.ip))
         seq = str(self.sequence_number)
@@ -224,12 +225,17 @@ class RelayServerProtocol(LineOnlyReceiver):
         defer.errback(RelayError("Relay at %s timed out" % self.ip))
 
     def connectionMade(self):
+        if self.ip in self.factory.relays:
+            log.error("Connection to relay at %s is already present, disconnecting" % self.ip)
+            self.transport.loseConnection()
+            return
         if Config.passport is not None:
             peer_cert = self.transport.getPeerCertificate()
             if not Config.passport.accept(peer_cert):
                 self.transport.loseConnection(CertificateSecurityError('peer certificate not accepted'))
                 return
-        self.factory.purge_sessions(self)
+        self.authenticated = True
+        self.factory.new_relay(self)
 
     def lineReceived(self, line):
         try:
@@ -290,7 +296,7 @@ class RelayServerProtocol(LineOnlyReceiver):
         for command, defer, timer in self.commands.itervalues():
             timer.cancel()
             defer.errback(RelayError("Relay at %s disconnected" % self.ip))
-        self.factory.connection_lost(self.ip)
+        self.factory.connection_lost(self)
 
 
 class DialogID(str):
@@ -345,18 +351,15 @@ class RelayFactory(Factory):
     def buildProtocol(self, addr):
         ip = addr.host
         log.debug("Connection from relay at %s" % ip)
-        if ip in self.relays:
-            log.error("Connection to relay %s is already present, disconnecting" % ip)
-            return None
-        timer = self.cleanup_timers.pop(ip, None)
-        if timer is not None:
-            timer.cancel()
         prot = Factory.buildProtocol(self, addr)
         prot.ip = ip
-        self.relays[ip] = prot
         return prot
 
-    def purge_sessions(self, relay):
+    def new_relay(self, relay):
+        self.relays[relay.ip] = relay
+        timer = self.cleanup_timers.pop(relay.ip, None)
+        if timer is not None:
+            timer.cancel()
         defer = relay.send_command("sessions", [])
         defer.addCallback(self._cb_purge_sessions, relay.ip)
 
@@ -441,13 +444,14 @@ class RelayFactory(Factory):
     def _got_statistics(self, results):
         return "[%s]" % ', '.join(result[1:-1] for succeeded, result in results if succeeded and result!='[]')
 
-    def connection_lost(self, ip):
-        del self.relays[ip]
+    def connection_lost(self, relay):
+        if relay.authenticated:
+            del self.relays[relay.ip]
         if self.shutting_down:
             if len(self.relays) == 0:
                 self.defer.callback(None)
         else:
-            self.cleanup_timers[ip] = reactor.callLater(Config.cleanup_dead_relays_after, self._do_cleanup, ip)
+            self.cleanup_timers[relay.ip] = reactor.callLater(Config.cleanup_dead_relays_after, self._do_cleanup, relay.ip)
 
     def _do_cleanup(self, ip):
         log.debug("Doing cleanup for old relay %s" % ip)
