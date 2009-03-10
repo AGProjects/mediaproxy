@@ -368,7 +368,7 @@ class RelayFactory(Factory):
         relay_call_ids = [session["call_id"] for session in relay_sessions]
         for session_id, session in self.sessions.items():
             if session.relay_ip == relay_ip and session_id not in relay_call_ids:
-                log.warn("Session %s is not longer on relay %s, statistics are probably lost" % (session_id, relay_ip))
+                log.warn("Session %s is no longer on relay %s, statistics are probably lost" % (session_id, relay_ip))
                 del self.sessions[session_id]
 
     def send_command(self, command, headers):
