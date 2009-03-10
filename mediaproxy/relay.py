@@ -25,6 +25,7 @@ from twisted.protocols.basic import LineOnlyReceiver
 from twisted.internet.error import ConnectionDone, DNSLookupError
 from twisted.internet.protocol import ClientFactory
 from twisted.internet.defer import DeferredList, succeed
+from twisted.internet.task import LoopingCall
 from twisted.internet import reactor
 from twisted.names import dns
 from twisted.names.client import lookupService
@@ -113,6 +114,7 @@ class RelayClientProtocol(LineOnlyReceiver):
     def __init__(self):
         self.command = None
         self.seq = None
+        self.ping_loop = LoopingCall(self._send_ping)
 
     def connectionMade(self):
         peer = self.transport.getPeer()
@@ -121,6 +123,11 @@ class RelayClientProtocol(LineOnlyReceiver):
             peer_cert = self.transport.getPeerCertificate()
             if not Config.passport.accept(peer_cert):
                 self.transport.loseConnection(CertificateSecurityError('peer certificate not accepted'))
+        self.ping_loop.start(60, now=False)
+
+    def connectionLost(self, reason):
+        if self.ping_loop.running:
+            self.ping_loop.stop()
 
     def lineReceived(self, line):
         if self.command is None:
@@ -162,6 +169,9 @@ class RelayClientProtocol(LineOnlyReceiver):
                     self.headers[name] = value
                 except DecodingError, e:
                     log.error("Could not decode header: %s" % e)
+
+    def _send_ping(self):
+        self.transport.write("ping\r\n")
 
 
 class DispatcherConnectingFactory(ClientFactory):

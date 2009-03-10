@@ -241,8 +241,8 @@ class RelayServerProtocol(LineOnlyReceiver):
         try:
             first, rest = line.split(" ", 1)
         except ValueError:
-            log.error("Could not decode reply from relay %s: %s" % (self.ip, line))
-            return
+            first = line
+            rest = ""
         if first == "expired":
             try:
                 stats = cjson.decode(rest)
@@ -260,6 +260,8 @@ class RelayServerProtocol(LineOnlyReceiver):
                     session.expire_time = time()
                 else:
                     del self.factory.sessions[call_id]
+            return
+        elif first == "ping":
             return
         try:
             command, defer, timer = self.commands.pop(first)
