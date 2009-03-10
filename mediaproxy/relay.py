@@ -172,6 +172,7 @@ class DispatcherConnectingFactory(ClientFactory):
         self.parent = parent
         self.host = (host, port)
         self.delayed = None
+        self.connection_lost = False
 
     def __eq__(self, other):
         return self.host == other.host
@@ -182,19 +183,30 @@ class DispatcherConnectingFactory(ClientFactory):
             self.delayed = reactor.callLater(Config.reconnect_delay, connector.connect)
 
     def clientConnectionLost(self, connector, reason):
+        self.cancel_delayed()
         if reason.type != ConnectionDone:
             log.error("Connection with dispatcher at %(host)s:%(port)d was lost: %%s" % connector.__dict__ % reason.value)
         else:
             log.msg("Connection with dispatcher at %(host)s:%(port)d was closed" % connector.__dict__)
         if self.parent.connector_needs_reconnect(connector):
-            if isinstance(reason.value, CertificateError):
+            if isinstance(reason.value, CertificateError) or self.connection_lost:
                 self.delayed = reactor.callLater(Config.reconnect_delay, connector.connect)
             else:
-                connector.connect()
+                self.delayed = reactor.callLater(min(Config.reconnect_delay, 1), connector.connect)
+            self.connection_lost = True
+
+    def buildProtocol(self, addr):
+        self.delayed = reactor.callLater(5, self._connected_successfully)
+        return ClientFactory.buildProtocol(self, addr)
+
+    def _connected_successfully(self):
+        self.connection_lost = False
 
     def cancel_delayed(self):
-        if self.delayed and self.delayed.active():
-            self.delayed.cancel()
+        if self.delayed:
+            if self.delayed.active():
+                self.delayed.cancel()
+            self.delayed = None
 
 
 class SRVMediaRelayBase(object):
