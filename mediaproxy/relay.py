@@ -325,10 +325,14 @@ class MediaRelay(MediaRelayBase):
     def update_dispatchers(self, dispatchers):
         dispatchers = set(dispatchers)
         for new_dispatcher in dispatchers.difference(self.dispatchers):
-            log.debug('Adding new dispatcher at %s:%d' % new_dispatcher)
-            dispatcher_addr, dispatcher_port = new_dispatcher
-            factory = DispatcherConnectingFactory(self, dispatcher_addr, dispatcher_port)
-            self.dispatcher_connectors[new_dispatcher] = reactor.connectTLS(dispatcher_addr, dispatcher_port, factory, self.cred)
+            if new_dispatcher in self.old_connectors.iterkeys():
+                log.debug('Restoring old dispatcher at %s:%d' % new_dispatcher)
+                self.dispatcher_connectors[new_dispatcher] = self.old_connectors.pop(new_dispatcher)
+            else:
+                log.debug('Adding new dispatcher at %s:%d' % new_dispatcher)
+                dispatcher_addr, dispatcher_port = new_dispatcher
+                factory = DispatcherConnectingFactory(self, dispatcher_addr, dispatcher_port)
+                self.dispatcher_connectors[new_dispatcher] = reactor.connectTLS(dispatcher_addr, dispatcher_port, factory, self.cred)
         for old_dispatcher in self.dispatchers.difference(dispatchers):
             log.debug('Removing old dispatcher at %s:%d' % old_dispatcher)
             self.old_connectors[old_dispatcher] = self.dispatcher_connectors.pop(old_dispatcher)
