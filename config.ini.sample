@@ -55,6 +55,12 @@
 ;
 ;port_range = 50000:60000
 
+; The minimum level log messages need to have in order to appear in syslog
+; or on the console, depending on the mode the relay is running in.
+; In order of severity, this can be one of CRITICAL, ERROR, WARNING, INFO or
+; DEBUG.
+;log_level = DEBUG
+
 ; The amount of time to wait for a stream in a new SDP offer to start sending
 ; data before the relay decides that it has timed out. The default value is 90
 ; seconds. This only applies to the initial setup stage, before the first
@@ -156,6 +162,12 @@
 ; Default value is None.
 ;
 ;management_passport = None
+
+; The minimum level log messages need to have in order to appear in syslog
+; or on the console, depending on the mode the dispatcher is running in.
+; In order of severity, this can be one of CRITICAL, ERROR, WARNING, INFO or
+; DEBUG.
+;log_level = DEBUG
 
 ; Timeout value in second for individual relays. When a command is sent from
 ; the dispatcher to a relay it will wait this amount of seconds for a reply.
