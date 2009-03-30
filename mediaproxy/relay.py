@@ -76,14 +76,21 @@ class PortRange(object):
         if not (self.start in allowed and self.end in allowed and self.start < self.end):
             raise ValueError("bad range: %r: ports must be even numbers in the range [1024, 65536] with start < end" % value)
 
+class PositiveInteger(int):
+    def __new__(cls, value):
+        instance = int.__new__(cls, value)
+        if instance < 1:
+            raise ValueError("value must be a positive integer")
+        return instance
+
 
 class Config(ConfigSection):
     _datatypes = {'dispatchers': DispatcherAddressList, 'relay_ip': IPAddress, 'passport': X509NameValidator}
     dispatchers = []
     relay_ip = default_host_ip
     port_range = PortRange("50000:60000")
-    dns_check_interval = 60
-    reconnect_delay = 10
+    dns_check_interval = PositiveInteger(60)
+    reconnect_delay = PositiveInteger(10)
     passport = None
 
 
