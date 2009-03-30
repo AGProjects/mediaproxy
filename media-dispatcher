@@ -10,7 +10,7 @@ if __name__ == "__main__":
     import sys
     from optparse import OptionParser
     from application.process import process, ProcessError
-    from application.configuration import ConfigFile
+    from application.configuration import ConfigFile, datatypes
     from application import log
     import mediaproxy
 
@@ -29,7 +29,7 @@ if __name__ == "__main__":
 
     process._system_config_directory = mediaproxy.system_config_directory
     config_file = ConfigFile(mediaproxy.configuration_filename)
-    log.level.current = config_file.get_option("Dispatcher", 'log_level', default=log.level.DEBUG, type=mediaproxy.LogLevel)
+    log.level.current = config_file.get_option("Dispatcher", 'log_level', default=log.level.DEBUG, type=datatypes.LogLevel)
 
     try:
         process.runtime_directory = mediaproxy.runtime_directory
