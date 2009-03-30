@@ -21,7 +21,7 @@ from mediaproxy import configuration_filename, default_dispatcher_port, __versio
 
 class SIPThorDomain(str):
     """A SIP Thor domain name or the keyword None"""
-    def __new__(typ, name):
+    def __new__(cls, name):
         if name.lower() == 'none':
             return None
         return name

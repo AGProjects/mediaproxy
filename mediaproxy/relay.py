@@ -49,7 +49,7 @@ IP_FORWARD_FILE = "/proc/sys/net/ipv4/ip_forward"
 KERNEL_VERSION_FILE = "/proc/sys/kernel/osrelease"
 
 class DispatcherAddress(tuple):
-    def __new__(typ, value):
+    def __new__(cls, value):
         match = re.search(r"^(?P<address>.+?):(?P<port>\d+)$", value)
         if match:
             address = str(match.group("address"))
@@ -65,7 +65,7 @@ class DispatcherAddress(tuple):
         return (address, port, is_domain)
 
 class DispatcherAddressList(list):
-    def __new__(typ, value):
+    def __new__(cls, value):
         return [DispatcherAddress(dispatcher) for dispatcher in value.split()]
 
 class PortRange(object):
