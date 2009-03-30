@@ -78,7 +78,7 @@ class PortRange(object):
 
 
 class Config(ConfigSection):
-    _datatypes = {'dispatchers': DispatcherAddressList, 'relay_ip': IPAddress, 'port_range': PortRange, 'passport': X509NameValidator}
+    _datatypes = {'dispatchers': DispatcherAddressList, 'relay_ip': IPAddress, 'passport': X509NameValidator}
     dispatchers = []
     relay_ip = default_host_ip
     port_range = PortRange("50000:60000")
