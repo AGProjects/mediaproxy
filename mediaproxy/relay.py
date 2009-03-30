@@ -25,7 +25,6 @@ from twisted.protocols.basic import LineOnlyReceiver
 from twisted.internet.error import ConnectionDone, DNSLookupError
 from twisted.internet.protocol import ClientFactory
 from twisted.internet.defer import DeferredList, succeed
-from twisted.internet.task import LoopingCall
 from twisted.internet import reactor
 from twisted.names import dns
 from twisted.names.client import lookupService
@@ -90,6 +89,7 @@ class Config(ConfigSection):
     relay_ip = default_host_ip
     port_range = PortRange("50000:60000")
     dns_check_interval = PositiveInteger(60)
+    keepalive_interval = PositiveInteger(10)
     reconnect_delay = PositiveInteger(10)
     passport = None
 
@@ -121,7 +121,11 @@ class RelayClientProtocol(LineOnlyReceiver):
     def __init__(self):
         self.command = None
         self.seq = None
-        self.ping_loop = LoopingCall(self._send_ping)
+        self._connection_watcher = None
+
+    def _send_keepalive(self):
+        self.transport.write("ping\r\n")
+        return KeepRunning
 
     def connectionMade(self):
         peer = self.transport.getPeer()
@@ -130,11 +134,11 @@ class RelayClientProtocol(LineOnlyReceiver):
             peer_cert = self.transport.getPeerCertificate()
             if not Config.passport.accept(peer_cert):
                 self.transport.loseConnection(CertificateSecurityError('peer certificate not accepted'))
-        self.ping_loop.start(60, now=False)
+        self._connection_watcher = RecurrentCall(Config.keepalive_interval, self._send_keepalive)
 
     def connectionLost(self, reason):
-        if self.ping_loop.running:
-            self.ping_loop.stop()
+        self._connection_watcher.cancel()
+        self._connection_watcher = None
 
     def lineReceived(self, line):
         if self.command is None:
@@ -176,9 +180,6 @@ class RelayClientProtocol(LineOnlyReceiver):
                     self.headers[name] = value
                 except DecodingError, e:
                     log.error("Could not decode header: %s" % e)
-
-    def _send_ping(self):
-        self.transport.write("ping\r\n")
 
 
 class DispatcherConnectingFactory(ClientFactory):
