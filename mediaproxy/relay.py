@@ -146,8 +146,9 @@ class RelayClientProtocol(LineOnlyReceiver):
         self._connection_watcher = RecurrentCall(Config.keepalive_interval, self._send_keepalive)
 
     def connectionLost(self, reason):
-        self._connection_watcher.cancel()
-        self._connection_watcher = None
+        if self._connection_watcher is not None:
+            self._connection_watcher.cancel()
+            self._connection_watcher = None
         self._queued_keepalives = 0
 
     def lineReceived(self, line):
