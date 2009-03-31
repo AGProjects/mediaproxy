@@ -41,10 +41,10 @@ log.msg("Twisted is using %s" % reactor.__module__.rsplit('.', 1)[-1])
 
 
 class DispatcherAddress(datatypes.NetworkAddress):
-    _defaultPort = default_dispatcher_port
+    default_port = default_dispatcher_port
 
 class DispatcherManagementAddress(datatypes.NetworkAddress):
-    _defaultPort = default_management_port
+    default_port = default_management_port
 
 class AccountingModuleList(datatypes.StringList):
     _valid_backends = set(('database', 'radius'))
