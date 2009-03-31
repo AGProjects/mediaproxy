@@ -43,7 +43,7 @@ from mediaproxy.tls import X509Credentials, X509NameValidator
 from mediaproxy.headers import DecodingDict, DecodingError
 from mediaproxy.mediacontrol import SessionManager
 from mediaproxy.scheduler import RecurrentCall, KeepRunning
-from mediaproxy import __version__ as version, configuration_filename, default_dispatcher_port
+from mediaproxy import __version__, configuration_filename, default_dispatcher_port
 
 IP_FORWARD_FILE = "/proc/sys/net/ipv4/ip_forward"
 KERNEL_VERSION_FILE = "/proc/sys/kernel/osrelease"
@@ -374,7 +374,7 @@ class MediaRelay(MediaRelayBase):
     def got_command(self, dispatcher, command, headers):
         if command == "summary":
             summary = {'ip'            : Config.relay_ip,
-                       'version'       : version,
+                       'version'       : __version__,
                        'status'        : self.status,
                        'uptime'        : int(time() - self.start_time),
                        'session_count' : len(self.session_manager.sessions),
