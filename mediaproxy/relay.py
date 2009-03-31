@@ -22,10 +22,11 @@ try:    from twisted.internet import epollreactor; epollreactor.install()
 except: raise RuntimeError("mandatory epoll reactor support is missing from the twisted framework")
 
 from twisted.protocols.basic import LineOnlyReceiver
-from twisted.internet.error import ConnectionDone, DNSLookupError
+from twisted.internet.error import ConnectionDone, TCPTimedOutError, DNSLookupError
 from twisted.internet.protocol import ClientFactory
 from twisted.internet.defer import DeferredList, succeed
 from twisted.internet import reactor
+from twisted.python import failure
 from twisted.names import dns
 from twisted.names.client import lookupService
 from twisted.names.error import DomainError
@@ -122,9 +123,17 @@ class RelayClientProtocol(LineOnlyReceiver):
         self.command = None
         self.seq = None
         self._connection_watcher = None
+        self._queued_keepalives = 0
 
     def _send_keepalive(self):
+        if self._queued_keepalives >= 3:
+            # 3 keepalives in a row didn't get an answer. assume connection is down.
+            log.error("missed 3 keepalive answers in a row. assuming the connection is down.")
+            # do not use loseConnection() as it waits to flush the output buffers.
+            reactor.callLater(0, self.transport.connectionLost, failure.Failure(TCPTimedOutError()))
+            return None
         self.transport.write("ping\r\n")
+        self._queued_keepalives += 1
         return KeepRunning
 
     def connectionMade(self):
@@ -139,8 +148,12 @@ class RelayClientProtocol(LineOnlyReceiver):
     def connectionLost(self, reason):
         self._connection_watcher.cancel()
         self._connection_watcher = None
+        self._queued_keepalives = 0
 
     def lineReceived(self, line):
+        if line == 'pong':
+            self._queued_keepalives -= 1
+            return
         if self.command is None:
             try:
                 command, seq = line.split()

@@ -262,6 +262,7 @@ class RelayServerProtocol(LineOnlyReceiver):
                     del self.factory.sessions[call_id]
             return
         elif first == "ping":
+            self.transport.write("pong\r\n")
             return
         try:
             command, defer, timer = self.commands.pop(first)
