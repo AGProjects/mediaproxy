@@ -201,6 +201,10 @@ class RelayError(Exception):
     pass
 
 
+class ConnectionReplaced(ConnectionDone):
+    pass
+
+
 class RelayServerProtocol(LineOnlyReceiver):
     noisy = False
     MAX_LENGTH = 4096*1024 ## (4MB)
@@ -292,10 +296,12 @@ class RelayServerProtocol(LineOnlyReceiver):
             defer.callback(rest)
 
     def connectionLost(self, reason):
-        if reason.type != ConnectionDone:
-            log.error("Connection with relay at %s was lost: %s" % (self.ip, reason.value))
-        else:
+        if reason.type == ConnectionDone:
             log.msg("Connection with relay at %s was closed" % self.ip)
+        elif reason.type == ConnectionReplaced:
+            log.warn("Old connection with relay at %s was lost" % self.ip)
+        else:
+            log.error("Connection with relay at %s was lost: %s" % (self.ip, reason.value))
         for command, defer, timer in self.commands.itervalues():
             timer.cancel()
             defer.errback(RelayError("Relay at %s disconnected" % self.ip))
@@ -361,8 +367,8 @@ class RelayFactory(Factory):
     def new_relay(self, relay):
         old_relay = self.relays.pop(relay.ip, None)
         if old_relay is not None:
-            log.error("Relay at %s reconnected, closing old connection" % relay.ip)
-            reactor.callLater(0, old_relay.transport.connectionLost, failure.Failure(ConnectionDone()))
+            log.warn("Relay at %s reconnected, closing old connection" % relay.ip)
+            reactor.callLater(0, old_relay.transport.connectionLost, failure.Failure(ConnectionReplaced("relay reconnected")))
         self.relays[relay.ip] = relay
         timer = self.cleanup_timers.pop(relay.ip, None)
         if timer is not None:
