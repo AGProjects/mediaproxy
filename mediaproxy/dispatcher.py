@@ -19,6 +19,7 @@ for name in ('epollreactor', 'kqreactor', 'pollreactor', 'selectreactor'):
     except: continue
     else:   break
 from twisted.protocols.basic import LineOnlyReceiver
+from twisted.python import failure
 from twisted.internet.error import ConnectionDone
 from twisted.internet.protocol import Factory
 from twisted.internet.defer import Deferred, DeferredList, maybeDeferred, succeed
@@ -225,10 +226,6 @@ class RelayServerProtocol(LineOnlyReceiver):
         defer.errback(RelayError("Relay at %s timed out" % self.ip))
 
     def connectionMade(self):
-        if self.ip in self.factory.relays:
-            log.error("Connection to relay at %s is already present, disconnecting" % self.ip)
-            self.transport.loseConnection()
-            return
         if Config.passport is not None:
             peer_cert = self.transport.getPeerCertificate()
             if not Config.passport.accept(peer_cert):
@@ -359,6 +356,10 @@ class RelayFactory(Factory):
         return prot
 
     def new_relay(self, relay):
+        old_relay = self.relays.pop(relay.ip, None)
+        if old_relay is not None:
+            log.error("Relay at %s reconnected, closing old connection" % relay.ip)
+            reactor.callLater(0, old_relay.transport.connectionLost, failure.Failure(ConnectionDone()))
         self.relays[relay.ip] = relay
         timer = self.cleanup_timers.pop(relay.ip, None)
         if timer is not None:
@@ -448,6 +449,8 @@ class RelayFactory(Factory):
         return "[%s]" % ', '.join(result[1:-1] for succeeded, result in results if succeeded and result!='[]')
 
     def connection_lost(self, relay):
+        if relay not in self.relays.itervalues():
+            return
         if relay.authenticated:
             del self.relays[relay.ip]
         if self.shutting_down:
