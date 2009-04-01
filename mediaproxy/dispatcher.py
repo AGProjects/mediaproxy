@@ -248,6 +248,9 @@ class RelayServerProtocol(LineOnlyReceiver):
             else:
                 call_id = stats['call_id']
                 session = self.factory.sessions[call_id]
+                if session.relay_ip != self.ip:
+                    log.error("session with call_id %s expired at relay %s, but is actually at relay %s, ignoring" % (call_id, self.ip, session.relay_ip))
+                    return
                 log.msg("session with call_id %s from relay %s did timeout" % (call_id, session.relay_ip))
                 stats["dialog_id"] = session.dialog_id
                 stats["timed_out"] = True
