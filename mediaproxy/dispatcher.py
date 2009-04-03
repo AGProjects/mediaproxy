@@ -20,7 +20,7 @@ for name in ('epollreactor', 'kqreactor', 'pollreactor', 'selectreactor'):
     else:   break
 from twisted.protocols.basic import LineOnlyReceiver
 from twisted.python import failure
-from twisted.internet.error import ConnectionDone, ConnectionLost
+from twisted.internet.error import ConnectionDone, TCPTimedOutError
 from twisted.internet.protocol import Factory
 from twisted.internet.defer import Deferred, DeferredList, maybeDeferred, succeed
 from twisted.internet import reactor
@@ -228,7 +228,7 @@ class RelayServerProtocol(LineOnlyReceiver):
     def _timeout(self, seq, defer):
         del self.commands[seq]
         defer.errback(RelayError("Relay at %s timed out" % self.ip))
-        reactor.callLater(0, self.transport.connectionLost, failure.Failure(ConnectionLost()))
+        reactor.callLater(0, self.transport.connectionLost, failure.Failure(TCPTimedOutError()))
 
     def connectionMade(self):
         if Config.passport is not None:
