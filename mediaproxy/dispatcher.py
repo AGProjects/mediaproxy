@@ -64,8 +64,9 @@ class Config(ConfigSection):
     socket_path = "dispatcher.sock"
     listen = DispatcherAddress("any")
     listen_management = DispatcherManagementAddress("any")
-    relay_timeout = 5
-    cleanup_dead_relays_after = 43200 # 12 hours
+    relay_timeout = 5           # How much to wait for an answer from a relay
+    relay_recover_interval = 60 # How much to wait for an unresponsive relay to recover, before disconnecting it
+    cleanup_dead_relays_after = 43200      # 12 hours
     cleanup_expired_sessions_after = 86400 # 24 hours
     management_use_tls = True
     accounting = []
@@ -211,9 +212,15 @@ class RelayServerProtocol(LineOnlyReceiver):
 
     def __init__(self):
         self.commands = {}
-        self.ready = True
+        self.halting = False
+        self.timedout = False
+        self.disconnect_timer = None
         self.sequence_number = 0
         self.authenticated = False
+
+    @property
+    def active(self):
+        return not self.halting and not self.timedout
 
     def send_command(self, command, headers):
         log.debug('Issuing "%s" command to relay at %s' % (command, self.ip))
@@ -228,7 +235,9 @@ class RelayServerProtocol(LineOnlyReceiver):
     def _timeout(self, seq, defer):
         del self.commands[seq]
         defer.errback(RelayError("Relay at %s timed out" % self.ip))
-        reactor.callLater(0, self.transport.connectionLost, failure.Failure(TCPTimedOutError()))
+        if self.timedout is False:
+            self.timedout = True
+            self.disconnect_timer = reactor.callLater(Config.relay_recover_interval, self.transport.connectionLost, failure.Failure(TCPTimedOutError()))
 
     def connectionMade(self):
         if Config.passport is not None:
@@ -270,6 +279,11 @@ class RelayServerProtocol(LineOnlyReceiver):
                     del self.factory.sessions[call_id]
             return
         elif first == "ping":
+            if self.timedout is True:
+                self.timedout = False
+                if self.disconnect_timer.active():
+                    self.disconnect_timer.cancel()
+                self.disconnect_timer = None
             self.transport.write("pong\r\n")
             return
         try:
@@ -281,7 +295,7 @@ class RelayServerProtocol(LineOnlyReceiver):
         if rest == "error":
             defer.errback(RelayError('Received error from relay at %s in response to "%s" command' % (self.ip, command)))
         elif rest == "halting":
-            self.ready = False
+            self.halting = True
             defer.errback(RelayError("Relay at %s is shutting down" % self.ip))
         elif command == "remove":
             try:
@@ -309,6 +323,11 @@ class RelayServerProtocol(LineOnlyReceiver):
         for command, defer, timer in self.commands.itervalues():
             timer.cancel()
             defer.errback(RelayError("Relay at %s disconnected" % self.ip))
+        if self.timedout is True:
+            self.timedout = False
+            if self.disconnect_timer.active():
+                self.disconnect_timer.cancel()
+            self.disconnect_timer = None
         self.factory.connection_lost(self)
 
 
@@ -406,11 +425,11 @@ class RelayFactory(Factory):
         ## We do not have a session for this call_id or the session is already expired
         if command == "update":
             preferred_relay = parsed_headers.get("media_relay")
-            try_relays = deque(protocol for protocol in self.relays.itervalues() if protocol.ready and protocol.ip != preferred_relay)
+            try_relays = deque(protocol for protocol in self.relays.itervalues() if protocol.active and protocol.ip != preferred_relay)
             random.shuffle(try_relays)
             if preferred_relay is not None:
                 protocol = self.relays.get(preferred_relay)
-                if protocol is not None and protocol.ready:
+                if protocol is not None and protocol.active:
                     try_relays.appendleft(protocol)
                 else:
                     log.warn("user requested media_relay %s is not available" % preferred_relay)
