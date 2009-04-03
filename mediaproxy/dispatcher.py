@@ -252,7 +252,10 @@ class RelayServerProtocol(LineOnlyReceiver):
                 log.error("Error decoding JSON from relay at %s" % self.ip)
             else:
                 call_id = stats['call_id']
-                session = self.factory.sessions[call_id]
+                session = self.factory.sessions.get(call_id, None)
+                if session is None:
+                    log.error("Unknown session with call_id %s expired at relay %s" % (call_id, self.ip))
+                    return
                 if session.relay_ip != self.ip:
                     log.error("session with call_id %s expired at relay %s, but is actually at relay %s, ignoring" % (call_id, self.ip, session.relay_ip))
                     return
