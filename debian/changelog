@@ -1,3 +1,30 @@
+mediaproxy (2.3.3) unstable; urgency=low
+
+  * Re-raise the exception on failing to read RADIUS config file so we get a
+    full traceback
+  * Have dispatcher close TLS connection cleanly when relay has duplicate IP
+  * Added log_level to both Relay and Dispatcher configuration sections
+  * Improved reconnection behaviour in relay to dispatcher
+    When the connection from the relay to the dispatcher is lost, first retry
+    in 1 second, then retry in 10 second on subsequent attempts if it loses
+    the connection again.
+  * Fix bug where relay connects needlessly to previously removed dispatcher
+  * Implemented a keepalive mechanism from relay to dispatcher
+  * On relay reconnect don't have dispatcher query expired sessions
+  * Removed superfluous datatype declaration
+  * Only allow positive integers for time intervals and delays
+  * Updated version dependency for python-application
+  * In dispatcher, replace old connection from relay with new one instead of
+    giving an error
+  * In the dispatcher, check if the reported expired session belongs to the
+    relay that reported it
+  * Improved log messages when a relay reconnects to the dispatcher
+  * In dispatcher, break the connection to a relay if a request times out
+  * In dispatcher check if we know about the session that expired at relay
+  * Use a more robust strategy to disconnect an unresponsive relay
+
+ -- Dan Pascu <dan@ag-projects.com>  Wed, 08 Apr 2009 11:48:12 +0300
+
 mediaproxy (2.3.2) unstable; urgency=low
 
   * Improved exception handling for DNS SRV lookups
