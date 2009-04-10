@@ -8,7 +8,7 @@ mediaproxy will be able to connect to your servers using them.
 To generate your own certificates, we recommend you use tinyca available at
 http://tinyca.sm-zone.net/ or directly available as a Debian package.
 
-Using tinyca, you should first generate a ceritificate authority. Next you
+Using tinyca, you should first generate a certificate authority. Next you
 should go to the Preferences menu and edit the OpenSSL configuration. There
 in the "Server Certificate Settings" change "Netscape Certificate Type" to
 "SSL Server, SSL Client" and press OK.
@@ -27,7 +27,7 @@ You also need to export the certificate authority in PEM format to ca.pem as
 well as the CRL list into crl.pem.
 
 Then you can use all the exported certificates and private keys by placing
-them in /etc/mediaproxy/tls/ (or /path-to-mediaproxy/tls for a standalone
+them in /etc/mediaproxy/tls/ (or /path-to-mediaproxy/tls for a stand alone
 installation). Additionally you can configure passport entries for the
 dispatcher and the relay in config.ini to perform extra checks on the
 certificates (like for example checking the subject organization or the
