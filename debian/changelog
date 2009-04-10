@@ -1,3 +1,11 @@
+mediaproxy (2.3.4) unstable; urgency=low
+
+  * Fixed building binary only architecture dependent debian packages
+  * Fixed lintian warning about reference to versionless license file
+  * Fixed spelling in tls/README
+
+ -- Dan Pascu <dan@ag-projects.com>  Fri, 10 Apr 2009 12:03:42 +0300
+
 mediaproxy (2.3.3) unstable; urgency=low
 
   * Re-raise the exception on failing to read RADIUS config file so we get a
