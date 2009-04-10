@@ -1,3 +1,4 @@
+usr/lib
 radius/dictionary etc/mediaproxy/radius
 tls/.placeholder etc/mediaproxy/tls
 tls/* usr/share/doc/mediaproxy-common/tls
