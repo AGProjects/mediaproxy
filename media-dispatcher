@@ -43,7 +43,7 @@ if __name__ == "__main__":
         except ProcessError, e:
             log.fatal("Cannot start %s: %s" % (fullname, e))
             sys.exit(1)
-        log.startSyslog(name)
+        log.start_syslog(name)
 
     log.msg("Starting %s %s" % (fullname, mediaproxy.__version__))
 
