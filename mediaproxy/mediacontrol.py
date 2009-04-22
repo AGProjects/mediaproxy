@@ -33,6 +33,10 @@ rtp_payloads = {
     34: "H263"
 }
 
+class RelayPortsExhaustedError(Exception):
+    pass
+
+
 class Config(ConfigSection):
     _datatypes = {"relay_ip": datatypes.IPAddress}
     relay_ip = default_host_ip
@@ -637,7 +641,10 @@ class SessionManager(Logger):
             log.debug("Excessive amount of bad ports, doing cleanup")
             self.ports.extend(self.bad_ports)
             self.bad_ports = deque()
-        return self.ports.popleft()
+        try:
+            return self.ports.popleft()
+        except IndexError:
+            raise RelayPortsExhaustedError()
 
     def set_bad_ports(self, ports):
         self.bad_ports.append(ports)

@@ -41,7 +41,7 @@ from application.system import default_host_ip
 
 from mediaproxy.tls import X509Credentials, X509NameValidator
 from mediaproxy.headers import DecodingDict, DecodingError
-from mediaproxy.mediacontrol import SessionManager
+from mediaproxy.mediacontrol import SessionManager, RelayPortsExhaustedError
 from mediaproxy.scheduler import RecurrentCall, KeepRunning
 from mediaproxy import __version__, configuration_filename, default_dispatcher_port
 
@@ -388,7 +388,11 @@ class MediaRelay(MediaRelayBase):
                 if not self.session_manager.has_session(**headers):
                     log.debug("cannot add new session: media-relay is shutting down")
                     return 'halting'
-            local_media = self.session_manager.update_session(dispatcher, **headers)
+            try:
+                local_media = self.session_manager.update_session(dispatcher, **headers)
+            except RelayPortsExhaustedError:
+                log.error("Could not reserve relay ports for session, all allocated ports are being used")
+                return "error"
             return " ".join([local_media[0][0]] + [str(media[1]) for media in local_media])
         else: # remove
             session = self.session_manager.remove_session(**headers)
