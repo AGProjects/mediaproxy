@@ -272,7 +272,7 @@ class RelayServerProtocol(LineOnlyReceiver):
                 stats["dialog_id"] = session.dialog_id
                 stats["timed_out"] = True
                 self.factory.dispatcher.update_statistics(stats)
-                if session.dialog_id is not None and stats["to_tag"] is not None:
+                if session.dialog_id is not None and stats["start_time"] is not None:
                     self.factory.dispatcher.opensips_management.end_dialog(session.dialog_id)
                     session.expire_time = time()
                 else:
@@ -550,7 +550,7 @@ class Dispatcher(object):
 
     def update_statistics(self, stats):
         log.debug("Got statistics: %s" % stats)
-        if stats["to_tag"] is not None:
+        if stats["start_time"] is not None:
             for act in self.accounting:
                 act.do_accounting(stats)
 
