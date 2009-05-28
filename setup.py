@@ -13,7 +13,7 @@ title, description = re.findall(r'^\s*([^\n]+)\s+(.*)$', readme, re.DOTALL)[0]
 
 def setup(*args, **kwargs):
     """Mangle setup to ignore media-relay on non-linux platforms"""
-    if sys.platform != 'linux2':
+    if not sys.platform.startswith('linux2'):
         print "WARNING: skipping the media relay component as this is a non-linux platform"
         kwargs.pop('ext_modules', None)
         kwargs['scripts'].remove('media-relay')
