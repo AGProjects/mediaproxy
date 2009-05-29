@@ -25,7 +25,7 @@ if __name__ == "__main__":
     parser.add_option("--pid", dest="pid_file", default=default_pid, help="pid file (%s)" % default_pid, metavar="File")
     (options, args) = parser.parse_args()
 
-    if sys.platform != 'linux2':
+    if not sys.platform.startswith('linux2'):
         log.fatal("Cannot start %s. A Linux host is required for operation." % fullname)
         sys.exit(1)
 
