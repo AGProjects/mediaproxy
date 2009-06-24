@@ -7,7 +7,7 @@ Standards-Version: 3.8.0
 
 Package: mediaproxy-common
 Architecture: any
-Depends: ${python:Depends}, ${shlibs:Depends}, python-application (>= 1.1.1), python-cjson, python-gnutls, python-twisted-core (>= 2.5.0), python-twisted-names, python-zopeinterface
+Depends: ${python:Depends}, ${shlibs:Depends}, ${misc:Depends}, python-application (>= 1.1.1), python-cjson, python-gnutls, python-twisted-core (>= 2.5.0), python-twisted-names, python-zopeinterface
 Recommends: python-pyrad (>= 1.1), python-sqlobject
 Description: MediaProxy common files
  MediaProxy is a distributed far end NAT traversal solution for media streams
@@ -31,7 +31,7 @@ Description: MediaProxy common files
 
 Package: mediaproxy-dispatcher
 Architecture: all
-Depends: ${python:Depends}, mediaproxy-common (>= ${source:Version}), lsb-base
+Depends: ${python:Depends}, ${misc:Depends}, mediaproxy-common (>= ${source:Version}), lsb-base
 Description: MediaProxy dispatcher
  MediaProxy is a distributed far end NAT traversal solution for media streams
  of SIP calls. MediaProxy has a dispatcher running on the same host with the
@@ -54,7 +54,7 @@ Description: MediaProxy dispatcher
 
 Package: mediaproxy-relay
 Architecture: all
-Depends: ${python:Depends}, mediaproxy-common (>= ${source:Version}), lsb-base
+Depends: ${python:Depends}, ${misc:Depends}, mediaproxy-common (>= ${source:Version}), lsb-base
 Description: MediaProxy relay
  MediaProxy is a distributed far end NAT traversal solution for media streams
  of SIP calls. MediaProxy has a dispatcher running on the same host with the
@@ -77,7 +77,7 @@ Description: MediaProxy relay
 
 Package: mediaproxy-web-sessions
 Architecture: all
-Depends: php5 | php5-cgi
+Depends: ${misc:Depends}, php5 | php5-cgi
 Description: MediaProxy sessions web page
  MediaProxy is a distributed far end NAT traversal solution for media streams
  of SIP calls. MediaProxy has a dispatcher running on the same host with the
