@@ -75,6 +75,8 @@ class PortRange(object):
         allowed = xrange(1024, 65537, 2)
         if not (self.start in allowed and self.end in allowed and self.start < self.end):
             raise ValueError("bad range: %r: ports must be even numbers in the range [1024, 65536] with start < end" % value)
+    def __repr__(self):
+        return "%s('%d:%d')" % (self.__class__.__name__, self.start, self.end)
 
 class PositiveInteger(int):
     def __new__(cls, value):
