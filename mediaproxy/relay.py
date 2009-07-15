@@ -87,18 +87,18 @@ class PositiveInteger(int):
 
 
 class Config(ConfigSection):
-    _datatypes = {'dispatchers': DispatcherAddressList, 'relay_ip': IPAddress, 'passport': X509NameValidator}
-    dispatchers = []
-    relay_ip = default_host_ip
+    __configfile__ = configuration_filename
+    __section__ = 'Relay'
+
+    dispatchers = ConfigSetting(type=DispatcherAddressList, value=[])
+    relay_ip = ConfigSetting(type=IPAddress, value=default_host_ip)
     port_range = PortRange("50000:60000")
     dns_check_interval = PositiveInteger(60)
     keepalive_interval = PositiveInteger(10)
     reconnect_delay = PositiveInteger(10)
-    passport = None
+    passport = ConfigSetting(type=X509NameValidator, value=None)
 
 
-configuration = ConfigFile(configuration_filename)
-configuration.read_settings("Relay", Config)
 
 ## Increase the system limit for the maximum number of open file descriptors
 ## to be able to handle connections to all ports in port_range

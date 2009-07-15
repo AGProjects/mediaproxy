@@ -20,11 +20,12 @@ from mediaproxy import configuration_filename
 
 
 class OpenSIPSConfig(ConfigSection):
+    __configfile__ = configuration_filename
+    __section__ = 'OpenSIPS'
+
     socket_path = '/var/run/opensips/socket'
     max_connections = 10
 
-config_file = ConfigFile(configuration_filename)
-config_file.read_settings('OpenSIPS', OpenSIPSConfig)
 
 
 class Error(Exception): pass

@@ -59,23 +59,22 @@ class AccountingModuleList(datatypes.StringList):
 
 
 class Config(ConfigSection):
-    _datatypes = {'listen': DispatcherAddress, 'listen_management': DispatcherManagementAddress, 'management_use_tls': datatypes.Boolean,
-                  'accounting': AccountingModuleList, 'passport': X509NameValidator, 'management_passport': X509NameValidator}
+    __configfile__ = configuration_filename
+    __section__ = 'Dispatcher'
+
     socket_path = "dispatcher.sock"
-    listen = DispatcherAddress("any")
-    listen_management = DispatcherManagementAddress("any")
+    listen = ConfigSetting(type=DispatcherAddress, value=DispatcherAddress("any"))
+    listen_management = ConfigSetting(type=DispatcherManagementAddress, value=DispatcherManagementAddress("any"))
     relay_timeout = 5           # How much to wait for an answer from a relay
     relay_recover_interval = 60 # How much to wait for an unresponsive relay to recover, before disconnecting it
     cleanup_dead_relays_after = 43200      # 12 hours
     cleanup_expired_sessions_after = 86400 # 24 hours
     management_use_tls = True
-    accounting = []
-    passport = None
-    management_passport = None
+    accounting = ConfigSetting(type=AccountingModuleList, value=[])
+    passport = ConfigSetting(type=X509NameValidator, value=None)
+    management_passport = ConfigSetting(type=X509NameValidator, value=None)
 
 
-configuration = ConfigFile(configuration_filename)
-configuration.read_settings("Dispatcher", Config)
 
 class ControlProtocol(LineOnlyReceiver):
     noisy = False

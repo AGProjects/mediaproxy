@@ -31,9 +31,9 @@ if __name__ == "__main__":
 
     pid_file = options.pid_file
 
-    process._system_config_directory = mediaproxy.system_config_directory
+    process.system_config_directory = mediaproxy.system_config_directory
     config_file = ConfigFile(mediaproxy.configuration_filename)
-    log.level.current = config_file.get_option("Relay", 'log_level', default=log.level.DEBUG, type=datatypes.LogLevel)
+    log.level.current = config_file.get_setting("Relay", 'log_level', type=datatypes.LogLevel, default=log.level.DEBUG)
 
     try:
         process.runtime_directory = mediaproxy.runtime_directory

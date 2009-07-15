@@ -27,12 +27,12 @@ class SIPThorDomain(str):
         return name
 
 class ThorNetworkConfig(ConfigSection):
-    _datatypes = {'domain': SIPThorDomain}
-    domain = None
+    __configfile__ = configuration_filename
+    __section__ = 'ThorNetwork'
+
+    domain = ConfigSetting(type=SIPThorDomain, value=None)
     node_ip = default_host_ip
 
-configuration = ConfigFile(configuration_filename)
-configuration.read_settings("ThorNetwork", ThorNetworkConfig)
 
 if ThorNetworkConfig.domain is None:
     ## SIP Thor is installed but disabled. Fake an ImportError to start in standalone media relay mode.

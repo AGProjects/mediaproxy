@@ -24,10 +24,11 @@ from twisted.internet import reactor
 from mediaproxy.headers import EncodingDict
 
 class Config(ConfigSection):
+    __configfile__ = mediaproxy.configuration_filename
+    __section__ = 'Dispatcher'
+
     socket = "/var/run/mediaproxy/dispatcher.sock"
 
-configuration = ConfigFile(mediaproxy.configuration_filename)
-configuration.read_settings("Dispatcher", Config)
 
 
 random_data = os.urandom(512)

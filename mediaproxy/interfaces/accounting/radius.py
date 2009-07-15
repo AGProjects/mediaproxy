@@ -15,12 +15,13 @@ import pyrad.dictionary
 from mediaproxy import configuration_filename
 
 class Config(ConfigSection):
+    __configfile__ = configuration_filename
+    __section__ = 'Radius'
+
     config_file = "/etc/opensips/radius/client.conf"
     additional_dictionary = "radius/dictionary"
 
 
-configuration = ConfigFile(configuration_filename)
-configuration.read_settings("Radius", Config)
 
 # helper class to make pyrad support the $INCLUDE statement in dictionary files
 class RadiusDictionaryFile(object):

@@ -19,12 +19,12 @@ from mediaproxy import configuration_filename
 
 
 class TLSConfig(ConfigSection):
+    __configfile__ = configuration_filename
+    __section__ = 'TLS'
+
     certs_path = 'tls'
     verify_interval = 300
 
-## Read config file and overwrite default settings
-config_file = ConfigFile(configuration_filename)
-config_file.read_settings('TLS', TLSConfig)
 
 
 class X509NameValidator(crypto.X509Name):

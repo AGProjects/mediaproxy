@@ -19,6 +19,9 @@ from mediaproxy import configuration_filename
 
 
 class Config(ConfigSection):
+    __configfile__ = configuration_filename
+    __section__ = 'Database'
+
     dburi = ""
     sessions_table = "media_sessions"
     callid_column = "call_id"
@@ -26,8 +29,6 @@ class Config(ConfigSection):
     totag_column = "to_tag"
     info_column = "info"
 
-configuration = ConfigFile(configuration_filename)
-configuration.read_settings("Database", Config)
 
 if not Config.dburi:
     raise RuntimeError("Database accounting is enabled, but the database URI is not specified in config.ini")

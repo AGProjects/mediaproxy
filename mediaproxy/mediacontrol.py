@@ -17,6 +17,7 @@ from twisted.python.log import Logger
 from application import log
 from application.system import default_host_ip
 from application.configuration import *
+from application.configuration.datatypes import IPAddress
 
 from mediaproxy import configuration_filename
 from mediaproxy.interfaces.system import _conntrack
@@ -38,15 +39,15 @@ class RelayPortsExhaustedError(Exception):
 
 
 class Config(ConfigSection):
-    _datatypes = {"relay_ip": datatypes.IPAddress}
-    relay_ip = default_host_ip
+    __configfile__ = configuration_filename
+    __section__ = 'Relay'
+
+    relay_ip = ConfigSetting(type=IPAddress, value=default_host_ip)
     stream_timeout = 90
     on_hold_timeout = 7200
     traffic_sampling_period = 15
     userspace_transmit_every = 1
 
-configuration = ConfigFile(configuration_filename)
-configuration.read_settings("Relay", Config)
 
 if Config.relay_ip is None:
     raise RuntimeError("Could not determine default host IP; either add default route or specify relay IP manually")
