@@ -45,11 +45,11 @@ In order to build and install, MediaProxy has the following requirements:
    http://twistedmatrix.com
  - python-zopeinterface (this is also a requirement for twisted)
    http://zope.org/Products/ZopeInterface
- - python-application (at least 1.1.1)
+ - python-application (at least 1.1.4)
    http://pypi.python.org/pypi/python-application
  - GNU-TLS
    http://www.gnu.org/software/gnutls
- - python-gnutls
+ - python-gnutls (at least 1.1.8)
    http://pypi.python.org/pypi/python-gnutls
  - python-cjson
    http://pypi.python.org/pypi/python-cjson
