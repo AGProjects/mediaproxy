@@ -1,3 +1,24 @@
+mediaproxy (2.3.5) unstable; urgency=low
+
+  * Replaced startSyslog with start_syslog to match latest python-application
+  * Improved detection for linux platforms to include non intel architectures
+  * Handle exhausted ports gracefully at relay
+  * Use start_time instead of to_tag to determine if accounting should be
+    performed and the dialog ended in OpenSIPS for an expired session, as
+    start_time only gets set if the relay saw SDP from both endpoints
+  * Fixed test to allow the relay to run on linux on non-intel architectures
+  * Only include used stream types in RADIUS Sip-Applications field
+  * Replaced reference to LGPL with GPL in debian/copyright
+  * Added ${misc:Depends} to debian/control to fix lintian warnings
+  * Removed var/run/mediaproxy from debian/*.dirs to fix lintian errors
+  * Added __repr__ method to PortRange class
+  * Adapted code to work with python-application-1.1.2 or newer
+  * Added package dependency checks for the minimum required versions
+  * Updated minimum dependency requirements in debian/control and INSTALL
+  * Bumped debian standards version to 3.8.2
+
+ -- Dan Pascu <dan@ag-projects.com>  Mon, 20 Jul 2009 16:39:26 +0300
+
 mediaproxy (2.3.4) unstable; urgency=low
 
   * Fixed building binary only architecture dependent debian packages
