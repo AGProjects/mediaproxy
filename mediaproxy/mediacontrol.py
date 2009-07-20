@@ -456,6 +456,8 @@ class Session(object):
             else:
                 old_streams = self.streams[self.cseq]
             for media_type, media_ip, media_port, media_direction in media_list:
+                if media_port == 0:
+                    continue
                 stream = None
                 for old_stream in old_streams:
                     old_remote = getattr(old_stream, party).remote_sdp
