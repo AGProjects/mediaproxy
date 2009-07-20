@@ -13,7 +13,7 @@ import mediaproxy
 from application.system import default_host_ip
 from application.configuration import *
 from application.process import process
-process._system_config_directory = mediaproxy.system_config_directory
+process.system_config_directory = mediaproxy.system_config_directory
 
 from twisted.internet.protocol import DatagramProtocol, ClientFactory
 from twisted.protocols.basic import LineOnlyReceiver
