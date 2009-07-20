@@ -25,6 +25,12 @@ if __name__ == "__main__":
     parser.add_option("--pid", dest="pid_file", default=default_pid, help="pid file (%s)" % default_pid, metavar="File")
     (options, args) = parser.parse_args()
 
+    try:
+        mediaproxy.dependencies.check()
+    except mediaproxy.DependencyError, e:
+        log.fatal(str(e))
+        sys.exit(1)
+
     pid_file = options.pid_file
 
     process.system_config_directory = mediaproxy.system_config_directory
