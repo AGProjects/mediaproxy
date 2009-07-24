@@ -152,17 +152,13 @@ class MediaSubParty(object):
         self.local = Address(host.host, host.port)
         self.timer = None
         self.codec = "Unknown"
-        self.reset(True)
+        self.reset()
 
-    def reset(self, expire):
+    def reset(self):
         if self.timer and self.timer.active():
             self.timer.cancel()
-        if expire:
-            self.timer = reactor.callLater(Config.stream_timeout, self.substream.expired, "no-traffic timeout", Config.stream_timeout)
-            self.remote.in_use = False # keep remote address around but mark it as obsolete
-        else:
-            self.timer = None
-            self.remote.forget() # completely forget about the remote address
+        self.timer = reactor.callLater(Config.stream_timeout, self.substream.expired, "no-traffic timeout", Config.stream_timeout)
+        self.remote.in_use = False # keep remote address around but mark it as obsolete
 
     def before_hold(self):
         if self.timer and self.timer.active():
@@ -241,9 +237,9 @@ class MediaSubStream(object):
 
     def reset(self, party):
         if party == "caller":
-            self.caller.reset(True)
+            self.caller.reset()
         else:
-            self.callee.reset(True)
+            self.callee.reset()
         self._stop_relaying()
 
     def check_create_conntrack(self):
@@ -385,9 +381,10 @@ class MediaStream(object):
 
     def substream_expired(self, substream, reason, timeout_wait):
         if substream is self.rtcp or (self.is_on_hold and reason=='conntrack timeout'):
-            # This will cause any re-occurence of the same traffic to be forwarded again
-            substream.caller.reset(False)
-            substream.callee.reset(False)
+            # Forget about the remote addresses, this will cause any
+            # re-occurence of the same traffic to be forwarded again
+            substream.caller.remote.forget()
+            substream.callee.remote.forget()
         else:
             session = self.session
             self.cleanup(reason)
