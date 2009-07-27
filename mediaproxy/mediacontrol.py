@@ -132,14 +132,15 @@ class StreamListenerProtocol(DatagramProtocol):
         else:
             self.sdp = None
 
-    def send(self, data):
+    def send(self, data, ip=None, port=None):
         host = self.transport.getHost()
-        if self.sdp is not None:
+        if ip is None or port is None:
+            if self.sdp is None:
+                return
             ip, port = self.sdp
-            if not self.send_packet_count % Config.userspace_transmit_every:
-                self.transport.write(data, (ip, port))
-            self.send_packet_count += 1
-
+        if not self.send_packet_count % Config.userspace_transmit_every:
+            self.transport.write(data, (ip, port))
+        self.send_packet_count += 1
 
 class MediaSubParty(object):
 
@@ -255,7 +256,11 @@ class MediaSubStream(object):
             dest = self.callee
         else:
             dest = self.caller
-        dest.listener.protocol.send(data)
+        if dest.remote:
+            ip, port = dest.remote.host, dest.remote.port
+            dest.listener.protocol.send(data, ip, port)
+        else:
+            dest.listener.protocol.send(data)
 
     def conntrack_expired(self):
         try:
