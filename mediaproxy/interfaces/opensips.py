@@ -20,7 +20,7 @@ from mediaproxy import configuration_filename
 
 
 class OpenSIPSConfig(ConfigSection):
-    __configfile__ = configuration_filename
+    __cfgfile__ = configuration_filename
     __section__ = 'OpenSIPS'
 
     socket_path = '/var/run/opensips/socket'

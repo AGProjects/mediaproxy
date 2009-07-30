@@ -87,7 +87,7 @@ class PositiveInteger(int):
 
 
 class Config(ConfigSection):
-    __configfile__ = configuration_filename
+    __cfgfile__ = configuration_filename
     __section__ = 'Relay'
 
     dispatchers = ConfigSetting(type=DispatcherAddressList, value=[])

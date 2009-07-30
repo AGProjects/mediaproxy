@@ -59,7 +59,7 @@ class AccountingModuleList(datatypes.StringList):
 
 
 class Config(ConfigSection):
-    __configfile__ = configuration_filename
+    __cfgfile__ = configuration_filename
     __section__ = 'Dispatcher'
 
     socket_path = "dispatcher.sock"

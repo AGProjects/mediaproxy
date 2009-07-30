@@ -27,7 +27,7 @@ class SIPThorDomain(str):
         return name
 
 class ThorNetworkConfig(ConfigSection):
-    __configfile__ = configuration_filename
+    __cfgfile__ = configuration_filename
     __section__ = 'ThorNetwork'
 
     domain = ConfigSetting(type=SIPThorDomain, value=None)

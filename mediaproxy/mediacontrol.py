@@ -39,7 +39,7 @@ class RelayPortsExhaustedError(Exception):
 
 
 class Config(ConfigSection):
-    __configfile__ = configuration_filename
+    __cfgfile__ = configuration_filename
     __section__ = 'Relay'
 
     relay_ip = ConfigSetting(type=IPAddress, value=default_host_ip)
