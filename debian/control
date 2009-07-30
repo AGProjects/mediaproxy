@@ -7,7 +7,7 @@ Standards-Version: 3.8.2
 
 Package: mediaproxy-common
 Architecture: any
-Depends: ${python:Depends}, ${shlibs:Depends}, ${misc:Depends}, python-application (>= 1.1.4), python-cjson, python-gnutls (>= 1.1.8), python-twisted-core (>= 2.5.0), python-twisted-names, python-zopeinterface
+Depends: ${python:Depends}, ${shlibs:Depends}, ${misc:Depends}, python-application (>= 1.1.5), python-cjson, python-gnutls (>= 1.1.8), python-twisted-core (>= 2.5.0), python-twisted-names, python-zopeinterface
 Recommends: python-pyrad (>= 1.1), python-sqlobject
 Description: MediaProxy common files
  MediaProxy is a distributed far end NAT traversal solution for media streams

@@ -14,7 +14,7 @@ default_dispatcher_port = 25060
 default_management_port = 25061
 
 
-package_requirements = {'python-application': '1.1.4',
+package_requirements = {'python-application': '1.1.5',
                         'python-gnutls':      '1.1.8',
                         'twisted':            '2.5.0'}
 
