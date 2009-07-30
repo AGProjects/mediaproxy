@@ -120,6 +120,7 @@ class StreamListenerProtocol(DatagramProtocol):
     def __init__(self):
         self.cb_func = None
         self.sdp = None
+        self.send_packet_count = 0
 
     def datagramReceived(self, data, (host, port)):
         if self.cb_func is not None:
@@ -127,7 +128,6 @@ class StreamListenerProtocol(DatagramProtocol):
 
     def set_remote_sdp(self, ip, port):
         if is_routable_ip(ip):
-            self.send_packet_count = 0
             self.sdp = ip, port
         else:
             self.sdp = None
@@ -160,6 +160,7 @@ class MediaSubParty(object):
             self.timer.cancel()
         self.timer = reactor.callLater(Config.stream_timeout, self.substream.expired, "no-traffic timeout", Config.stream_timeout)
         self.remote.in_use = False # keep remote address around but mark it as obsolete
+        self.listener.protocol.send_packet_count = 0
 
     def before_hold(self):
         if self.timer and self.timer.active():
@@ -389,7 +390,9 @@ class MediaStream(object):
             # Forget about the remote addresses, this will cause any
             # re-occurence of the same traffic to be forwarded again
             substream.caller.remote.forget()
+            substream.caller.listener.protocol.send_packet_count = 0
             substream.callee.remote.forget()
+            substream.callee.listener.protocol.send_packet_count = 0
         else:
             session = self.session
             self.cleanup(reason)
