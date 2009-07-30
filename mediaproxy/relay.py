@@ -59,7 +59,7 @@ class DispatcherAddress(tuple):
 
 class DispatcherAddressList(list):
     def __init__(cls, value):
-        list.__init__(cls, (DispatcherAddress(dispatcher) for dispatcher in value.split()))
+        list.__init__(cls, (DispatcherAddress(dispatcher) for dispatcher in re.split(r'\s*,\s*|\s+', value)))
 
 class PortRange(object):
     """A port range in the form start:end with start and end being even numbers in the [1024, 65536] range"""
