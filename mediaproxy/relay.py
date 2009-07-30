@@ -55,11 +55,11 @@ class DispatcherAddress(tuple):
             is_domain = False
         except ValueError:
             is_domain = True
-        return (address, port, is_domain)
+        return tuple.__new__(cls, (address, port, is_domain))
 
 class DispatcherAddressList(list):
-    def __new__(cls, value):
-        return [DispatcherAddress(dispatcher) for dispatcher in value.split()]
+    def __init__(cls, value):
+        list.__init__(cls, (DispatcherAddress(dispatcher) for dispatcher in value.split()))
 
 class PortRange(object):
     """A port range in the form start:end with start and end being even numbers in the [1024, 65536] range"""
