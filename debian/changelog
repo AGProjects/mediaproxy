@@ -1,3 +1,20 @@
+mediaproxy (2.3.6) unstable; urgency=low
+
+  * Consider offered streams with a port of 0 to be removed
+  * Don't remove hold timeout when the conntrack rule expires while on hold
+  * Added synthetic test for on_hold_timeout (holdtest3.py)
+  * Use learnt remote IP when ssending packets through userspace if possible
+  * Adapted code to the latest API changes in python-application 1.1.5
+  * Removed old and now redundant test for the twisted version from relay.py
+  * Refactored some datatypes from validators to actual types
+  * Modified SIPThorDomain data validator to accept everything it generates
+  * Allow the dispatcher list in the config file to be comma separated as well
+  * Updated minimum version dependency for python-application
+  * Fix for send_packet_count atttribute not being set
+  * 
+
+ -- Dan Pascu <dan@ag-projects.com>  Thu, 30 Jul 2009 17:06:51 +0300
+
 mediaproxy (2.3.5) unstable; urgency=low
 
   * Replaced startSyslog with start_syslog to match latest python-application
