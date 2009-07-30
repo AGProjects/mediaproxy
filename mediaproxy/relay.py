@@ -11,13 +11,6 @@ import resource
 import re
 from time import time
 
-import twisted
-from twisted.python.versions import Version
-needed_version = Version('twisted', 2, 5, 0)
-if twisted.version < needed_version:
-    have_version, want_version = twisted.__version__, needed_version.short()
-    raise RuntimeError("the twisted framework should be at least version %s (found %s)" % (want_version, have_version))
-
 try:    from twisted.internet import epollreactor; epollreactor.install()
 except: raise RuntimeError("mandatory epoll reactor support is missing from the twisted framework")
 
