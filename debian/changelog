@@ -10,8 +10,7 @@ mediaproxy (2.3.6) unstable; urgency=low
   * Modified SIPThorDomain data validator to accept everything it generates
   * Allow the dispatcher list in the config file to be comma separated as well
   * Updated minimum version dependency for python-application
-  * Fix for send_packet_count atttribute not being set
-  * 
+  * Fix for send_packet_count attribute not being set
 
  -- Dan Pascu <dan@ag-projects.com>  Thu, 30 Jul 2009 17:06:51 +0300
 
