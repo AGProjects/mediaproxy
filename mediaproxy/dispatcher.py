@@ -292,7 +292,7 @@ class RelayServerProtocol(LineOnlyReceiver):
             return
         timer.cancel()
         if rest == "error":
-            defer.errback(RelayError('Received error from relay at %s in response to "%s" command' % (self.ip, command)))
+            defer.errback(RelayError("Received error from relay at %s in response to `%s' command" % (self.ip, command)))
         elif rest == "halting":
             self.halting = True
             defer.errback(RelayError("Relay at %s is shutting down" % self.ip))
