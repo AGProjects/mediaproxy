@@ -440,7 +440,7 @@ class RelayFactory(Factory):
             del self.sessions[call_id]
             return 'removed'
         else:
-            raise RelayError("Non-update command received from OpenSIPS for unknown session")
+            raise RelayError("Got `%s' command from OpenSIPS for unknown session with call-id `%s'" % (command, call_id))
 
     def _add_session(self, result, try_relays, call_id, parsed_headers):
         self.sessions[call_id] = RelaySession(try_relays[0].ip, parsed_headers)
