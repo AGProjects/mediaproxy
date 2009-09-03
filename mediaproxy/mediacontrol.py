@@ -461,12 +461,10 @@ class Session(object):
             else:
                 old_streams = self.streams[self.cseq]
             for media_type, media_ip, media_port, media_direction in media_list:
-                if media_port == 0:
-                    continue
                 stream = None
                 for old_stream in old_streams:
                     old_remote = getattr(old_stream, party).remote_sdp
-                    if old_stream.media_type == media_type and ((media_ip == "0.0.0.0" and old_remote[1] == media_port) or old_remote == (media_ip, media_port)):
+                    if old_stream.is_alive and old_stream.media_type==media_type and ((media_ip, media_port) in (old_remote, ('0.0.0.0', old_remote[1]), (old_remote[0], 0))):
                         stream = old_stream
                         stream.check_hold(party, media_direction, media_ip)
                         log.debug("Found matching existing stream: %s" % stream)
@@ -474,6 +472,9 @@ class Session(object):
                 if stream is None:
                     stream = MediaStream(self, media_type, media_ip, media_port, party, media_direction)
                     log.debug("Added new stream: %s" % stream)
+                if media_port == 0:
+                    stream.cleanup()
+                    log.debug("Stream explicitly closed: %s" % stream)
                 new_streams.append(stream)
             if self.previous_cseq is not None:
                 for stream in self.streams[self.previous_cseq]:
