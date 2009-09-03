@@ -137,9 +137,12 @@ class Endpoint(object):
         for port, connector in zip(ports, self.connectors):
             if connector is not None:
                 protocol = connector.protocol
-                protocol.transport.connect(ip, port)
-                protocol.loop = LoopingCall(protocol.transport.write, random_data)
-                protocol.loop.start(random.uniform(0.5, 1))
+                if port != 0:
+                    protocol.transport.connect(ip, port)
+                    protocol.loop = LoopingCall(protocol.transport.write, random_data)
+                    protocol.loop.start(random.uniform(0.5, 1))
+                else:
+                    protocol.defer.callback(None)
 
     def stop_media(self):
         defers = []
