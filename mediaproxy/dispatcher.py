@@ -94,7 +94,7 @@ class ControlProtocol(LineOnlyReceiver):
 
     def _relay_error(self, failure):
         failure.trap(RelayError)
-        log.error("Error processing request: %s" % failure.value)
+        log.error(failure.value)
         self.transport.write("error\r\n")
 
     def _catch_all(self, failure):
