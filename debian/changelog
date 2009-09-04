@@ -1,3 +1,16 @@
+mediaproxy (2.3.7) unstable; urgency=low
+
+  * Fixed typo in debian changelog
+  * Improved some error messages
+  * Do not try to send media to port 0 in tests
+  * Fixed handling of streams that are disabled when their port is set to 0
+  * Added 2 more tests for sessions with disabled streams
+  * Automatically restore the media_sessions table if gone during runtime
+  * Allow the to_tag field in the media_sessions table to be NULL
+  * Fixed issue in radius accounting when to_tag is None
+
+ -- Dan Pascu <dan@ag-projects.com>  Fri, 04 Sep 2009 13:50:38 +0300
+
 mediaproxy (2.3.6) unstable; urgency=low
 
   * Consider offered streams with a port of 0 to be removed
