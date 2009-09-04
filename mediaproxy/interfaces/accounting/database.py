@@ -44,7 +44,7 @@ class MediaSessions(SQLObject):
         cacheValues = False
     call_id = StringCol(length=255, dbName=Config.callid_column, notNone=True)
     from_tag = StringCol(length=64, dbName=Config.fromtag_column, notNone=True)
-    to_tag = StringCol(length=64, dbName=Config.totag_column, notNone=True)
+    to_tag = StringCol(length=64, dbName=Config.totag_column)
     info = BLOBCol(length=2**24-1, dbName=Config.info_column) # 2**24-1 makes it a mediumblob in mysql, that can hold 16 million bytes
     ## Indexes
     callid_idx = DatabaseIndex('call_id', 'from_tag', 'to_tag', unique=True)
