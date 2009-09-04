@@ -109,7 +109,7 @@ class RadiusAccounting(EventQueue, pyrad.client.Client):
         attrs["Acct-Input-Octets"] = sum(stream_stats['caller_bytes'] for stream_stats in stats['streams'])
         attrs["Acct-Output-Octets"] = sum(stream_stats['callee_bytes'] for stream_stats in stats['streams'])
         attrs["Sip-From-Tag"] = stats["from_tag"]
-        attrs["Sip-To-Tag"] = stats["to_tag"]
+        attrs["Sip-To-Tag"] = stats["to_tag"] or ""
         attrs["NAS-IP-Address"] = stats["streams"][0]["caller_local"].split(":")[0]
         attrs["Sip-User-Agents"] = (stats["caller_ua"] + "+" + stats["callee_ua"])[:253]
         attrs["Sip-Applications"] = ', '.join(sorted(set(stream['media_type'] for stream in stats['streams'] if stream['start_time'] != stream['end_time'])))[:253]
