@@ -96,7 +96,7 @@ class UNIXSocketConnection(object):
         try:
             self.transport.write(request.command, OpenSIPSConfig.socket_path)
         except socket.error, why:
-            log.error("cannot write request to %s: %s" % (OpenSIPSConfig.socket_path, why[1]))
+            log.error("cannot write request to `%s': %s" % (OpenSIPSConfig.socket_path, why[1]))
             self.deferred.errback(Failure(CommandError("Cannot send request to OpenSIPS")))
         else:
             reactor.callLater(self.timeout, self._did_timeout, self.deferred)
