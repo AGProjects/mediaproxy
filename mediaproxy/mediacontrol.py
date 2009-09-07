@@ -464,7 +464,11 @@ class Session(object):
                 stream = None
                 for old_stream in old_streams:
                     old_remote = getattr(old_stream, party).remote_sdp
-                    if old_stream.is_alive and old_stream.media_type==media_type and ((media_ip, media_port) in (old_remote, ('0.0.0.0', old_remote[1]), (old_remote[0], 0))):
+                    if old_remote is not None:
+                        old_ip, old_port = old_remote
+                    else:
+                        old_ip, old_port = None, None
+                    if old_stream.is_alive and old_stream.media_type==media_type and ((media_ip, media_port) in ((old_ip, old_port), ('0.0.0.0', old_port), (old_ip, 0))):
                         stream = old_stream
                         stream.check_hold(party, media_direction, media_ip)
                         log.debug("Found matching existing stream: %s" % stream)
