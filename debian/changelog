@@ -1,3 +1,12 @@
+mediaproxy (2.3.8) unstable; urgency=low
+
+  * Removed wrong quotes around option in config.ini.sample
+  * Improved error message to make it easier to spot problems
+  * Fixed handling of old remote stream address when undefined
+  * Fixed building debian architecture dependent packages only
+
+ -- Dan Pascu <dan@ag-projects.com>  Wed, 09 Sep 2009 20:39:44 +0300
+
 mediaproxy (2.3.7) unstable; urgency=low
 
   * Fixed typo in debian changelog
