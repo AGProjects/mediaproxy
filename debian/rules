@@ -3,6 +3,7 @@
 DEB_PYTHON_SYSTEM=pysupport
 DEB_COMPRESS_EXCLUDE := .py
 DEB_DH_INSTALLINIT_ARGS=-- defaults 21
+DEB_PYTHON_MODULE_PACKAGES=mediaproxy-common
 
 include /usr/share/cdbs/1/rules/debhelper.mk
 include /usr/share/cdbs/1/class/python-distutils.mk
@@ -18,6 +19,14 @@ clean::
 
 install/mediaproxy-common::
 	install -m 0644 config.ini.sample debian/mediaproxy-common/etc/mediaproxy/config.ini
+
+install/mediaproxy-dispatcher::
+	install -D -m 755 media-dispatcher debian/tmp/usr/bin/media-dispatcher
+	sed --in-place 's,/usr/bin/env python,/usr/bin/python,' debian/tmp/usr/bin/media-dispatcher
+
+install/mediaproxy-relay::
+	install -D -m 755 media-relay debian/tmp/usr/bin/media-relay
+	sed --in-place 's,/usr/bin/env python,/usr/bin/python,' debian/tmp/usr/bin/media-relay
 
 install/mediaproxy-web-sessions::
 	install -m 0644 web/config/media_sessions.conf.sample debian/mediaproxy-web-sessions/etc/mediaproxy/web/media_sessions.conf
