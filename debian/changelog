@@ -1,3 +1,9 @@
+mediaproxy (2.3.9) unstable; urgency=low
+
+  * Build against the newer libnetfiler-conntrack3
+
+ -- Dan Pascu <dan@ag-projects.com>  Mon, 12 Oct 2009 15:43:21 +0200
+
 mediaproxy (2.3.8) unstable; urgency=low
 
   * Removed wrong quotes around option in config.ini.sample
