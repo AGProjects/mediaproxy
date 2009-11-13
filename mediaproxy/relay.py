@@ -452,11 +452,9 @@ class MediaRelay(MediaRelayBase):
         if not self.shutting_down:
             self.shutting_down = True
             self.srv_monitor.cancel()
+            self.session_manager.cleanup()
             if len(self.dispatcher_connectors) + len(self.old_connectors) == 0:
                 self._shutdown()
             else:
                 self.update_dispatchers([])
-            self.session_manager.cleanup()
 
-    def on_shutdown(self):
-        self.session_manager.cleanup()
