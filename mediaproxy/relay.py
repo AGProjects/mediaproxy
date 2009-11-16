@@ -282,7 +282,7 @@ class SRVMediaRelayBase(object):
         process.signals.add_handler(signal.SIGHUP, self._handle_SIGHUP)
         process.signals.add_handler(signal.SIGINT, self._handle_SIGINT)
         process.signals.add_handler(signal.SIGTERM, self._handle_SIGTERM)
-        reactor.run()
+        reactor.run(installSignalHandlers=False)
 
     def _handle_SIGHUP(self, *args):
         log.msg("Received SIGHUP, shutting down after all sessions have expired.")
