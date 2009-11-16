@@ -1,3 +1,12 @@
+mediaproxy (2.3.10) unstable; urgency=low
+
+  * Fixed issue with core file regexp on OS X
+  * End dialog if session is no longer on any relay
+  * Expire all sessions before disconnecting from dispatchers
+  * Don't install signal handlers when running the relay reactor
+
+ -- Dan Pascu <dan@ag-projects.com>  Mon, 16 Nov 2009 16:41:08 +0200
+
 mediaproxy (2.3.9) unstable; urgency=low
 
   * Build against the newer libnetfiler-conntrack3

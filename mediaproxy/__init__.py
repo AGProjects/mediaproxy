@@ -3,7 +3,7 @@
 
 """Mediaproxy implements a media relay for SIP calls"""
 
-__version__ = "2.3.9"
+__version__ = "2.3.10"
 
 system_config_directory = '/etc/mediaproxy'
 runtime_directory = '/var/run/mediaproxy'
