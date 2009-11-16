@@ -404,9 +404,9 @@ class RelayFactory(Factory):
         for session_id, session in self.sessions.items():
             if session.expire_time is None and session.relay_ip == relay_ip and session_id not in relay_call_ids:
                 log.warn("Session %s is no longer on relay %s, statistics are probably lost" % (session_id, relay_ip))
-                # If no relay has that session, end the dialog
+                if session.dialog_id is not None:
+                    self.dispatcher.opensips_management.end_dialog(session.dialog_id)
                 del self.sessions[session_id]
-                self.dispatcher.opensips_management.end_dialog(session.dialog_id)
 
     def send_command(self, command, headers):
         try:
