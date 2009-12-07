@@ -553,7 +553,11 @@ class Dispatcher(object):
         log.debug("Got statistics: %s" % stats)
         if stats["start_time"] is not None:
             for act in self.accounting:
-                act.do_accounting(stats)
+                try:
+                    act.do_accounting(stats)
+                except Exception, e:
+                    log.error("An unhandled error occured while doing accounting: %s" % e)
+                    log.err()
 
     def _handle_SIGHUP(self, *args):
         log.msg("Received SIGHUP, shutting down.")
