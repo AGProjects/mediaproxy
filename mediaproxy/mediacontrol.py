@@ -183,7 +183,8 @@ class MediaSubParty(object):
                 return
             self.substream.send_data(self, data)
             if self.timer:
-                self.timer.cancel()
+                if self.timer.active():
+                    self.timer.cancel()
                 self.timer = None
             if self.codec == "Unknown" and self.substream is self.substream.stream.rtp:
                 try:
