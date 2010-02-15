@@ -461,7 +461,7 @@ class Session(object):
                 old_streams = []
             else:
                 old_streams = self.streams[self.cseq]
-            for media_type, media_ip, media_port, media_direction in media_list:
+            for media_type, media_ip, media_port, media_direction, media_parameters in media_list:
                 stream = None
                 for old_stream in old_streams:
                     old_remote = getattr(old_stream, party).remote_sdp
@@ -499,7 +499,7 @@ class Session(object):
                     stream.cleanup("rejected")
                     if stream.start_time is None:
                         stream.start_time = now
-            for stream, (media_type, media_ip, media_port, media_direction) in zip(current_streams, media_list):
+            for stream, (media_type, media_ip, media_port, media_direction, media_parameters) in zip(current_streams, media_list):
                 if stream.start_time is None:
                     stream.start_time = now
                 if stream.media_type != media_type:

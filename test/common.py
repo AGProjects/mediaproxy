@@ -117,7 +117,7 @@ class Endpoint(object):
     def set_media(self, media):
         assert(len(self.connectors) == 0)
         self.media = media
-        for index, (media_type, port, direction) in enumerate(self.media):
+        for index, (media_type, port, direction, parameters) in enumerate(self.media):
             if port != 0:
                 protocol = MediaReceiverProtocol(self, index)
                 connector = reactor.listenUDP(port, protocol)
@@ -131,7 +131,7 @@ class Endpoint(object):
             ip = "0.0.0.0"
         else:
             ip = default_host_ip
-        return [(media_type, ip, port, direction) for media_type, port, direction in self.media]
+        return [(media_type, ip, port, direction, parameters) for media_type, port, direction, parameters in self.media]
 
     def start_media(self, ip, ports):
         for port, connector in zip(ports, self.connectors):
