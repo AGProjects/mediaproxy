@@ -1,3 +1,12 @@
+mediaproxy (2.4.0) unstable; urgency=low
+
+  * Added ICE negotiation capability and assert itself as a TURN relay
+    candidate in the SDP, for a complete description and usage information
+    see http://mediaproxy-ng.org/wiki/ICE
+  * Fixed rewriting of the RTCP ports in the SDP
+
+ -- Adrian Georgescu <ag@ag-projects.com>  Thu, 18 Feb 2010 19:02:00 +0100
+
 mediaproxy (2.3.10) unstable; urgency=low
 
   * Fixed issue with core file regexp on OS X
