@@ -57,8 +57,8 @@ def stop_media(result, protocol, session, callee_ip, callee_ports):
 def change_callee_prov(result, protocol, session, callee_ip, callee_ports):
     print "sending new provisional update for callee"
     session.callee.tag = "newtotag"
-    caller_media = session.caller.set_media([("audio", 40000, "sendrecv", {})])
-    callee_media = session.callee.set_media([("audio", 50010, "sendrecv", {})])
+    caller_media = session.caller.set_media([("audio", 40000, "sendrecv", "")])
+    callee_media = session.callee.set_media([("audio", 50010, "sendrecv", "")])
     media_defer = DeferredList([caller_media, callee_media])
     defer = session.do_update(protocol, "callee", "reply", False)
     defer.addCallback(start_new_media_prov, protocol, session, media_defer, callee_ip, callee_ports)
@@ -86,8 +86,8 @@ def stop_media_prov(result, protocol, session, callee_ip, callee_ports):
 
 def change_callee(result, protocol, session, callee_ip, callee_ports):
     print "sending new update for callee"
-    caller_media = session.caller.set_media([("audio", 40000, "sendrecv", {})])
-    callee_media = session.callee.set_media([("audio", 50020, "sendrecv", {})])
+    caller_media = session.caller.set_media([("audio", 40000, "sendrecv", "")])
+    callee_media = session.callee.set_media([("audio", 50020, "sendrecv", "")])
     media_defer = DeferredList([caller_media, callee_media])
     defer = session.do_update(protocol, "callee", "reply", True)
     defer.addCallback(start_new_media, protocol, session, media_defer, callee_ip, callee_ports)
@@ -121,9 +121,9 @@ def catch_all_err(failure):
 
 if __name__ == "__main__":
     caller = Endpoint("Alice <alice@example.com>", "Caller UA", True)
-    caller_media = caller.set_media([("audio", 40000, "sendrecv", {})])
+    caller_media = caller.set_media([("audio", 40000, "sendrecv", "")])
     callee = Endpoint("Bob <bob@example.com>", "Callee UA", False)
-    callee_media = callee.set_media([("audio", 50000, "sendrecv", {})])
+    callee_media = callee.set_media([("audio", 50000, "sendrecv", "")])
     session = Session(caller, callee)
     connector, defer = connect_to_dispatcher()
     defer.addCallback(caller_update, session, caller_media, callee_media)

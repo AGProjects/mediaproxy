@@ -35,7 +35,7 @@ def change_caller1(caller_addr, callee_addr, protocol, session, caller_media, ca
 
 def change_caller2(result, caller_addr, callee_addr, protocol, session, callee_media):
     print "setting new media for caller"
-    caller_media = caller.set_media([("audio", 0, "sendrecv", {}), ("video", 0, "sendrecv", {}), ("audio", 40020, "sendrecv", {})])
+    caller_media = caller.set_media([("audio", 0, "sendrecv", ""), ("video", 0, "sendrecv", ""), ("audio", 40020, "sendrecv", "")])
     return do_media(caller_addr, callee_addr, protocol, session, caller_media, callee_media)
 
 def do_media((caller_ip, caller_ports), (callee_ip, callee_ports), protocol, session, caller_media, callee_media):
@@ -67,9 +67,9 @@ def catch_all_err(failure):
 
 if __name__ == "__main__":
     caller = Endpoint("Alice <alice@example.com>", "Caller UA", True)
-    caller_media = caller.set_media([("audio", 40000, "sendrecv", {}), ("video", 40010, "sendrecv", {}), ("audio", 40020, "sendrecv", {})])
+    caller_media = caller.set_media([("audio", 40000, "sendrecv", ""), ("video", 40010, "sendrecv", ""), ("audio", 40020, "sendrecv", "")])
     callee = Endpoint("Bob <bob@example.com>", "Callee UA", False)
-    callee_media = callee.set_media([("audio", 0, "sendrecv", {}), ("video", 0, "sendrecv", {}), ("audio", 50020, "sendrecv", {})])
+    callee_media = callee.set_media([("audio", 0, "sendrecv", ""), ("video", 0, "sendrecv", ""), ("audio", 50020, "sendrecv", "")])
     session = Session(caller, callee)
     connector, defer = connect_to_dispatcher()
     defer.addCallback(caller_update, session, caller_media, callee_media)

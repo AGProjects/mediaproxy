@@ -12,8 +12,8 @@ from common import *
 
 def phase1(protocol, session):
     print "setting up 1 video stream"
-    caller_media = session.caller.set_media([("video", 40000, "sendrecv", {})])
-    callee_media = session.callee.set_media([("video", 50000, "sendrecv", {})])
+    caller_media = session.caller.set_media([("video", 40000, "sendrecv", "")])
+    callee_media = session.callee.set_media([("video", 50000, "sendrecv", "")])
     media_defer = DeferredList([caller_media, callee_media])
     defer = succeed(None)
     defer.addCallback(caller_update, protocol, session, media_defer, phase2)
@@ -21,8 +21,8 @@ def phase1(protocol, session):
 
 def phase2(result, protocol, session):
     print "adding 2 audio streams"
-    caller_media = session.caller.set_media([("video", 40000, "sendrecv", {}), ("audio", 40010, "sendrecv", {}), ("audio", 40020, "sendrecv", {})])
-    callee_media = session.callee.set_media([("video", 50000, "sendrecv", {}), ("audio", 50010, "sendrecv", {}), ("audio", 50020, "sendrecv", {})])
+    caller_media = session.caller.set_media([("video", 40000, "sendrecv", ""), ("audio", 40010, "sendrecv", ""), ("audio", 40020, "sendrecv", "")])
+    callee_media = session.callee.set_media([("video", 50000, "sendrecv", ""), ("audio", 50010, "sendrecv", ""), ("audio", 50020, "sendrecv", "")])
     media_defer = DeferredList([caller_media, callee_media])
     defer = succeed(None)
     defer.addCallback(caller_update, protocol, session, media_defer, phase3)
@@ -30,8 +30,8 @@ def phase2(result, protocol, session):
 
 def phase3(result, protocol, session):
     print "removing 1 video and 1 audio stream"
-    caller_media = session.caller.set_media([("audio", 40020, "sendrecv", {})])
-    callee_media = session.callee.set_media([("audio", 50020, "sendrecv", {})])
+    caller_media = session.caller.set_media([("audio", 40020, "sendrecv", "")])
+    callee_media = session.callee.set_media([("audio", 50020, "sendrecv", "")])
     media_defer = DeferredList([caller_media, callee_media])
     defer = succeed(None)
     defer.addCallback(caller_update, protocol, session, media_defer, kthxbye)

@@ -53,9 +53,9 @@ def catch_all_err(failure):
 
 if __name__ == "__main__":
     caller = Endpoint("Alice <alice@example.com>", "Caller UA", True)
-    caller_media = caller.set_media([('audio', 0, 'sendrecv')])
+    caller_media = caller.set_media([('audio', 0, 'sendrecv', '')])
     callee = Endpoint("Bob <bob@example.com>", "Callee UA", False)
-    callee_media = callee.set_media([('audio', 40000, 'sendrecv')])
+    callee_media = callee.set_media([('audio', 40000, 'sendrecv', '')])
     session = Session(caller, callee)
     connector, defer = connect_to_dispatcher()
     defer.addCallback(caller_update, session, caller_media, callee_media)
