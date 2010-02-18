@@ -56,13 +56,7 @@ class MediaProxyHeaders(object):
     @staticmethod
     def encode_media(value):
         try:
-            streams = []
-            for media_type, media_ip, media_port, media_direction, media_parameters in value:
-                stream = [media_type, media_ip, str(media_port), media_direction]
-                for media_parameter in media_parameters.iteritems():
-                    stream.append("%s=%s" % media_parameter)
-                streams.append(stream)
-            return ",".join(":".join(data for data in stream) for stream in streams)
+            return ','.join(':'.join([type, ip, str(port), direction] + ['%s=%s' % param for param in parameters]) for type, ip, port, direction, parameters in value)
         except:
             raise EncodingError("Ill-formatted media information")
 
@@ -72,10 +66,9 @@ class MediaProxyHeaders(object):
             streams = []
             for stream_data in value.split(","):
                 stream_data = stream_data.split(":")
-                media_type, media_ip, media_port, media_direction = stream_data[:4]
-                media_port = int(media_port)
-                media_parameters = dict(media_parameter.split("=") for media_parameter in stream_data[4:])
-                streams.append((media_type, media_ip, media_port, media_direction, media_parameters))
+                type, ip, port, direction = stream_data[:4]
+                parameters = dict(param.split("=") for param in stream_data[4:] if param)
+                streams.append((type, ip, int(port), direction, parameters))
             return streams
         except:
             raise DecodingError("Ill-formatted media header")

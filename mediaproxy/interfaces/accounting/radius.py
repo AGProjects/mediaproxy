@@ -114,8 +114,10 @@ class RadiusAccounting(EventQueue, pyrad.client.Client):
         attrs["Sip-User-Agents"] = (stats["caller_ua"] + "+" + stats["callee_ua"])[:253]
         attrs["Sip-Applications"] = ', '.join(sorted(set(stream['media_type'] for stream in stats['streams'] if stream['start_time'] != stream['end_time'])))[:253]
         attrs["Media-Codecs"] = ', '.join(stream['caller_codec'] for stream in stats['streams'])[:253]
-        if stats["timed_out"]:
+        if stats["timed_out"] and not stats.get("all_streams_ice", False):
             attrs["Media-Info"] = "timeout"
+        elif stats.get("all_streams_ice", False):
+            attrs["Media-Info"] = "ICE session"
         else:
             attrs["Media-Info"] = ""
         for stream in stats["streams"]:

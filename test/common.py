@@ -7,6 +7,7 @@ sys.path.append("..")
 import os
 import random
 import string
+import struct
 
 import mediaproxy
 
@@ -32,6 +33,7 @@ class Config(ConfigSection):
 
 
 random_data = os.urandom(512)
+stun_data = struct.pack("!HHIIII", 0x0001, 0, 0x2112A442, 0, 0, 0)
 
 
 class OpenSIPSControlClientProtocol(LineOnlyReceiver):
@@ -133,13 +135,13 @@ class Endpoint(object):
             ip = default_host_ip
         return [(media_type, ip, port, direction, parameters) for media_type, port, direction, parameters in self.media]
 
-    def start_media(self, ip, ports):
+    def start_media(self, ip, ports, send_stun=False):
         for port, connector in zip(ports, self.connectors):
             if connector is not None:
                 protocol = connector.protocol
                 if port != 0:
                     protocol.transport.connect(ip, port)
-                    protocol.loop = LoopingCall(protocol.transport.write, random_data)
+                    protocol.loop = LoopingCall(protocol.transport.write, send_stun and stun_data or random_data)
                     protocol.loop.start(random.uniform(0.5, 1))
                 else:
                     protocol.defer.callback(None)

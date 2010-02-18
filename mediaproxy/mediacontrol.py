@@ -2,6 +2,7 @@
 # Author: Ruud Klaver <ruud@ag-projects.com>
 #
 
+import struct
 from time import time
 from collections import deque
 from operator import attrgetter
@@ -55,10 +56,11 @@ if Config.relay_ip is None:
 
 class Address(object):
     """Representation of an endpoint address"""
-    def __init__(self, host, port, in_use=True):
+    def __init__(self, host, port, in_use=True, got_rtp=False):
         self.host = host
         self.port = port
         self.in_use = self.__nonzero__() and in_use
+        self.got_rtp = got_rtp
     def __len__(self):
         return 2
     def __nonzero__(self):
@@ -73,9 +75,9 @@ class Address(object):
     def __str__(self):
         return self.__nonzero__() and ("%s:%d" % (self.host, self.port)) or "Unknown"
     def __repr__(self):
-        return "%s(%r, %r, in_use=%r)" % (self.__class__.__name__, self.host, self.port, self.in_use)
+        return "%s(%r, %r, in_use=%r, got_rtp=%r)" % (self.__class__.__name__, self.host, self.port, self.in_use, self.got_rtp)
     def forget(self):
-        self.host, self.port, self.in_use = None, None, False
+        self.host, self.port, self.in_use, self.got_rtp = None, None, False, False
     @property
     def unknown(self):
         return None in (self.host, self.port)
@@ -121,6 +123,7 @@ class StreamListenerProtocol(DatagramProtocol):
         self.cb_func = None
         self.sdp = None
         self.send_packet_count = 0
+        self.stun_queue = []
 
     def datagramReceived(self, data, (host, port)):
         if self.cb_func is not None:
@@ -132,15 +135,43 @@ class StreamListenerProtocol(DatagramProtocol):
         else:
             self.sdp = None
 
-    def send(self, data, ip=None, port=None):
-        host = self.transport.getHost()
+    def send(self, data, is_stun, ip=None, port=None):
+        if is_stun:
+            self.stun_queue.append(data)
+
         if ip is None or port is None:
+            # this means that we have not received any packets from this host yet,
+            # so we have not learnt its address
             if self.sdp is None:
+                # we can't do anything if we haven't received the SDP IP yet or
+                # it was in a private range
                 return
             ip, port = self.sdp
-        if not self.send_packet_count % Config.userspace_transmit_every:
-            self.transport.write(data, (ip, port))
-        self.send_packet_count += 1
+
+        # we learnt the IP, empty the STUN packets queue
+        if self.stun_queue:
+            for data in self.stun_queue:
+                self.transport.write(data, (ip, port))
+            self.stun_queue = []
+
+        if not is_stun:
+            if not self.send_packet_count % Config.userspace_transmit_every:
+                self.transport.write(data, (ip, port))
+            self.send_packet_count += 1
+
+
+def _stun_test(data):
+    # Check if data is a STUN request and if it's a binding request
+    if len(data) < 20:
+        return False, False
+    msg_type, msg_len, magic = struct.unpack("!HHI", data[:8])
+    if msg_type & 0xc == 0 and magic == 0x2112A442:
+        if msg_type == 0x0001:
+            return True, True
+        else:
+            return True, False
+    else:
+        return False, False
 
 class MediaSubParty(object):
 
@@ -153,6 +184,7 @@ class MediaSubParty(object):
         self.local = Address(host.host, host.port)
         self.timer = None
         self.codec = "Unknown"
+        self.got_stun_probing = False
         self.reset()
 
     def reset(self):
@@ -160,6 +192,8 @@ class MediaSubParty(object):
             self.timer.cancel()
         self.timer = reactor.callLater(Config.stream_timeout, self.substream.expired, "no-traffic timeout", Config.stream_timeout)
         self.remote.in_use = False # keep remote address around but mark it as obsolete
+        self.remote.got_rtp = False
+        self.got_stun_probing = False
         self.listener.protocol.send_packet_count = 0
 
     def before_hold(self):
@@ -176,12 +210,23 @@ class MediaSubParty(object):
     def got_data(self, host, port, data):
         if (host, port) == tuple(self.remote):
             if self.remote.obsolete:
+                # the received packet matches the previously used IP/port,
+                # which has been made obsolete, so ignore it
                 return
-            self.substream.send_data(self, data)
         else:
             if self.remote.in_use:
+                # the received packet is different than the recorded IP/port,
+                # so we will discard it
                 return
-            self.substream.send_data(self, data)
+            # we have learnt the remote IP/port
+            self.remote.host, self.remote.port = host, port
+            self.remote.in_use = True
+            log.debug("Got traffic information for stream: %s" % self.substream.stream)
+        is_stun, is_binding_request = _stun_test(data)
+        self.substream.send_data(self, data, is_stun)
+        if not self.remote.got_rtp and not is_stun:
+            # This is the first RTP packet received
+            self.remote.got_rtp = True
             if self.timer:
                 if self.timer.active():
                     self.timer.cancel()
@@ -198,9 +243,9 @@ class MediaSubParty(object):
                         self.codec = rtp_payloads[pt]
                     else:
                         self.codec = "Unknown(%d)" % pt
-            self.remote.host, self.remote.port = host, port
-            self.remote.in_use = True
             self.substream.check_create_conntrack()
+        if is_binding_request:
+            self.got_stun_probing = True
 
     def cleanup(self):
         if self.timer and self.timer.active():
@@ -246,23 +291,24 @@ class MediaSubStream(object):
         self._stop_relaying()
 
     def check_create_conntrack(self):
-        log.debug("Got traffic information for stream: %s" % self.stream)
         if self.stream.first_media_time is None:
             self.stream.first_media_time = time()
-        if self.caller.remote.in_use and self.callee.remote.in_use:
+        if self.caller.remote.in_use and self.caller.remote.got_rtp and self.callee.remote.in_use and self.callee.remote.got_rtp:
             self.forwarding_rule = _conntrack.ForwardingRule(self.caller.remote, self.caller.local, self.callee.remote, self.callee.local, self.stream.session.mark)
             self.forwarding_rule.expired_func = self.conntrack_expired
 
-    def send_data(self, source, data):
+    def send_data(self, source, data, is_stun):
         if source is self.caller:
             dest = self.callee
         else:
             dest = self.caller
         if dest.remote:
+            # if we have already learnt the remote address of the destination, use that
             ip, port = dest.remote.host, dest.remote.port
-            dest.listener.protocol.send(data, ip, port)
+            dest.listener.protocol.send(data, is_stun, ip, port)
         else:
-            dest.listener.protocol.send(data)
+            # otherwise use the IP/port specified in the SDP, if public
+            dest.listener.protocol.send(data, is_stun)
 
     def conntrack_expired(self):
         try:
@@ -288,6 +334,7 @@ class MediaParty(object):
         self.manager = stream.session.manager
         self._remote_sdp = None
         self.is_on_hold = False
+        self.uses_ice = False
         while True:
             self.listener_rtp = None
             self.ports = port_rtp, port_rtcp = self.manager.get_ports()
@@ -318,7 +365,7 @@ class MediaParty(object):
 
 class MediaStream(object):
 
-    def __init__(self, session, media_type, media_ip, media_port, initiating_party, direction = None):
+    def __init__(self, session, media_type, media_ip, media_port, direction, media_parameters, initiating_party):
         self.is_alive = True
         self.session = session
         self.media_type = media_type
@@ -327,6 +374,7 @@ class MediaStream(object):
         self.rtp = MediaSubStream(self, self.caller.listener_rtp, self.callee.listener_rtp)
         self.rtcp = MediaSubStream(self, self.caller.listener_rtcp, self.callee.listener_rtcp)
         getattr(self, initiating_party).remote_sdp = (media_ip, media_port)
+        getattr(self, initiating_party).uses_ice = (media_parameters.get("ice", "no") == "yes")
         self.check_hold(initiating_party, direction, media_ip)
         self.create_time = time()
         self.first_media_time = None
@@ -342,12 +390,16 @@ class MediaStream(object):
             src = "%s:%d" % self.caller.remote_sdp
         if self.caller.is_on_hold:
             src += " ON HOLD"
+        if self.caller.uses_ice:
+            src += " (ICE)"
         if self.callee.remote_sdp is None:
             dst = "Unknown"
         else:
             dst = "%s:%d" % self.callee.remote_sdp
         if self.callee.is_on_hold:
             dst += " ON HOLD"
+        if self.callee.uses_ice:
+            dst += " (ICE)"
         rtp = self.rtp
         rtcp = self.rtcp
         return "(%s) %s (RTP: %s, RTCP: %s) <-> %s <-> %s <-> %s (RTP: %s, RTCP: %s)" % (
@@ -387,6 +439,8 @@ class MediaStream(object):
         getattr(self, party).remote_sdp = (media_ip, media_port)
 
     def substream_expired(self, substream, reason, timeout_wait):
+        if substream is self.rtp and reason == "no-traffic timeout" and self.caller.uses_ice and self.callee.uses_ice and (substream.caller.got_stun_probing or substream.callee.got_stun_probing):
+            reason = "unselected ICE candidate"
         if substream is self.rtcp or (self.is_on_hold and reason=='conntrack timeout'):
             # Forget about the remote addresses, this will cause any
             # re-occurence of the same traffic to be forwarded again
@@ -465,17 +519,18 @@ class Session(object):
                 stream = None
                 for old_stream in old_streams:
                     old_remote = getattr(old_stream, party).remote_sdp
+                    old_uses_ice = getattr(old_stream, party).uses_ice
                     if old_remote is not None:
                         old_ip, old_port = old_remote
                     else:
                         old_ip, old_port = None, None
-                    if old_stream.is_alive and old_stream.media_type==media_type and ((media_ip, media_port) in ((old_ip, old_port), ('0.0.0.0', old_port), (old_ip, 0))):
+                    if old_stream.is_alive and old_stream.media_type == media_type and ((media_ip, media_port) in ((old_ip, old_port), ('0.0.0.0', old_port), (old_ip, 0))) and old_uses_ice == (media_parameters.get("ice", "no") == "yes"):
                         stream = old_stream
                         stream.check_hold(party, media_direction, media_ip)
                         log.debug("Found matching existing stream: %s" % stream)
                         break
                 if stream is None:
-                    stream = MediaStream(self, media_type, media_ip, media_port, party, media_direction)
+                    stream = MediaStream(self, media_type, media_ip, media_port, media_direction, media_parameters, party)
                     log.debug("Added new stream: %s" % stream)
                 if media_port == 0:
                     stream.cleanup()
@@ -510,6 +565,7 @@ class Session(object):
                     continue
                 stream.check_hold(party, media_direction, media_ip)
                 party_info = getattr(stream, party)
+                party_info.uses_ice = (media_parameters.get("ice", "no") == "yes")
                 if party_info.remote_sdp is None or party_info.remote_sdp[0] == "0.0.0.0":
                     party_info.remote_sdp = (media_ip, media_port)
                     log.debug("Got initial answer from %s for stream: %s" % (party, stream))

@@ -270,8 +270,10 @@ class RelayServerProtocol(LineOnlyReceiver):
                 log.msg("session with call_id %s from relay %s did timeout" % (call_id, session.relay_ip))
                 stats["dialog_id"] = session.dialog_id
                 stats["timed_out"] = True
+                all_streams_ice = all(stream_info["status"] == "unselected ICE candidate" for stream_info in stats["streams"])
+                stats["all_streams_ice"] = all_streams_ice
                 self.factory.dispatcher.update_statistics(stats)
-                if session.dialog_id is not None and stats["start_time"] is not None:
+                if session.dialog_id is not None and stats["start_time"] is not None and not all_streams_ice:
                     self.factory.dispatcher.opensips_management.end_dialog(session.dialog_id)
                     session.expire_time = time()
                 else:
@@ -552,9 +554,9 @@ class Dispatcher(object):
     def update_statistics(self, stats):
         log.debug("Got statistics: %s" % stats)
         if stats["start_time"] is not None:
-            for act in self.accounting:
+            for accounting in self.accounting:
                 try:
-                    act.do_accounting(stats)
+                    accounting.do_accounting(stats)
                 except Exception, e:
                     log.error("An unhandled error occured while doing accounting: %s" % e)
                     log.err()
