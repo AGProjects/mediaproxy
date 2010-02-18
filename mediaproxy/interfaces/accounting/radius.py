@@ -51,17 +51,17 @@ class RadiusDictionaryFile(object):
 class Accounting(object):
 
     def __init__(self):
-        self.radius = RadiusAccounting()
+        self.handler = RadiusAccounting()
 
     def start(self):
-        self.radius.start()
+        self.handler.start()
 
     def do_accounting(self, stats):
-        self.radius.put(stats)
+        self.handler.put(stats)
 
     def stop(self):
-        self.radius.stop()
-        self.radius.join()
+        self.handler.stop()
+        self.handler.join()
 
 
 class RadiusAccounting(EventQueue, pyrad.client.Client):

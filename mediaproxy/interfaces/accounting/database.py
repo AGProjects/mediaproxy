@@ -67,17 +67,17 @@ except OperationalError, e:
 class Accounting(object):
 
     def __init__(self):
-        self.database = DatabaseAccounting()
+        self.handler = DatabaseAccounting()
 
     def start(self):
-        self.database.start()
+        self.handler.start()
 
     def do_accounting(self, stats):
-        self.database.put(stats)
+        self.handler.put(stats)
 
     def stop(self):
-        self.database.stop()
-        self.database.join()
+        self.handler.stop()
+        self.handler.join()
 
 
 class DatabaseAccounting(EventQueue):
