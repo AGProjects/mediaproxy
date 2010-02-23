@@ -3,9 +3,11 @@ mediaproxy (2.4.0) unstable; urgency=low
   * Added ICE negotiation capability and assert itself as a TURN relay
     candidate in the SDP, for a complete description and usage information
     see http://mediaproxy-ng.org/wiki/ICE
-  * Fixed rewriting of the RTCP ports in the SDP
+  * Fix race in which an already called event tried to be cancelled
+  * Prevent other acounting backends to be affected by a failure in one of
+    them
 
- -- Adrian Georgescu <ag@ag-projects.com>  Thu, 18 Feb 2010 19:02:00 +0100
+ -- Saul Ibarra <saul@ag-projects.com>  Tue, 23 Feb 2010 18:36:53 +0100
 
 mediaproxy (2.3.10) unstable; urgency=low
 
