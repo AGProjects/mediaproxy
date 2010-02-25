@@ -1,3 +1,9 @@
+mediaproxy (2.4.1) unstable; urgency=low
+
+  * Update the session information if 200 OK was received without SDP 
+
+ -- Saul Ibarra <saul@ag-projects.com>  Thu, 25 Feb 2010 11:07:19 +0100
+
 mediaproxy (2.4.0) unstable; urgency=low
 
   * Added ICE negotiation capability and assert itself as a TURN relay
