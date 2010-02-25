@@ -64,7 +64,7 @@ class MediaProxyHeaders(object):
     def decode_media(value):
         try:
             streams = []
-            for stream_data in value.split(","):
+            for stream_data in (data for data in value.split(",") if data):
                 stream_data = stream_data.split(":")
                 type, ip, port, direction = stream_data[:4]
                 parameters = dict(param.split("=") for param in stream_data[4:] if param)

@@ -109,7 +109,7 @@ else:
 
 class RelayClientProtocol(LineOnlyReceiver):
     noisy = False
-    required_headers = {'update': set(['call_id', 'from_tag', 'from_uri', 'to_uri', 'cseq', 'user_agent', 'media', 'type']),
+    required_headers = {'update': set(['call_id', 'from_tag', 'from_uri', 'to_uri', 'cseq', 'user_agent', 'type']),
                         'remove': set(['call_id', 'from_tag']),
                         'summary': set(),
                         'sessions': set()}

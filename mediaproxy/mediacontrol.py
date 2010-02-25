@@ -548,6 +548,11 @@ class Session(object):
             if self.start_time is None:
                 self.start_time = now
             current_streams = self.streams[cseq]
+            for stream in current_streams:
+                if stream.start_time is None:
+                    stream.start_time = now
+            if to_tag is not None and len(media_list) == 0:
+                return
             if len(media_list) < len(current_streams):
                 for stream in current_streams[len(media_list):]:
                     log.debug("Stream rejected by not being included in the SDP answer: %s" % stream)
@@ -555,8 +560,6 @@ class Session(object):
                     if stream.start_time is None:
                         stream.start_time = now
             for stream, (media_type, media_ip, media_port, media_direction, media_parameters) in zip(current_streams, media_list):
-                if stream.start_time is None:
-                    stream.start_time = now
                 if stream.media_type != media_type:
                     raise ValueError('Media types do not match: "%s" and "%s"' % (stream.media_type, media_type))
                 if media_port == 0:
@@ -736,7 +739,7 @@ class SessionManager(Logger):
     def has_session(self, call_id, from_tag, to_tag=None, **kw):
         return any((call_id, tag) in self.sessions for tag in (from_tag, to_tag) if tag is not None)
 
-    def update_session(self, dispatcher, call_id, from_tag, from_uri, to_uri, cseq, user_agent, media, type, to_tag=None, **kw):
+    def update_session(self, dispatcher, call_id, from_tag, from_uri, to_uri, cseq, user_agent, type, media=[], to_tag=None, **kw):
         key = self._find_session_key(call_id, from_tag, to_tag)
         if key:
             session = self.sessions[key]
