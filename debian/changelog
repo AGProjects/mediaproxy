@@ -1,3 +1,10 @@
+mediaproxy (2.4.2) unstable; urgency=low
+
+  * Prevent streams from being closed when a broken in-dialog
+    request is received
+
+ -- Saul Ibarra <saul@ag-projects.com>  Tue, 09 Mar 2010 11:20:17 +0100
+
 mediaproxy (2.4.1) unstable; urgency=low
 
   * Update the session information if 200 OK was received without SDP 
