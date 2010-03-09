@@ -509,6 +509,8 @@ class Session(object):
             if self.callee_ua is None:
                 self.callee_ua = user_agent
         if self.cseq is None or cseq > self.cseq:
+            if not media_list:
+                return
             log.debug("Received new SDP offer")
             self.streams[cseq] = new_streams = []
             if self.cseq is None:
@@ -551,7 +553,7 @@ class Session(object):
             for stream in current_streams:
                 if stream.start_time is None:
                     stream.start_time = now
-            if to_tag is not None and len(media_list) == 0:
+            if to_tag is not None and not media_list:
                 return
             if len(media_list) < len(current_streams):
                 for stream in current_streams[len(media_list):]:
@@ -590,7 +592,10 @@ class Session(object):
             pos = 0
         else:
             pos = 1
-        cseq = max(key for key in self.streams.keys() if key[pos] == cseq)
+        try:
+            cseq = max(key for key in self.streams.keys() if key[pos] == cseq)
+        except ValueError:
+            return None
         if is_downstream:
             retval = [(stream.status in ["active", "on hold"]) and tuple(stream.rtp.callee.local) or (stream.rtp.callee.local.host, 0) for stream in self.streams[cseq]]
         else:
