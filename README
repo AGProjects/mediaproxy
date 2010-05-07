@@ -2,12 +2,12 @@
 MediaProxy
 ----------
 
-Copyright (c) 2008 AG Projects
+Copyright (c) 2008-2010 AG Projects
 http://ag-projects.com
 
-Authors: Ruud Klaver, Dan Pascu
+Authors: Ruud Klaver, Dan Pascu, Saul Ibarra
 
-Home page: http://www.ag-projects.com/MediaProxy.html
+Home page: http://mediaproxy-ng.org
 
 
 License
@@ -39,7 +39,6 @@ Features
  - TLS encryption between the relays and dispatcher
  - T.38 fax support
  - Graceful shutdown capability
- - Modular design for custom selection algorithms for the relay location
  - Automatic load balancing and redundancy among all media relays
  - Real-time sessions statistics
  - Configurable IP and UDP port range
@@ -48,6 +47,7 @@ Features
  - Radius accounting of IP network traffic
  - Database accounting of complete media information including all streams,
    their type, codecs and duration.
+ - Supports ICE negotiation by behaving like a TURN relay candiate
 
 
 Background
@@ -122,6 +122,8 @@ Please note that the accounting modules are not shown.
 
 Compatibility and pre-requisites
 --------------------------------
+
+Both OpenSIPS and MediaProxy must use a public IP address.
 
 To run the software, you will need a server running the Linux Operating
 System using a kernel version 2.6.18 or higher that has been compiled with
