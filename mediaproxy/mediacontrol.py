@@ -752,6 +752,8 @@ class SessionManager(Logger):
             is_downstream = (session.from_tag != from_tag) ^ (type == "request")
             is_caller_cseq = (session.from_tag == from_tag)
             session.update_media(cseq, to_tag, user_agent, media, is_downstream, is_caller_cseq)
+        elif type == "reply" and not media:
+            return None
         else:
             is_downstream = type == "request"
             is_caller_cseq = True
