@@ -3,13 +3,38 @@ Section: net
 Priority: optional
 Maintainer: Dan Pascu <dan@ag-projects.com>
 Uploaders: Adrian Georgescu <ag@ag-projects.com>, Lucian Stanescu <luci@ag-projects.com>, Saul Ibarra <saul@ag-projects.com>
-Build-Depends: cdbs (>= 0.4.47), debhelper (>= 7), python-all-dev (>= 2.4.4), python-support, libnetfilter-conntrack-dev (>= 0.0.89)
+Build-Depends: cdbs (>= 0.4.47), debhelper (>= 7.3.5), python-all-dev (>= 2.5), python-all-dbg (>= 2.5), python-support, libnetfilter-conntrack-dev (>= 0.0.89)
 Standards-Version: 3.8.4
 
 Package: mediaproxy-common
 Architecture: any
 Depends: ${python:Depends}, ${shlibs:Depends}, ${misc:Depends}, python-application (>= 1.1.5), python-cjson, python-gnutls (>= 1.1.8), python-twisted-core (>= 2.5.0), python-twisted-names, python-zopeinterface
 Recommends: python-pyrad (>= 1.1), python-sqlobject
+Description: MediaProxy common files
+ MediaProxy is a distributed far end NAT traversal solution for media streams
+ of SIP calls. MediaProxy has a dispatcher running on the same host with the
+ OpenSIPS proxy and multiple media relays distributed over the network.
+ The media relays work by manipulating conntrack rules in the Linux kernel to
+ create paths that forward the media streams between the 2 SIP user agents
+ participating in the call. Because it avoids to copy stream data from kernel
+ space to user space and back to kernel space like other implementations,
+ MediaProxy can handle much more media streams at a time, limited only to the
+ network interface bandwidth and the Linux kernel network layer processing
+ speed.
+ .
+ MediaProxy features secure encrypted communication between the dispatcher
+ and the relays, advanced accounting capabilities using multiple backends,
+ support for any combination of audio and video streams, realtime statistics,
+ T.38 fax support as well as automatic load balancing and redundancy among
+ the active relays.
+ .
+ This package includes files common to all MediaProxy packages.
+
+Package: mediaproxy-common-dbg
+Architecture: any
+Priority: extra
+Section: debug
+Depends: ${shlibs:Depends}, ${misc:Depends}, python-all-dbg, mediaproxy-common (= ${binary:Version})
 Description: MediaProxy common files
  MediaProxy is a distributed far end NAT traversal solution for media streams
  of SIP calls. MediaProxy has a dispatcher running on the same host with the
