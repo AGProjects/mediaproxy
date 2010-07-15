@@ -1,3 +1,13 @@
+mediaproxy (2.4.3) unstable; urgency=low
+
+  * Added support for pyrad version 1.2
+  * Don't create a media session in the relay if the SIP request and response
+    do not contain SDP with media streams
+  * Added mediaproxy-common-dbg package to allow debugging in case of software
+    crash
+
+ -- Saul Ibarra <saul@ag-projects.com>  Thu, 15 Jul 2010 14:08:36 +0200
+
 mediaproxy (2.4.2) unstable; urgency=low
 
   * Prevent streams from being closed when a broken in-dialog
