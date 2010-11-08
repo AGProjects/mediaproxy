@@ -177,6 +177,9 @@ ForwardingRule_dealloc(ForwardingRule *self)
 {
     struct nfct_handle *ct_handle;
 
+    PyObject_GC_UnTrack(self);
+    ForwardingRule_clear(self);
+
     if (self->is_active) {
         forwarding_rules[ntohs(nfct_get_attr_u16(self->conntrack, ATTR_ORIG_PORT_DST))] = NULL;
 
@@ -188,9 +191,8 @@ ForwardingRule_dealloc(ForwardingRule *self)
         }
         Py_END_ALLOW_THREADS
     }
-
-    ForwardingRule_clear(self);
     nfct_destroy(self->conntrack);
+
     self->ob_type->tp_free((PyObject*)self);
 }
 
