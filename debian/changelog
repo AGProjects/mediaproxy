@@ -1,3 +1,11 @@
+mediaproxy (2.4.4) unstable; urgency=low
+
+  * Fixed ForwardingRule deallocation
+  * Bumped Debian Standards-Version to 3.9.1
+  * Fixed deprecation warning
+
+ -- Saul Ibarra <saul@ag-projects.com>  Mon, 08 Nov 2010 15:19:27 +0100
+
 mediaproxy (2.4.3) unstable; urgency=low
 
   * Added support for pyrad version 1.2
