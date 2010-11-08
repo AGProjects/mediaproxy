@@ -34,7 +34,7 @@ class X509NameValidator(crypto.X509Name):
         return crypto.X509Name.__new__(cls, dname)
 
     def __init__(self, dname):
-        str.__init__(self, dname)
+        str.__init__(self)
         pairs = [x.replace('\,', ',') for x in re.split(r'(?<!\\),\s*', dname)]
         for pair in pairs:
             try:
