@@ -5,11 +5,10 @@
 """SIP Thor backend"""
 
 from application import log
-from application.configuration import *
+from application.configuration import ConfigSection, ConfigSetting
 from application.system import host
-from application.process import process
 
-from gnutls.constants import *
+from gnutls.constants import COMP_LZO, COMP_DEFLATE, COMP_NULL
 
 from thor.entities import ThorEntities, GenericThorEntity
 from thor.eventservice import EventServiceClient, ThorEvent

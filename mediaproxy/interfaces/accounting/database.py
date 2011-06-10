@@ -7,13 +7,12 @@
 import cjson
 
 from application import log
-from application.process import process
 from application.python.queue import EventQueue
-from application.configuration import *
+from application.configuration import ConfigSection
 
 from sqlobject import SQLObject, connectionForURI, sqlhub
 from sqlobject import StringCol, BLOBCol, DatabaseIndex
-from sqlobject.dberrors import *
+from sqlobject.dberrors import DatabaseError, ProgrammingError, OperationalError
 
 from mediaproxy import configuration_filename
 

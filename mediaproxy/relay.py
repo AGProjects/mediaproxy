@@ -27,7 +27,7 @@ from twisted.names.error import DomainError
 from gnutls.errors import CertificateError, CertificateSecurityError
 
 from application import log
-from application.configuration import *
+from application.configuration import ConfigSection, ConfigSetting
 from application.configuration.datatypes import IPAddress
 from application.process import process
 from application.system import host
@@ -51,7 +51,7 @@ class DispatcherAddress(tuple):
             address = value
             port = default_dispatcher_port
         try:
-            address = datatypes.IPAddress(address)
+            address = IPAddress(address)
             is_domain = False
         except ValueError:
             is_domain = True

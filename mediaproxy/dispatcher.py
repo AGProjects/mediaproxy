@@ -29,9 +29,9 @@ from gnutls.errors import CertificateSecurityError
 
 from application import log
 from application.process import process
-from application.configuration import *
+from application.configuration import ConfigSection, ConfigSetting
+from application.configuration.datatypes import NetworkAddress, StringList
 from application.system import unlink
-
 from mediaproxy import configuration_filename, default_dispatcher_port, default_management_port, __version__
 from mediaproxy.tls import X509Credentials, X509NameValidator
 from mediaproxy.interfaces import opensips
@@ -41,17 +41,17 @@ from mediaproxy.scheduler import RecurrentCall, KeepRunning
 log.msg("Twisted is using %s" % reactor.__module__.rsplit('.', 1)[-1])
 
 
-class DispatcherAddress(datatypes.NetworkAddress):
+class DispatcherAddress(NetworkAddress):
     default_port = default_dispatcher_port
 
-class DispatcherManagementAddress(datatypes.NetworkAddress):
+class DispatcherManagementAddress(NetworkAddress):
     default_port = default_management_port
 
-class AccountingModuleList(datatypes.StringList):
+class AccountingModuleList(StringList):
     _valid_backends = set(('database', 'radius'))
     
     def __new__(cls, value):
-        proposed_backends = set(datatypes.StringList.__new__(cls, value))
+        proposed_backends = set(StringList.__new__(cls, value))
         invalid_names = proposed_backends - cls._valid_backends
         for name in invalid_names:
             log.warn("Ignoring invalid accounting module name: `%s'" % name)

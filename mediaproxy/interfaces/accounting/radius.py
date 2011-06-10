@@ -7,7 +7,7 @@
 from application import log
 from application.process import process
 from application.python.queue import EventQueue
-from application.configuration import *
+from application.configuration import ConfigSection
 
 import pyrad.client
 import pyrad.dictionary
@@ -95,7 +95,7 @@ class RadiusAccounting(EventQueue, pyrad.client.Client):
             raddict = pyrad.dictionary.Dictionary(*dicts)
             timeout = int(config["radius_timeout"])
             retries = int(config["radius_retries"])
-        except Exception, e:
+        except Exception:
             log.fatal("cannot read the RADIUS configuration file")
             raise
         pyrad.client.Client.__init__(self, server, 1812, acctport, secret, raddict)

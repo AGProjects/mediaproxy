@@ -13,7 +13,7 @@ from gnutls import crypto
 from gnutls.interfaces import twisted
 
 from application.process import process
-from application.configuration import ConfigSection, ConfigFile
+from application.configuration import ConfigSection
 
 from mediaproxy import configuration_filename
 

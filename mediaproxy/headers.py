@@ -72,7 +72,6 @@ class MediaProxyHeaders(object):
             return streams
         except:
             raise DecodingError("Ill-formatted media header")
-        return retval
 
 
 class CodingDict(dict):

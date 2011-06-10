@@ -17,7 +17,7 @@ from twisted.python.log import Logger
 
 from application import log
 from application.system import host
-from application.configuration import *
+from application.configuration import ConfigSection, ConfigSetting
 from application.configuration.datatypes import IPAddress
 
 from mediaproxy import configuration_filename
