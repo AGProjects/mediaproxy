@@ -11,7 +11,7 @@ from twisted.internet.protocol import DatagramProtocol
 from twisted.internet.error import CannotListenError
 from twisted.python.failure import Failure
 from application.configuration import ConfigSection, ConfigFile
-from application.python.util import Singleton
+from application.python.types import Singleton
 from application.process import process
 from application.system import unlink
 from application import log

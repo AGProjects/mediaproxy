@@ -11,7 +11,7 @@ import struct
 
 import mediaproxy
 
-from application.system import default_host_ip
+from application.system import host
 from application.configuration import *
 from application.process import process
 process.system_config_directory = mediaproxy.system_config_directory
@@ -34,6 +34,7 @@ class Config(ConfigSection):
 
 random_data = os.urandom(512)
 stun_data = struct.pack("!HHIIII", 0x0001, 0, 0x2112A442, 0, 0, 0)
+default_host_ip = host.default_ip
 
 
 class OpenSIPSControlClientProtocol(LineOnlyReceiver):

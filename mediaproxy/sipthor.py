@@ -6,7 +6,7 @@
 
 from application import log
 from application.configuration import *
-from application.system import default_host_ip
+from application.system import host
 from application.process import process
 
 from gnutls.constants import *
@@ -35,7 +35,7 @@ class ThorNetworkConfig(ConfigSection):
     __section__ = 'ThorNetwork'
 
     domain = ConfigSetting(type=SIPThorDomain, value=None)
-    node_ip = default_host_ip
+    node_ip = host.default_ip
 
 
 if ThorNetworkConfig.domain is None:

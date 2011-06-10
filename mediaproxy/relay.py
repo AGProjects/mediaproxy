@@ -30,7 +30,7 @@ from application import log
 from application.configuration import *
 from application.configuration.datatypes import IPAddress
 from application.process import process
-from application.system import default_host_ip
+from application.system import host
 
 from mediaproxy.tls import X509Credentials, X509NameValidator
 from mediaproxy.headers import DecodingDict, DecodingError
@@ -84,7 +84,7 @@ class Config(ConfigSection):
     __section__ = 'Relay'
 
     dispatchers = ConfigSetting(type=DispatcherAddressList, value=[])
-    relay_ip = ConfigSetting(type=IPAddress, value=default_host_ip)
+    relay_ip = ConfigSetting(type=IPAddress, value=host.default_ip)
     port_range = PortRange("50000:60000")
     dns_check_interval = PositiveInteger(60)
     keepalive_interval = PositiveInteger(10)

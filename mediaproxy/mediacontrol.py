@@ -16,7 +16,7 @@ from twisted.internet.error import CannotListenError
 from twisted.python.log import Logger
 
 from application import log
-from application.system import default_host_ip
+from application.system import host
 from application.configuration import *
 from application.configuration.datatypes import IPAddress
 
@@ -43,7 +43,7 @@ class Config(ConfigSection):
     __cfgfile__ = configuration_filename
     __section__ = 'Relay'
 
-    relay_ip = ConfigSetting(type=IPAddress, value=default_host_ip)
+    relay_ip = ConfigSetting(type=IPAddress, value=host.default_ip)
     stream_timeout = 90
     on_hold_timeout = 7200
     traffic_sampling_period = 15
