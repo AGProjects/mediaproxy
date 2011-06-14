@@ -10,6 +10,7 @@
 #include <structmember.h>
 #include <libnetfilter_conntrack/libnetfilter_conntrack.h>
 #include <libiptc/libiptc.h>
+#include <libiptc/libxtc.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -24,9 +25,9 @@
 #define string(x) _string(x)
 
 
-#define IPTC_ENTRY_SIZE IPT_ALIGN(sizeof(struct ipt_entry))
-#define IPTC_MATCH_SIZE IPT_ALIGN(sizeof(struct ipt_entry_match) + sizeof(struct ipt_udp))
-#define IPTC_TARGET_SIZE IPT_ALIGN(sizeof(struct ipt_entry_target))
+#define IPTC_ENTRY_SIZE XT_ALIGN(sizeof(struct ipt_entry))
+#define IPTC_MATCH_SIZE XT_ALIGN(sizeof(struct ipt_entry_match) + sizeof(struct ipt_udp))
+#define IPTC_TARGET_SIZE XT_ALIGN(sizeof(struct ipt_entry_target))
 #define IPTC_FULL_SIZE IPTC_ENTRY_SIZE + IPTC_MATCH_SIZE + IPTC_TARGET_SIZE
 
 
@@ -110,17 +111,17 @@ init_inhibitor_rule(struct ipt_entry *entry, struct in_addr src_address, int src
 static void
 remove_inhibitor_rules(struct ipt_entry *caller_inhibitor_entry, struct ipt_entry *callee_inhibitor_entry)
 {
-    iptc_handle_t ipt_handle;
+    struct iptc_handle *ipt_handle;
     unsigned char matchmask[IPTC_FULL_SIZE];
 
     if ((ipt_handle = iptc_init("raw")) != NULL) {
         memset(matchmask, 255, IPTC_FULL_SIZE);
         // We release all rules to workaround stray rules that may remain in the
         // raw table after the application crashes without a chance to clean up.
-        while(iptc_delete_entry("PREROUTING", caller_inhibitor_entry, matchmask, &ipt_handle));
-        while(iptc_delete_entry("PREROUTING", callee_inhibitor_entry, matchmask, &ipt_handle));
-        if (!iptc_commit(&ipt_handle))
-            iptc_free(&ipt_handle);
+        while(iptc_delete_entry("PREROUTING", caller_inhibitor_entry, matchmask, ipt_handle));
+        while(iptc_delete_entry("PREROUTING", callee_inhibitor_entry, matchmask, ipt_handle));
+        if (!iptc_commit(ipt_handle))
+            iptc_free(ipt_handle);
     }
 }
 
@@ -205,7 +206,7 @@ ForwardingRule_init(ForwardingRule *self, PyObject *args, PyObject *kwds)
     int port[4], i, result;
     unsigned int timeout = DEFAULT_TIMEOUT, mark = 0;
     struct nfct_handle *ct_handle;
-    iptc_handle_t ipt_handle;
+    struct iptc_handle *ipt_handle;
     char caller_inhibitor_buf[IPTC_FULL_SIZE];
     char callee_inhibitor_buf[IPTC_FULL_SIZE];
     struct ipt_entry *caller_inhibitor_entry = (struct ipt_entry *) caller_inhibitor_buf;
@@ -246,20 +247,20 @@ ForwardingRule_init(ForwardingRule *self, PyObject *args, PyObject *kwds)
         return -1;
     }
 
-    if (!iptc_append_entry("PREROUTING", caller_inhibitor_entry, &ipt_handle)) {
-        iptc_free(&ipt_handle);
+    if (!iptc_append_entry("PREROUTING", caller_inhibitor_entry, ipt_handle)) {
+        iptc_free(ipt_handle);
         PyErr_SetString(Error, iptc_strerror(errno));
         return -1;
     }
 
-    if (!iptc_append_entry("PREROUTING", callee_inhibitor_entry, &ipt_handle)) {
-        iptc_free(&ipt_handle);
+    if (!iptc_append_entry("PREROUTING", callee_inhibitor_entry, ipt_handle)) {
+        iptc_free(ipt_handle);
         PyErr_SetString(Error, iptc_strerror(errno));
         return -1;
     }
 
-    if (!iptc_commit(&ipt_handle)) {
-        iptc_free(&ipt_handle);
+    if (!iptc_commit(ipt_handle)) {
+        iptc_free(ipt_handle);
         PyErr_SetString(Error, iptc_strerror(errno));
         return -1;
     }
@@ -700,13 +701,13 @@ PyMODINIT_FUNC
 init_conntrack(void) 
 {
     PyObject* module;
-    iptc_handle_t handle;
+    struct iptc_handle *handle;
 
     if ((handle = iptc_init("nat")) == NULL) {
         PyErr_SetString(PyExc_RuntimeError, "Could not initialize the iptables 'nat' table. Missing kernel support or running without root priviliges.");
         return;
     }
-    iptc_free(&handle);
+    iptc_free(handle);
 
     memset(forwarding_rules, 0, sizeof(ForwardingRule *) * 65536);
 
