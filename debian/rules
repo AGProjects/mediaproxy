@@ -1,50 +1,33 @@
 #!/usr/bin/make -f
 
-DEB_PYTHON_SYSTEM=pysupport
-DEB_COMPRESS_EXCLUDE := .py
-DEB_DH_INSTALLINIT_ARGS=-- defaults 21
-DEB_PYTHON_MODULE_PACKAGES=mediaproxy-common
-DEB_DH_STRIP_ARGS := --dbg-package=mediaproxy-common-dbg
+#export DH_VERBOSE=1
 
-include /usr/share/cdbs/1/rules/debhelper.mk
-include /usr/share/cdbs/1/class/python-distutils.mk
+%:
+	dh  $@ --with python2
 
-DEB_INSTALL_DOCS_ALL=
-DEB_INSTALL_DOCS_mediaproxy-common=README TODO
-DEB_INSTALL_DOCS_mediaproxy-dispatcher=README TODO
-DEB_INSTALL_DOCS_mediaproxy-relay=README TODO
-DEB_INSTALL_DOCS_mediaproxy-web-sessions=web/README
+override_dh_clean:
+	dh_clean
+	rm -rf build dist MANIFEST
 
-clean::
-	-rm -rf build dist MANIFEST
-
-install/mediaproxy-common::
+override_dh_install:
+	# common
 	install -m 0644 config.ini.sample debian/mediaproxy-common/etc/mediaproxy/config.ini
-
-install/mediaproxy-dispatcher::
+	# dispatcher
 	install -D -m 755 media-dispatcher debian/tmp/usr/bin/media-dispatcher
 	sed --in-place 's,/usr/bin/env python,/usr/bin/python,' debian/tmp/usr/bin/media-dispatcher
-
-install/mediaproxy-relay::
+	# relay
 	install -D -m 755 media-relay debian/tmp/usr/bin/media-relay
 	sed --in-place 's,/usr/bin/env python,/usr/bin/python,' debian/tmp/usr/bin/media-relay
-
-install/mediaproxy-web-sessions::
+	# web
 	install -m 0644 web/config/media_sessions.conf.sample debian/mediaproxy-web-sessions/etc/mediaproxy/web/media_sessions.conf
 	install -m 0644 debian/mediaproxy-web-sessions.apache_conf debian/mediaproxy-web-sessions/etc/apache2/conf.d/mediaproxy_sessions
+	# install the debug extensions to -dbg package
+	dh_install "debian/tmp/usr/lib/python*/*-packages/mediaproxy/interfaces/system/*_d.so" -p mediaproxy-common-dbg
+	# Continue with regular dh_install
+	dh_install -X"*_d.so"
 
-build/mediaproxy-common-dbg::
-	for i in $(cdbs_python_build_versions); do \
-          python$$i-dbg ./setup.py build; \
-        done
+override_dh_strip:
+	# Stripped symbols go into -dbg package
+	dh_strip --dbg-package=mediaproxy-common-dbg
 
-install/mediaproxy-common-dbg::
-	for i in $(cdbs_python_build_versions); do \
-          python$$i-dbg ./setup.py install --root $(CURDIR)/debian/mediaproxy-common-dbg; \
-        done
-	find debian/mediaproxy-common-dbg -type f ! -name '*_d.so' -exec rm -f {} \;
-	find debian/mediaproxy-common-dbg -depth -empty -exec rmdir {} \;
-
-binary-strip/mediaproxy-common-dbg::
-	cd debian/mediaproxy-common-dbg/usr/lib/debug/usr/lib && mv pyshared pymodules
-
+.PHONY: override_dh_clean override_dh_install override_dh_strip

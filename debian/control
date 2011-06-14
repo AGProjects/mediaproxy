@@ -3,7 +3,7 @@ Section: net
 Priority: optional
 Maintainer: Dan Pascu <dan@ag-projects.com>
 Uploaders: Adrian Georgescu <ag@ag-projects.com>, Lucian Stanescu <luci@ag-projects.com>, Saul Ibarra <saul@ag-projects.com>
-Build-Depends: cdbs (>= 0.4.47), debhelper (>= 7.3.5), python-all-dev (>= 2.5), python-all-dbg (>= 2.5), python-support, libnetfilter-conntrack-dev (>= 0.0.89)
+Build-Depends: debhelper (>= 7.3.5), python-all-dev (>= 2.5), python-all-dbg (>= 2.5), libnetfilter-conntrack-dev (>= 0.0.89), iptables-dev (>=1.4.3)
 Standards-Version: 3.9.2
 
 Package: mediaproxy-common
@@ -34,7 +34,8 @@ Package: mediaproxy-common-dbg
 Architecture: any
 Priority: extra
 Section: debug
-Depends: ${shlibs:Depends}, ${misc:Depends}, python-all-dbg, mediaproxy-common (= ${binary:Version})
+Depends: ${shlibs:Depends}, ${misc:Depends}, mediaproxy-common (= ${binary:Version})
+Recommends: python-all-dbg
 Description: MediaProxy common files
  MediaProxy is a distributed far end NAT traversal solution for media streams
  of SIP calls. MediaProxy has a dispatcher running on the same host with the
