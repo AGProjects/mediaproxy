@@ -1,6 +1,3 @@
-+ Support for ICE negotiation between end-points by adding a new candidate
-  in the SDP offer/answer with the selected media relay, this avoids the
-  ice-missmatch failure
 + Make speed measurement inexpensive by using an iptables rule counter
 + Filter the result of the sessions command and return at most 50 entries
   ordered by some criteria (like most recent first). Also add a new command
