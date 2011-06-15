@@ -1,6 +1,6 @@
 <?php
 
-// array with mappings between User Agents and images
+// Mappings between User Agents and images
 $userAgentImages = array("Asterisk"       => "asterisk.png",
                          "AVM FRITZ"      => "avm-fritzbox-wlan.png",
                          "Cisco ATA"      => "cisco-ata.png",
@@ -11,7 +11,7 @@ $userAgentImages = array("Asterisk"       => "asterisk.png",
                          "Eyebeam"        => "eyebeam.png",
                          "Grandstream"    => "handytone.png",
                          "ipDialog"       => "ipDialog.png",
-                         "Linksys\/PAP"   => "linksys-pap2.png",
+                         "Linksys"        => "linksys-pap2.png",
                          "Session.*Wave"  => "session.png",
                          "SIPPS"          => "sipps.png",
                          "Sipura"         => "spa2000.png",
@@ -27,13 +27,29 @@ $userAgentImages = array("Asterisk"       => "asterisk.png",
                          "voipster"       => "zoep.png",
                          "Windows RTC"    => "messenger.png",
                          "X-Lite"         => "xten.png",
-                         "X-PRO"          => "xten.png",
+                         "X-PRO|bria"     => "xten.png",
                          "ZyXEL P2000W"   => "zyxel-p2000.png",
                          "-IMVP"          => "innomedia-mta5000.png",
                          "3610\/"         => "siemens-3610.png",
                          "cirpack"        => "cirpack.png",
-                         "Brcm Callctrl"  => "aastra.png",
-                         "Audiocodes-Sip-Gateway-MP-124" => "audiocodes-mp124.png"
+                         "Brcm-Callctrl|EPX2203|EPC2203"  => "webstarepx2203.png",
+                         "Audiocodes-Sip-Gateway-MP" => "audiocodes-mp124.png",
+                         "Nokia|E71"	  => "nokia.png",
+                         "CopperJet"	  => "copperjet16162p.png",
+                         "Ekiga"	  => "ekiga.png",
+                         "sofia-sip"      => "Nokia810.png",
+                         "sipsimple"      => "blink.png",
+                         "blink"          => "blink.png",
+                         "fring"          => "fring.png",
+                         "ARRIS-TM722"    => "Arris_TM722b.png",
+                         "Genexis OCG118" => "genexis.png",
+                         "droid" => "droid.png",
+                         "SIP Communicator"=> "sip-communicator.png",
+                         "telephone" => "Telephone.png",
+                         "nimbuzz" => "nimbuzz.png",
+                         "ipkall" => "ipkall.png",
+                         "a580" => "G580.png",
+                         "teles" => "teles.png"
                          );
 
 ?>
