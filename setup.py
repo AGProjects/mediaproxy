@@ -4,11 +4,13 @@ from distutils.core import setup as _setup, Extension
 import sys
 import re
 
-import mediaproxy
 
 # Get the title and description from README
 readme = open('README').read()
 title, description = re.findall(r'^\s*([^\n]+)\s+(.*)$', readme, re.DOTALL)[0]
+
+def get_version():
+    return re.search(r"""__version__\s+=\s+(?P<quote>['"])(?P<version>.+?)(?P=quote)""", open('mediaproxy/__init__.py').read()).group('version')
 
 
 def setup(*args, **kwargs):
@@ -21,7 +23,7 @@ def setup(*args, **kwargs):
 
 
 setup(name         = "mediaproxy",
-      version      = mediaproxy.__version__,
+      version      = get_version(),
       author       = "Ruud Klaver",
       author_email = "support@ag-projects.com",
       maintainer   = "AG Projects",
@@ -51,7 +53,7 @@ setup(name         = "mediaproxy",
           Extension(name = 'mediaproxy.interfaces.system._conntrack',
                     sources = ['mediaproxy/interfaces/system/_conntrack.c'],
                     libraries = ["iptc", "netfilter_conntrack"],
-                    define_macros = [('MODULE_VERSION', mediaproxy.__version__)])
+                    define_macros = [('MODULE_VERSION', get_version())])
       ]
 )
 
