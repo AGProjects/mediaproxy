@@ -1,3 +1,16 @@
+mediaproxy (2.5.0) unstable; urgency=low
+
+  * Adapted to changes in python-application
+  * Fixed several pyflakes warnings
+  * Fixed encoding media information
+  * Adapted to changes in libipt and netfilter APIs
+  * Bumped Debian standards version to 3.9.2
+  * Reworked Debian packaging
+  * Added more user agent images taken from CDRTool
+  * Added specific iptables version dependency
+
+ -- Saul Ibarra <saul@ag-projects.com>  Thu, 16 Jun 2011 17:16:05 +0200
+
 mediaproxy (2.4.4) unstable; urgency=low
 
   * Fixed ForwardingRule deallocation
