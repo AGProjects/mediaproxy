@@ -39,13 +39,17 @@ In order to build and install, MediaProxy has the following requirements:
    Most of the Linux distributions separate a library package into runtime
    and development packages. To build MediaProxy, the development version
    is needed (it usually has a -dev suffix in the package name).
+ - iptables (at least version 1.4.3)
+   To build MediaProxy, the development version is needed (usually has a -dev
+   suffix in the package name). For running the development package is not
+   needed, only plain iptables is enough.
  - Python (at least 2.5)
    http://python.org
  - Twisted framework (at least 2.5.0 with epollreactor support)
    http://twistedmatrix.com
  - python-zopeinterface (this is also a requirement for twisted)
    http://zope.org/Products/ZopeInterface
- - python-application (at least 1.1.5)
+ - python-application (at least 1.2.8)
    http://pypi.python.org/pypi/python-application
  - GNU-TLS
    http://www.gnu.org/software/gnutls
@@ -68,13 +72,13 @@ For the RADIUS accounting module:
 Installation
 ------------
 
-For people running Debian testing or unstable on an i386 architecture there is
-an official public repository provided by AG Projects. To use it, add these
-lines in /etc/apt/sources.list (use unstable/testing as appropriate):
+For people running Debian or Ubuntu on an i386 or amd64 architecture there are
+official public repositories provided by AG Projects.
 
-# AG Projects software
-deb     http://ag-projects.com/debian unstable main
-deb-src http://ag-projects.com/debian unstable main
+Modify your /etc/apt/sources.list depending on the distribution you are using,
+check here for the appropriate lines:
+
+http://mediaproxy.ag-projects.com/wiki/InstallationGuide
 
 Install the AG Projects debian software signing key:
 
@@ -163,13 +167,13 @@ Ubuntu 8.04 Hardy as well, though they were not tested there):
 
 apt-get update
 apt-get install devscripts cdbs debhelper python-all-dev python-support \
-                libnetfilter-conntrack-dev python-application python-cjson \
+                iptables-dev libnetfilter-conntrack-dev python-application python-cjson \
                 python-gnutls python-twisted-core python-twisted-names \
                 python-zopeinterface python-pyrad python-sqlobject
 
 then unpack MediaProxy and in the directory where it was unpacked run:
 
-debuild
+debuild -us -uc
 
 You can safely ignore the pgp signing error at the end of the build process,
 that is only because you do not have the pgp key for the person who is listed

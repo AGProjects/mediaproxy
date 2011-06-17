@@ -127,11 +127,12 @@ Both OpenSIPS and MediaProxy must use a public IP address.
 
 To run the software, you will need a server running the Linux Operating
 System using a kernel version 2.6.18 or higher that has been compiled with
-connection tracking support (conntrack). Because of this dependency on
-Linux, other operating systems are not supported. This dependency only
-applies to the media relay component. The dispatcher component which runs on
-the same host as OpenSIPS, can run on any platform that has a python
-interpreter and supports the twisted framework.
+connection tracking support (conntrack). IPtables 1.4.3 or higher is also
+required. Because of this dependency on Linux, other operating systems are
+not supported. This dependency only applies to the media relay component.
+The dispatcher component which runs on the same host as OpenSIPS, can run
+on any platform that has a python interpreter and supports the twisted
+framework.
 
 Communication between the dispatcher and the relays uses TLS encryption and
 requires a set of X509 certificates to work. For more information about this
