@@ -1,1 +1,4 @@
+debian/mediaproxy-web-sessions.apache_conf etc/apache2/conf.d/mediaproxy_sessions
 web usr/share/mediaproxy
+web/config/media_sessions.conf.sample etc/mediaproxy/web/media_sessions.conf
+
