@@ -1,8 +1,11 @@
 #!/usr/bin/python
 
-from distutils.core import setup as _setup, Extension
-import sys
 import re
+import sys
+
+from ctypes import CDLL
+from ctypes.util import find_library
+from distutils.core import setup as _setup, Extension
 
 
 # Get the title and description from README
@@ -12,6 +15,21 @@ title, description = re.findall(r'^\s*([^\n]+)\s+(.*)$', readme, re.DOTALL)[0]
 def get_version():
     return re.search(r"""__version__\s+=\s+(?P<quote>['"])(?P<version>.+?)(?P=quote)""", open('mediaproxy/__init__.py').read()).group('version')
 
+def get_link_libraries():
+    libiptc = CDLL(find_library('iptc'))
+    libip4tc = CDLL(find_library('ip4tc'))
+    try:
+        libiptc.iptc_commit
+    except AttributeError:
+        try:
+            libip4tc.iptc_commit
+        except AttributeError:
+            print 'No valid iptc library was found on the system. Please install iptables development libraries.'
+            sys.exit(1)
+        else:
+            return ['netfilter_conntrack', 'ip4tc']
+    else:
+        return ['netfilter_conntrack', 'iptc']
 
 def setup(*args, **kwargs):
     """Mangle setup to ignore media-relay on non-linux platforms"""
@@ -52,7 +70,7 @@ setup(name         = "mediaproxy",
       ext_modules  = [
           Extension(name = 'mediaproxy.interfaces.system._conntrack',
                     sources = ['mediaproxy/interfaces/system/_conntrack.c'],
-                    libraries = ["iptc", "netfilter_conntrack"],
+                    libraries = get_link_libraries(),
                     define_macros = [('MODULE_VERSION', get_version())])
       ]
 )
