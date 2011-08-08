@@ -27,7 +27,6 @@ test -f $DAEMON || exit 0
 case "$1" in
   start|debug)
 	log_daemon_msg "Starting $DESC" "media-relay"
-        modprobe ip_tables 2>/dev/null || :
 	start-stop-daemon --start --quiet --pidfile $PIDFILE \
 		--exec $DAEMON -- $OPTIONS || log_progress_msg "already running"
 	log_end_msg 0

@@ -9,6 +9,7 @@ import cjson
 import signal
 import resource
 import re
+import subprocess
 from time import time
 
 try:    from twisted.internet import epollreactor; epollreactor.install()
@@ -31,6 +32,11 @@ from application.configuration import ConfigSection, ConfigSetting
 from application.configuration.datatypes import IPAddress
 from application.process import process
 from application.system import host
+
+try:
+    subprocess.check_call(['modprobe', 'ip_tables'])
+except (subprocess.CalledProcessError, OSError):
+    raise RuntimeError("Could not load ip_tables kernel module")
 
 from mediaproxy.tls import X509Credentials, X509NameValidator
 from mediaproxy.headers import DecodingDict, DecodingError
