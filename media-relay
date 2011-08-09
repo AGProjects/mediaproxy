@@ -8,6 +8,7 @@
 
 if __name__ == "__main__":
     import sys
+    import subprocess
     from optparse import OptionParser
     from application.process import process, ProcessError
     from application.configuration import ConfigFile, datatypes
@@ -34,6 +35,11 @@ if __name__ == "__main__":
     except mediaproxy.DependencyError, e:
         log.fatal(str(e))
         sys.exit(1)
+
+    try:
+        subprocess.check_call(['modprobe', 'ip_tables'])
+    except (subprocess.CalledProcessError, OSError):
+        raise RuntimeError("Could not load ip_tables kernel module")
 
     pid_file = options.pid_file
 
