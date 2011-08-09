@@ -45,7 +45,6 @@ case "$1" in
 	log_daemon_msg "Restarting $DESC" "media-relay"
 	start-stop-daemon --oknodo --stop --quiet --pidfile $PIDFILE
 	sleep 1
-        modprobe ip_tables 2>/dev/null || :
 	start-stop-daemon --start --quiet --pidfile $PIDFILE \
 		--exec $DAEMON -- $OPTIONS
 	log_end_msg 0
