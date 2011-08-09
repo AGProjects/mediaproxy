@@ -37,7 +37,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     try:
-        subprocess.call(['modprobe', 'ip_tables'])
+        subprocess.call(['modprobe', 'ip_tables'], env={'PATH': '/usr/sbin:/sbin:/usr/bin:/bin'})
     except OSError, e:
         raise RuntimeError("Could not load ip_tables kernel module: %s" % e)
 
