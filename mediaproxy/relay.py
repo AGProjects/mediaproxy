@@ -323,17 +323,17 @@ class MediaRelay(MediaRelayBase):
 
     def __init__(self):
         try:
-            ip_forward = bool(int(open(IP_FORWARD_FILE).read()))
-        except:
-            ip_forward = False
-        if not ip_forward:
-            raise RuntimeError("IP forwarding is not available or not enabled (check %s)" % IP_FORWARD_FILE)
-        try:
             major, minor, revision = [int(num) for num in open(KERNEL_VERSION_FILE).read().split("-", 1)[0].split(".")[:3]]
         except:
             raise RuntimeError("Could not determine Linux kernel version")
         if (major, minor, revision) < (2, 6, 18):
             raise RuntimeError("A mimimum Linux kernel version of 2.6.18 is required")
+        try:
+            ip_forward = bool(int(open(IP_FORWARD_FILE).read()))
+        except:
+            ip_forward = False
+        if not ip_forward:
+            raise RuntimeError("IP forwarding is not available or not enabled (check %s)" % IP_FORWARD_FILE)
         try:
             with open(CONNTRACK_ACCT_FILE, 'w+') as f:
                 f.write("1")
