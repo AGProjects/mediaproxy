@@ -67,7 +67,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     try:
-        with open(CONNTRACK_ACCT_FILE, 'w+') as acct_file:
+        with open(CONNTRACK_ACCT_FILE, 'w') as acct_file:
             acct_file.write("1")
     except (IOError, OSError), e:
         if e.errno != errno.ENOENT:
