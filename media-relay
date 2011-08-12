@@ -5,8 +5,11 @@
 
 """MediaProxy Relay component"""
 
+from __future__ import with_statement
+
 
 if __name__ == "__main__":
+    import errno
     import sys
     import subprocess
     from optparse import OptionParser
@@ -14,6 +17,10 @@ if __name__ == "__main__":
     from application.configuration import ConfigFile, datatypes
     from application import log
     import mediaproxy
+
+    IP_FORWARD_FILE     = "/proc/sys/net/ipv4/ip_forward"
+    CONNTRACK_ACCT_FILE = "/proc/sys/net/netfilter/nf_conntrack_acct"
+    KERNEL_VERSION_FILE = "/proc/sys/kernel/osrelease"
 
     name = "media-relay"
     fullname = "MediaProxy Relay"
@@ -41,6 +48,29 @@ if __name__ == "__main__":
     except OSError, e:
         log.fatal("Cannot start %s: failed to load the ip_tables kernel module: %s" % (fullname, e))
         sys.exit(1)
+
+    try:
+        major, minor, revision = [int(num) for num in open(KERNEL_VERSION_FILE).read().split("-", 1)[0].split(".")[:3]]
+    except:
+        raise RuntimeError("Could not determine Linux kernel version")
+    if (major, minor, revision) < (2, 6, 18):
+        raise RuntimeError("A mimimum Linux kernel version of 2.6.18 is required")
+
+    try:
+        ip_forward = bool(int(open(IP_FORWARD_FILE).read()))
+    except:
+        ip_forward = False
+    if not ip_forward:
+        raise RuntimeError("IP forwarding is not available or not enabled (check %s)" % IP_FORWARD_FILE)
+
+    try:
+        with open(CONNTRACK_ACCT_FILE, 'w+') as f:
+            f.write("1")
+    except IOError, e:
+        if e.errno != errno.ENOENT:
+            raise RuntimeError(e)
+    except OSError, e:
+        raise RuntimeError(e)
 
     pid_file = options.pid_file
 
