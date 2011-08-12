@@ -52,25 +52,27 @@ if __name__ == "__main__":
     try:
         major, minor, revision = [int(num) for num in open(KERNEL_VERSION_FILE).read().split("-", 1)[0].split(".")[:3]]
     except:
-        raise RuntimeError("Could not determine Linux kernel version")
+        log.fatal("Could not determine Linux kernel version")
+        sys.exit(1)
     if (major, minor, revision) < (2, 6, 18):
-        raise RuntimeError("A mimimum Linux kernel version of 2.6.18 is required")
+        log.fatal("A mimimum Linux kernel version of 2.6.18 is required")
+        sys.exit(1)
 
     try:
         ip_forward = bool(int(open(IP_FORWARD_FILE).read()))
     except:
         ip_forward = False
     if not ip_forward:
-        raise RuntimeError("IP forwarding is not available or not enabled (check %s)" % IP_FORWARD_FILE)
+        log.fatal("IP forwarding is not available or not enabled (check %s)" % IP_FORWARD_FILE)
+        sys.exit(1)
 
     try:
-        with open(CONNTRACK_ACCT_FILE, 'w+') as f:
-            f.write("1")
-    except IOError, e:
+        with open(CONNTRACK_ACCT_FILE, 'w+') as acct_file:
+            acct_file.write("1")
+    except (IOError, OSError), e:
         if e.errno != errno.ENOENT:
-            raise RuntimeError(e)
-    except OSError, e:
-        raise RuntimeError(e)
+            log.fatal("Could not enable conntrack rule counters (check %s): %s" % (CONNTRACK_ACCT_FILE, e))
+            sys.exit(1)
 
     pid_file = options.pid_file
 
