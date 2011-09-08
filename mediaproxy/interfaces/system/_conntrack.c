@@ -120,8 +120,8 @@ remove_inhibitor_rules(struct ipt_entry *caller_inhibitor_entry, struct ipt_entr
         // raw table after the application crashes without a chance to clean up.
         while(iptc_delete_entry("PREROUTING", caller_inhibitor_entry, matchmask, ipt_handle));
         while(iptc_delete_entry("PREROUTING", callee_inhibitor_entry, matchmask, ipt_handle));
-        if (!iptc_commit(ipt_handle))
-            iptc_free(ipt_handle);
+        iptc_commit(ipt_handle);
+        iptc_free(ipt_handle);
     }
 }
 
@@ -264,6 +264,8 @@ ForwardingRule_init(ForwardingRule *self, PyObject *args, PyObject *kwds)
         PyErr_SetString(Error, iptc_strerror(errno));
         return -1;
     }
+
+    iptc_free(ipt_handle);
 
     Py_BEGIN_ALLOW_THREADS
     ct_handle = nfct_open(CONNTRACK, 0);
