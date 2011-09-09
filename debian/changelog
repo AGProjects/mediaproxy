@@ -1,3 +1,12 @@
+mediaproxy (2.5.2) unstable; urgency=low
+
+  * Fixed descriptor leak
+  * Load the ip_tables module from python code
+  * Enable conntrack rule accounting in the kernel
+  * Moved system checks to media-relay file
+
+ -- Saul Ibarra <saul@ag-projects.com>  Fri, 09 Sep 2011 09:43:24 +0200
+
 mediaproxy (2.5.1) unstable; urgency=low
 
   * Fixed linking with iptc library
