@@ -170,7 +170,9 @@ Operation
 ---------
 
 Before the relay is run, please make sure that /proc/sys/net/ipv4/ip_forward
-is set to "1".
+is set to "1". Also for newer kernels ACCT on connection tracking needs to 
+be enabled. Therefore /proc/sys/net/netfilter/nf_conntrack_acct must be set to
+"1".
 
 Both the dispatcher and the relay should be executed with root privileges.
 With no arguments, both applications will automatically fork into the
