@@ -102,7 +102,7 @@ if __name__ == "__main__":
     try:
         from mediaproxy.relay import MediaRelay
         if not options.fork:
-            from application.debug.memory import *
+            from application.debug.memory import memory_dump
         relay = MediaRelay()
     except Exception, e:
         log.fatal("failed to create %s: %s" % (fullname, e))
@@ -113,5 +113,5 @@ if __name__ == "__main__":
     relay.run()
 
     if not options.fork:
-        #from application.debug.memory import *
+        #from application.debug.memory import memory_dump
         memory_dump()
