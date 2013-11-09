@@ -13,9 +13,10 @@ if __name__ == "__main__":
     import sys
     import subprocess
     from optparse import OptionParser
-    from application.process import process, ProcessError
-    from application.configuration import ConfigFile, datatypes
     from application import log
+    from application.configuration import ConfigFile, datatypes
+    from application.process import process, ProcessError
+    from application.version import Version
     import mediaproxy
 
     IP_FORWARD_FILE     = "/proc/sys/net/ipv4/ip_forward"
@@ -50,18 +51,20 @@ if __name__ == "__main__":
         sys.exit(1)
 
     try:
-        major, minor, revision = [int(num) for num in open(KERNEL_VERSION_FILE).read().split("-", 1)[0].split(".")[:3]]
-    except:
+        kernel_version = Version.parse(open(KERNEL_VERSION_FILE).read().strip())
+    except (OSError, IOError, ValueError):
         log.fatal("Could not determine Linux kernel version")
         sys.exit(1)
-    if (major, minor, revision) < (2, 6, 18):
-        log.fatal("A mimimum Linux kernel version of 2.6.18 is required")
+
+    if kernel_version < Version(2, 6, 18):
+        log.fatal("Linux kernel version 2.6.18 or newer is required to run the media relay")
         sys.exit(1)
 
     try:
         ip_forward = bool(int(open(IP_FORWARD_FILE).read()))
-    except:
+    except (OSError, IOError, ValueError):
         ip_forward = False
+
     if not ip_forward:
         log.fatal("IP forwarding is not available or not enabled (check %s)" % IP_FORWARD_FILE)
         sys.exit(1)
