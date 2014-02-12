@@ -5,36 +5,16 @@
 """SIP Thor backend"""
 
 from application import log
-from application.configuration import ConfigSection, ConfigSetting
-from application.system import host
-
 from gnutls.constants import COMP_LZO, COMP_DEFLATE, COMP_NULL
 
 from thor.entities import ThorEntities, GenericThorEntity
 from thor.eventservice import EventServiceClient, ThorEvent
 from thor.tls import X509Credentials
 
+from mediaproxy import __version__
+from mediaproxy.configuration import ThorNetworkConfig
+from mediaproxy.configuration.datatypes import DispatcherIPAddress
 from mediaproxy.relay import SRVMediaRelayBase
-from mediaproxy import configuration_filename, default_dispatcher_port, __version__
-
-
-class SIPThorDomain(str):
-    """A SIP Thor domain name or the keyword None"""
-    def __new__(cls, name):
-        if name is None:
-            return None
-        elif not isinstance(name, basestring):
-            raise TypeError("domain name must be a string, unicode or None")
-        if name.lower() == 'none':
-            return None
-        return name
-
-class ThorNetworkConfig(ConfigSection):
-    __cfgfile__ = configuration_filename
-    __section__ = 'ThorNetwork'
-
-    domain = ConfigSetting(type=SIPThorDomain, value=None)
-    node_ip = host.default_ip
 
 
 if ThorNetworkConfig.domain is None:
@@ -60,7 +40,7 @@ class SIPThorMediaRelayBase(EventServiceClient, SRVMediaRelayBase):
     def handle_event(self, event):
         if not self.shutting_down:
             sip_proxy_ips = [node.ip for node in ThorEntities(event.message, role="sip_proxy")]
-            self.sipthor_dispatchers = [(ip, default_dispatcher_port) for ip in sip_proxy_ips]
+            self.sipthor_dispatchers = [(ip, DispatcherIPAddress.default_port) for ip in sip_proxy_ips]
             self.update_dispatchers(self.sipthor_dispatchers + self.additional_dispatchers)
 
     def _cb_got_all(self, results):

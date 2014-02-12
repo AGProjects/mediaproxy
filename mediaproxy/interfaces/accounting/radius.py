@@ -7,19 +7,11 @@
 from application import log
 from application.process import process
 from application.python.queue import EventQueue
-from application.configuration import ConfigSection
 
 import pyrad.client
 import pyrad.dictionary
 
-from mediaproxy import configuration_filename
-
-class Config(ConfigSection):
-    __cfgfile__ = configuration_filename
-    __section__ = 'Radius'
-
-    config_file = "/etc/opensips/radius/client.conf"
-    additional_dictionary = "radius/dictionary"
+from mediaproxy.configuration import RadiusConfig
 
 
 try:
@@ -72,9 +64,9 @@ class Accounting(object):
 class RadiusAccounting(EventQueue, pyrad.client.Client):
 
     def __init__(self):
-        main_config_file = process.config_file(Config.config_file)
+        main_config_file = process.config_file(RadiusConfig.config_file)
         if main_config_file is None:
-            raise RuntimeError("Cannot find the radius configuration file: `%s'" % Config.config_file)
+            raise RuntimeError("Cannot find the radius configuration file: `%s'" % RadiusConfig.config_file)
         try:
             config = dict(line.rstrip("\n").split(None, 1) for line in open(main_config_file) if len(line.split(None, 1)) == 2 and not line.startswith("#"))
             secrets = dict(line.rstrip("\n").split(None, 1) for line in open(config["servers"]) if len(line.split(None, 1)) == 2 and not line.startswith("#"))
@@ -86,12 +78,12 @@ class RadiusAccounting(EventQueue, pyrad.client.Client):
                 acctport = 1813
             secret = secrets[server]
             dicts = [RadiusDictionaryFile(config["dictionary"])]
-            if Config.additional_dictionary:
-                additional_dictionary = process.config_file(Config.additional_dictionary)
+            if RadiusConfig.additional_dictionary:
+                additional_dictionary = process.config_file(RadiusConfig.additional_dictionary)
                 if additional_dictionary:
                     dicts.append(RadiusDictionaryFile(additional_dictionary))
                 else:
-                    log.warn("Could not load additional RADIUS dictionary file: `%s'" % Config.additional_dictionary)
+                    log.warn("Could not load additional RADIUS dictionary file: `%s'" % RadiusConfig.additional_dictionary)
             raddict = pyrad.dictionary.Dictionary(*dicts)
             timeout = int(config["radius_timeout"])
             retries = int(config["radius_retries"])

@@ -14,10 +14,10 @@ from collections import deque
 from itertools import ifilter
 from time import time
 
-for name in ('epollreactor', 'kqreactor', 'pollreactor', 'selectreactor'):
-    try:    __import__('twisted.internet.%s' % name, globals(), locals(), fromlist=[name]).install()
-    except: continue
-    else:   break
+from application import log
+from application.process import process
+from application.system import unlink
+from gnutls.errors import CertificateSecurityError
 from twisted.protocols.basic import LineOnlyReceiver
 from twisted.python import failure
 from twisted.internet.error import ConnectionDone, TCPTimedOutError
@@ -25,55 +25,13 @@ from twisted.internet.protocol import Factory
 from twisted.internet.defer import Deferred, DeferredList, maybeDeferred, succeed
 from twisted.internet import reactor
 
-from gnutls.errors import CertificateSecurityError
-
-from application import log
-from application.process import process
-from application.configuration import ConfigSection, ConfigSetting
-from application.configuration.datatypes import NetworkAddress, StringList
-from application.system import unlink
-from mediaproxy import configuration_filename, default_dispatcher_port, default_management_port, __version__
-from mediaproxy.tls import X509Credentials, X509NameValidator
+from mediaproxy import __version__
+from mediaproxy.configuration import DispatcherConfig
 from mediaproxy.interfaces import opensips
 from mediaproxy.scheduler import RecurrentCall, KeepRunning
-
+from mediaproxy.tls import X509Credentials
 
 log.msg("Twisted is using %s" % reactor.__module__.rsplit('.', 1)[-1])
-
-
-class DispatcherAddress(NetworkAddress):
-    default_port = default_dispatcher_port
-
-class DispatcherManagementAddress(NetworkAddress):
-    default_port = default_management_port
-
-class AccountingModuleList(StringList):
-    _valid_backends = set(('database', 'radius'))
-    
-    def __new__(cls, value):
-        proposed_backends = set(StringList.__new__(cls, value))
-        invalid_names = proposed_backends - cls._valid_backends
-        for name in invalid_names:
-            log.warn("Ignoring invalid accounting module name: `%s'" % name)
-        return list(proposed_backends & cls._valid_backends)
-
-
-class Config(ConfigSection):
-    __cfgfile__ = configuration_filename
-    __section__ = 'Dispatcher'
-
-    socket_path = "dispatcher.sock"
-    listen = ConfigSetting(type=DispatcherAddress, value=DispatcherAddress("any"))
-    listen_management = ConfigSetting(type=DispatcherManagementAddress, value=DispatcherManagementAddress("any"))
-    relay_timeout = 5           # How much to wait for an answer from a relay
-    relay_recover_interval = 60 # How much to wait for an unresponsive relay to recover, before disconnecting it
-    cleanup_dead_relays_after = 43200      # 12 hours
-    cleanup_expired_sessions_after = 86400 # 24 hours
-    management_use_tls = True
-    accounting = ConfigSetting(type=AccountingModuleList, value=[])
-    passport = ConfigSetting(type=X509NameValidator, value=None)
-    management_passport = ConfigSetting(type=X509NameValidator, value=None)
-
 
 
 class ControlProtocol(LineOnlyReceiver):
@@ -135,9 +93,9 @@ class ManagementControlProtocol(ControlProtocol):
     description = "Management interface client"
 
     def connectionMade(self):
-        if Config.management_use_tls and Config.management_passport is not None:
+        if DispatcherConfig.management_use_tls and DispatcherConfig.management_passport is not None:
             peer_cert = self.transport.getPeerCertificate()
-            if not Config.management_passport.accept(peer_cert):
+            if not DispatcherConfig.management_passport.accept(peer_cert):
                 self.transport.loseConnection(CertificateSecurityError('peer certificate not accepted'))
                 return
 
@@ -226,7 +184,7 @@ class RelayServerProtocol(LineOnlyReceiver):
         seq = str(self.sequence_number)
         self.sequence_number += 1
         defer = Deferred()
-        timer = reactor.callLater(Config.relay_timeout, self._timeout, seq, defer)
+        timer = reactor.callLater(DispatcherConfig.relay_timeout, self._timeout, seq, defer)
         self.commands[seq] = (command, defer, timer)
         self.transport.write("\r\n".join([" ".join([command, seq])] + headers + ["", ""]))
         return defer
@@ -236,12 +194,12 @@ class RelayServerProtocol(LineOnlyReceiver):
         defer.errback(RelayError("Relay at %s timed out" % self.ip))
         if self.timedout is False:
             self.timedout = True
-            self.disconnect_timer = reactor.callLater(Config.relay_recover_interval, self.transport.connectionLost, failure.Failure(TCPTimedOutError()))
+            self.disconnect_timer = reactor.callLater(DispatcherConfig.relay_recover_interval, self.transport.connectionLost, failure.Failure(TCPTimedOutError()))
 
     def connectionMade(self):
-        if Config.passport is not None:
+        if DispatcherConfig.passport is not None:
             peer_cert = self.transport.getPeerCertificate()
-            if not Config.passport.accept(peer_cert):
+            if not DispatcherConfig.passport.accept(peer_cert):
                 self.transport.loseConnection(CertificateSecurityError('peer certificate not accepted'))
                 return
         self.authenticated = True
@@ -369,12 +327,12 @@ class RelayFactory(Factory):
             self.sessions = {}
             self.cleanup_timers = {}
         else:
-            self.cleanup_timers = dict((ip, reactor.callLater(Config.cleanup_dead_relays_after, self._do_cleanup, ip)) for ip in set(session.relay_ip for session in self.sessions.itervalues()))
+            self.cleanup_timers = dict((ip, reactor.callLater(DispatcherConfig.cleanup_dead_relays_after, self._do_cleanup, ip)) for ip in set(session.relay_ip for session in self.sessions.itervalues()))
         unlink(state_file)
         self.expired_cleaner = RecurrentCall(600, self._remove_expired_sessions)
 
     def _remove_expired_sessions(self):
-        now, limit = time(), Config.cleanup_expired_sessions_after
+        now, limit = time(), DispatcherConfig.cleanup_expired_sessions_after
         obsolete = [k for k, s in ifilter(lambda (k, s): s.expire_time and (now-s.expire_time>=limit), self.sessions.iteritems())]
         if obsolete:
             [self.sessions.pop(call_id) for call_id in obsolete]
@@ -492,7 +450,7 @@ class RelayFactory(Factory):
             if len(self.relays) == 0:
                 self.defer.callback(None)
         else:
-            self.cleanup_timers[relay.ip] = reactor.callLater(Config.cleanup_dead_relays_after, self._do_cleanup, relay.ip)
+            self.cleanup_timers[relay.ip] = reactor.callLater(DispatcherConfig.cleanup_dead_relays_after, self._do_cleanup, relay.ip)
 
     def _do_cleanup(self, ip):
         log.debug("Doing cleanup for old relay %s" % ip)
@@ -523,19 +481,19 @@ class RelayFactory(Factory):
 class Dispatcher(object):
 
     def __init__(self):
-        self.accounting = [__import__("mediaproxy.interfaces.accounting.%s" % mod.lower(), globals(), locals(), [""]).Accounting() for mod in set(Config.accounting)]
+        self.accounting = [__import__("mediaproxy.interfaces.accounting.%s" % mod.lower(), globals(), locals(), [""]).Accounting() for mod in set(DispatcherConfig.accounting)]
         self.cred = X509Credentials(cert_name='dispatcher')
         self.relay_factory = RelayFactory(self)
-        dispatcher_addr, dispatcher_port = Config.listen
+        dispatcher_addr, dispatcher_port = DispatcherConfig.listen
         self.relay_listener = reactor.listenTLS(dispatcher_port, self.relay_factory, self.cred, interface=dispatcher_addr)
         self.opensips_factory = OpenSIPSControlFactory(self)
-        socket_path = process.runtime_file(Config.socket_path)
+        socket_path = process.runtime_file(DispatcherConfig.socket_path)
         unlink(socket_path)
         self.opensips_listener = reactor.listenUNIX(socket_path, self.opensips_factory)
         self.opensips_management = opensips.ManagementInterface()
         self.management_factory = ManagementControlFactory(self)
-        management_addr, management_port = Config.listen_management
-        if Config.management_use_tls:
+        management_addr, management_port = DispatcherConfig.listen_management
+        if DispatcherConfig.management_use_tls:
             self.management_listener = reactor.listenTLS(management_port, self.management_factory, self.cred, interface=management_addr)
         else:
             self.management_listener = reactor.listenTCP(management_port, self.management_factory, interface=management_addr)

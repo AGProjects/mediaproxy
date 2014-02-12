@@ -7,12 +7,14 @@
 import cjson
 import signal
 import resource
-import re
 from time import time
 
 try:    from twisted.internet import epollreactor; epollreactor.install()
 except: raise RuntimeError("mandatory epoll reactor support is missing from the twisted framework")
 
+from application import log
+from application.process import process
+from gnutls.errors import CertificateError, CertificateSecurityError
 from twisted.protocols.basic import LineOnlyReceiver
 from twisted.internet.error import ConnectionDone, TCPTimedOutError, DNSLookupError
 from twisted.internet.protocol import ClientFactory
@@ -23,77 +25,18 @@ from twisted.names import dns
 from twisted.names.client import lookupService
 from twisted.names.error import DomainError
 
-from gnutls.errors import CertificateError, CertificateSecurityError
-
-from application import log
-from application.configuration import ConfigSection, ConfigSetting
-from application.configuration.datatypes import IPAddress
-from application.process import process
-from application.system import host
-
-from mediaproxy.tls import X509Credentials, X509NameValidator
+from mediaproxy import __version__
+from mediaproxy.configuration import RelayConfig
 from mediaproxy.headers import DecodingDict, DecodingError
 from mediaproxy.mediacontrol import SessionManager, RelayPortsExhaustedError
 from mediaproxy.scheduler import RecurrentCall, KeepRunning
-from mediaproxy import __version__, configuration_filename, default_dispatcher_port
-
-
-class DispatcherAddress(tuple):
-    def __new__(cls, value):
-        match = re.search(r"^(?P<address>.+?):(?P<port>\d+)$", value)
-        if match:
-            address = str(match.group("address"))
-            port = int(match.group("port"))
-        else:
-            address = value
-            port = default_dispatcher_port
-        try:
-            address = IPAddress(address)
-            is_domain = False
-        except ValueError:
-            is_domain = True
-        return tuple.__new__(cls, (address, port, is_domain))
-
-class DispatcherAddressList(list):
-    def __init__(cls, value):
-        list.__init__(cls, (DispatcherAddress(dispatcher) for dispatcher in re.split(r'\s*,\s*|\s+', value)))
-
-class PortRange(object):
-    """A port range in the form start:end with start and end being even numbers in the [1024, 65536] range"""
-    def __init__(self, value):
-        self.start, self.end = [int(p) for p in value.split(':', 1)]
-        allowed = xrange(1024, 65537, 2)
-        if not (self.start in allowed and self.end in allowed and self.start < self.end):
-            raise ValueError("bad range: %r: ports must be even numbers in the range [1024, 65536] with start < end" % value)
-    def __repr__(self):
-        return "%s('%d:%d')" % (self.__class__.__name__, self.start, self.end)
-
-class PositiveInteger(int):
-    def __new__(cls, value):
-        instance = int.__new__(cls, value)
-        if instance < 1:
-            raise ValueError("value must be a positive integer")
-        return instance
-
-
-class Config(ConfigSection):
-    __cfgfile__ = configuration_filename
-    __section__ = 'Relay'
-
-    dispatchers = ConfigSetting(type=DispatcherAddressList, value=[])
-    relay_ip = ConfigSetting(type=IPAddress, value=host.default_ip)
-    port_range = PortRange("50000:60000")
-    dns_check_interval = PositiveInteger(60)
-    keepalive_interval = PositiveInteger(10)
-    reconnect_delay = PositiveInteger(10)
-    passport = ConfigSetting(type=X509NameValidator, value=None)
-
+from mediaproxy.tls import X509Credentials
 
 
 ## Increase the system limit for the maximum number of open file descriptors
 ## to be able to handle connections to all ports in port_range
 try:
-    fd_limit = Config.port_range.end - Config.port_range.start + 1000
+    fd_limit = RelayConfig.port_range.end - RelayConfig.port_range.start + 1000
     resource.setrlimit(resource.RLIMIT_NOFILE, (fd_limit, fd_limit))
 except ValueError:
     raise RuntimeError("Cannot set resource limit for maximum open file descriptors to %d" % fd_limit)
@@ -131,11 +74,11 @@ class RelayClientProtocol(LineOnlyReceiver):
     def connectionMade(self):
         peer = self.transport.getPeer()
         log.debug("Connected to dispatcher at %s:%d" % (peer.host, peer.port))
-        if Config.passport is not None:
+        if RelayConfig.passport is not None:
             peer_cert = self.transport.getPeerCertificate()
-            if not Config.passport.accept(peer_cert):
+            if not RelayConfig.passport.accept(peer_cert):
                 self.transport.loseConnection(CertificateSecurityError('peer certificate not accepted'))
-        self._connection_watcher = RecurrentCall(Config.keepalive_interval, self._send_keepalive)
+        self._connection_watcher = RecurrentCall(RelayConfig.keepalive_interval, self._send_keepalive)
 
     def connectionLost(self, reason):
         if self._connection_watcher is not None:
@@ -202,9 +145,9 @@ class DispatcherConnectingFactory(ClientFactory):
         return self.host == other.host
 
     def clientConnectionFailed(self, connector, reason):
-        log.error('Could not connect to dispatcher at %(host)s:%(port)d (retrying in %%d seconds): %%s' % connector.__dict__ % (Config.reconnect_delay, reason.value))
+        log.error('Could not connect to dispatcher at %(host)s:%(port)d (retrying in %%d seconds): %%s' % connector.__dict__ % (RelayConfig.reconnect_delay, reason.value))
         if self.parent.connector_needs_reconnect(connector):
-            self.delayed = reactor.callLater(Config.reconnect_delay, connector.connect)
+            self.delayed = reactor.callLater(RelayConfig.reconnect_delay, connector.connect)
 
     def clientConnectionLost(self, connector, reason):
         self.cancel_delayed()
@@ -214,9 +157,9 @@ class DispatcherConnectingFactory(ClientFactory):
             log.msg("Connection with dispatcher at %(host)s:%(port)d was closed" % connector.__dict__)
         if self.parent.connector_needs_reconnect(connector):
             if isinstance(reason.value, CertificateError) or self.connection_lost:
-                self.delayed = reactor.callLater(Config.reconnect_delay, connector.connect)
+                self.delayed = reactor.callLater(RelayConfig.reconnect_delay, connector.connect)
             else:
-                self.delayed = reactor.callLater(min(Config.reconnect_delay, 1), connector.connect)
+                self.delayed = reactor.callLater(min(RelayConfig.reconnect_delay, 1), connector.connect)
             self.connection_lost = True
 
     def buildProtocol(self, addr):
@@ -236,12 +179,12 @@ class DispatcherConnectingFactory(ClientFactory):
 class SRVMediaRelayBase(object):
 
     def __init__(self):
-        self.srv_monitor = RecurrentCall(Config.dns_check_interval, self._do_lookup)
+        self.srv_monitor = RecurrentCall(RelayConfig.dns_check_interval, self._do_lookup)
         self._do_lookup()
 
     def _do_lookup(self):
         defers = []
-        for addr, port, is_domain in Config.dispatchers:
+        for addr, port, is_domain in RelayConfig.dispatchers:
             if is_domain:
                 defer = lookupService("_sip._udp.%s" % addr)
                 defer.addCallback(self._cb_got_srv, port)
@@ -317,7 +260,7 @@ class MediaRelay(MediaRelayBase):
 
     def __init__(self):
         self.cred = X509Credentials(cert_name='relay')
-        self.session_manager = SessionManager(self, Config.port_range.start, Config.port_range.end)
+        self.session_manager = SessionManager(self, RelayConfig.port_range.start, RelayConfig.port_range.end)
         self.dispatchers = set()
         self.dispatcher_session_count = {}
         self.dispatcher_connectors = {}
@@ -353,7 +296,7 @@ class MediaRelay(MediaRelayBase):
 
     def got_command(self, dispatcher, command, headers):
         if command == "summary":
-            summary = {'ip'            : Config.relay_ip,
+            summary = {'ip'            : RelayConfig.relay_ip,
                        'version'       : __version__,
                        'status'        : self.status,
                        'uptime'        : int(time() - self.start_time),

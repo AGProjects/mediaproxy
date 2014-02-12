@@ -8,19 +8,15 @@ from collections import deque
 from operator import attrgetter
 from itertools import chain
 
-from zope.interface import implements
+from application import log
 from twisted.internet import reactor
 from twisted.internet.interfaces import IReadDescriptor
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet.error import CannotListenError
 from twisted.python.log import Logger
+from zope.interface import implements
 
-from application import log
-from application.system import host
-from application.configuration import ConfigSection, ConfigSetting
-from application.configuration.datatypes import IPAddress
-
-from mediaproxy import configuration_filename
+from mediaproxy.configuration import RelayConfig
 from mediaproxy.interfaces.system import _conntrack
 from mediaproxy.iputils import is_routable_ip
 from mediaproxy.scheduler import RecurrentCall, KeepRunning
@@ -39,18 +35,7 @@ class RelayPortsExhaustedError(Exception):
     pass
 
 
-class Config(ConfigSection):
-    __cfgfile__ = configuration_filename
-    __section__ = 'Relay'
-
-    relay_ip = ConfigSetting(type=IPAddress, value=host.default_ip)
-    stream_timeout = 90
-    on_hold_timeout = 7200
-    traffic_sampling_period = 15
-    userspace_transmit_every = 1
-
-
-if Config.relay_ip is None:
+if RelayConfig.relay_ip is None:
     raise RuntimeError("Could not determine default host IP; either add default route or specify relay IP manually")
 
 
@@ -155,7 +140,7 @@ class StreamListenerProtocol(DatagramProtocol):
             self.stun_queue = []
 
         if not is_stun:
-            if not self.send_packet_count % Config.userspace_transmit_every:
+            if not self.send_packet_count % RelayConfig.userspace_transmit_every:
                 self.transport.write(data, (ip, port))
             self.send_packet_count += 1
 
@@ -190,7 +175,7 @@ class MediaSubParty(object):
     def reset(self):
         if self.timer and self.timer.active():
             self.timer.cancel()
-        self.timer = reactor.callLater(Config.stream_timeout, self.substream.expired, "no-traffic timeout", Config.stream_timeout)
+        self.timer = reactor.callLater(RelayConfig.stream_timeout, self.substream.expired, "no-traffic timeout", RelayConfig.stream_timeout)
         self.remote.in_use = False # keep remote address around but mark it as obsolete
         self.remote.got_rtp = False
         self.got_stun_probing = False
@@ -199,13 +184,13 @@ class MediaSubParty(object):
     def before_hold(self):
         if self.timer and self.timer.active():
             self.timer.cancel()
-        self.timer = reactor.callLater(Config.on_hold_timeout, self.substream.expired, "on hold timeout", Config.on_hold_timeout)
+        self.timer = reactor.callLater(RelayConfig.on_hold_timeout, self.substream.expired, "on hold timeout", RelayConfig.on_hold_timeout)
 
     def after_hold(self):
         if self.timer and self.timer.active():
             self.timer.cancel()
         if not self.remote.in_use:
-            self.timer = reactor.callLater(Config.stream_timeout, self.substream.expired, "no-traffic timeout", Config.stream_timeout)
+            self.timer = reactor.callLater(RelayConfig.stream_timeout, self.substream.expired, "no-traffic timeout", RelayConfig.stream_timeout)
 
     def got_data(self, host, port, data):
         if (host, port) == tuple(self.remote):
@@ -339,8 +324,8 @@ class MediaParty(object):
             self.listener_rtp = None
             self.ports = port_rtp, port_rtcp = self.manager.get_ports()
             try:
-                self.listener_rtp = reactor.listenUDP(port_rtp, StreamListenerProtocol(), interface=Config.relay_ip)
-                self.listener_rtcp = reactor.listenUDP(port_rtcp, StreamListenerProtocol(), interface=Config.relay_ip)
+                self.listener_rtp = reactor.listenUDP(port_rtp, StreamListenerProtocol(), interface=RelayConfig.relay_ip)
+                self.listener_rtcp = reactor.listenUDP(port_rtcp, StreamListenerProtocol(), interface=RelayConfig.relay_ip)
             except CannotListenError:
                 if self.listener_rtp is not None:
                     self.listener_rtp.stopListening()
@@ -683,8 +668,8 @@ class SessionManager(Logger):
         self.active_byte_counter = 0 # relayed byte counter for sessions active during last speed measurement
         self.closed_byte_counter = 0 # relayed byte counter for sessions closed after last speed measurement
         self.bps_relayed = 0
-        if Config.traffic_sampling_period > 0:
-            self.speed_calculator = RecurrentCall(Config.traffic_sampling_period, self._measure_speed)
+        if RelayConfig.traffic_sampling_period > 0:
+            self.speed_calculator = RecurrentCall(RelayConfig.traffic_sampling_period, self._measure_speed)
         else:
             self.speed_calculator = None
         reactor.addReader(self)
@@ -692,7 +677,7 @@ class SessionManager(Logger):
     def _measure_speed(self):
         start_time = time()
         current_byte_counter = sum(session.relayed_bytes for session in self.sessions.itervalues())
-        self.bps_relayed = 8 * (current_byte_counter + self.closed_byte_counter - self.active_byte_counter) / Config.traffic_sampling_period
+        self.bps_relayed = 8 * (current_byte_counter + self.closed_byte_counter - self.active_byte_counter) / RelayConfig.traffic_sampling_period
         self.active_byte_counter = current_byte_counter
         self.closed_byte_counter = 0
         us_taken = int((time() - start_time) * 1000000)

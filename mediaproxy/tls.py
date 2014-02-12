@@ -3,65 +3,16 @@
 
 """TLS support"""
 
-__all__ = ['X509Credentials', 'X509NameValidator']
+__all__ = ['X509Credentials']
 
 import os
 import stat
-import re
 
+from application.process import process
 from gnutls import crypto
 from gnutls.interfaces import twisted
 
-from application.process import process
-from application.configuration import ConfigSection
-
-from mediaproxy import configuration_filename
-
-
-class TLSConfig(ConfigSection):
-    __cfgfile__ = configuration_filename
-    __section__ = 'TLS'
-
-    certs_path = 'tls'
-    verify_interval = 300
-
-
-
-class X509NameValidator(crypto.X509Name):
-    def __new__(cls, dname):
-        if dname.lower() == 'none':
-            return None
-        return crypto.X509Name.__new__(cls, dname)
-
-    def __init__(self, dname):
-        str.__init__(self)
-        pairs = [x.replace('\,', ',') for x in re.split(r'(?<!\\),\s*', dname)]
-        for pair in pairs:
-            try:
-                name, value = pair.split(':', 1)
-            except ValueError:
-                raise ValueError("Invalid certificate access list: %s" % dname)
-            if name not in self.ids:
-                raise ValueError("Invalid authorization attribute: %s", name)
-            str.__setattr__(self, name, value)
-        for name in crypto.X509Name.ids:
-            if not hasattr(self, name):
-                str.__setattr__(self, name, None)
-
-    def accept(self, cert):
-        for id in self.ids:
-            validator_attr = getattr(self, id)
-            if validator_attr is not None:
-                cert_attr = getattr(cert.subject, id)
-                if validator_attr[0] == '*':
-                    if not cert_attr.endswith(validator_attr[1:]):
-                        return False
-                elif validator_attr[-1] == '*':
-                    if not cert_attr.startswith(validator_attr[:-1]):
-                        return False
-                elif validator_attr != cert_attr:
-                    return False
-        return True
+from mediaproxy.configuration import TLSConfig
 
 
 class FileDescriptor(object):

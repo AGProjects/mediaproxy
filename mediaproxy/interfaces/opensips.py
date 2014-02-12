@@ -10,22 +10,12 @@ from twisted.internet import reactor, defer
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet.error import CannotListenError
 from twisted.python.failure import Failure
-from application.configuration import ConfigSection
 from application.python.types import Singleton
 from application.process import process
 from application.system import unlink
 from application import log
 
-from mediaproxy import configuration_filename
-
-
-class OpenSIPSConfig(ConfigSection):
-    __cfgfile__ = configuration_filename
-    __section__ = 'OpenSIPS'
-
-    socket_path = '/var/run/opensips/socket'
-    max_connections = 10
-
+from mediaproxy.configuration import OpenSIPSConfig
 
 
 class Error(Exception): pass
