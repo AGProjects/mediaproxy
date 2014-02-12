@@ -317,7 +317,7 @@ class MediaRelay(MediaRelayBase):
                 log.error("Could not reserve relay ports for session, all allocated ports are being used")
                 return "error"
             if local_media:
-                return " ".join([local_media[0][0]] + [str(media[1]) for media in local_media])
+                return " ".join([RelayConfig.advertised_ip or local_media[0][0]] + [str(media[1]) for media in local_media])
         else: # remove
             session = self.session_manager.remove_session(**headers)
             if session is None:
