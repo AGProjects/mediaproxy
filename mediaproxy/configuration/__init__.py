@@ -2,7 +2,7 @@
 #
 
 from application.configuration import ConfigSection, ConfigSetting
-from application.configuration.datatypes import IPAddress
+from application.configuration.datatypes import IPAddress, NetworkRangeList
 from application.system import host
 
 from mediaproxy import configuration_filename
@@ -42,6 +42,7 @@ class RelayConfig(ConfigSection):
     keepalive_interval = PositiveInteger(10)
     reconnect_delay = PositiveInteger(10)
     passport = ConfigSetting(type=X509NameValidator, value=None)
+    routable_private_ranges = ConfigSetting(type=NetworkRangeList, value=[])
 
 
 class OpenSIPSConfig(ConfigSection):

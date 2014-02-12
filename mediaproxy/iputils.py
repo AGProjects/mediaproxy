@@ -10,6 +10,8 @@ import struct
 
 from application.configuration.datatypes import NetworkRangeList
 
+from mediaproxy.configuration import RelayConfig
+
 
 # Non routable network addresses (RFC 3330)
 #
@@ -35,6 +37,9 @@ def is_routable_ip(ip):
         ip_addr = struct.unpack('!L', socket.inet_aton(ip))[0]
     except:
         return False
+    for netbase, mask in RelayConfig.routable_private_ranges:
+        if (ip_addr & mask) == netbase:
+            return True
     for netbase, mask in _non_routable_nets:
         if (ip_addr & mask) == netbase:
             return False

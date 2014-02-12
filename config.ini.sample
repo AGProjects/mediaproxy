@@ -100,6 +100,10 @@
 ;
 ;traffic_sampling_period = 15
 
+; Specify a list of network ranges (in CIDR notation) for which media is relayed
+; even if no packet was received from the endpoint and the IP address is private.
+;routable_private_ranges = 192.168.1.0/24
+
 
 [Dispatcher]
 ; Local socket on which to communicate with OpenSIPS. The OpenSIPS mediaproxy
