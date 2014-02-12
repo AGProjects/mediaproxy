@@ -1,3 +1,15 @@
+mediaproxy (2.6.0) UNRELEASED; urgency=medium
+
+  * Added ability to relay traffic to selected routable private ranges
+  * Added ability to configure the advertised IP address
+  * Improved how the relay checks the kernel version
+  * Moved configuration objects to their own package
+  * Add test IP ranges to non routable ranges list
+  * Updated dependency for zope interface
+  * Bumped Debian Standards-Version
+
+ -- Saul Ibarra <saul@ag-projects.com>  Wed, 12 Feb 2014 11:12:20 +0100
+
 mediaproxy (2.5.2) unstable; urgency=low
 
   * Fixed descriptor leak
