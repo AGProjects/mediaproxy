@@ -1,4 +1,4 @@
-# Copyright (C) 2007-2008 AG Projects.
+# Copyright (C) 2007-2014 AG Projects.
 #
 
 """TLS support"""

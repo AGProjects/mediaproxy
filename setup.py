@@ -42,10 +42,8 @@ def setup(*args, **kwargs):
 
 setup(name         = "mediaproxy",
       version      = get_version(),
-      author       = "Ruud Klaver",
+      author       = "AG Projects",
       author_email = "support@ag-projects.com",
-      maintainer   = "AG Projects",
-      maintainer_email = "support@ag-projects.com",
       url          = "http://www.ag-projects.com/MediaProxy.html",
       description  = title,
       long_description = description,

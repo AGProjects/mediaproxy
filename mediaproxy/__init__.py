@@ -1,4 +1,4 @@
-# Copyright (C) 2008 AG-Projects.
+# Copyright (C) 2008-2014 AG-Projects.
 #
 
 """Mediaproxy implements a media relay for SIP calls"""

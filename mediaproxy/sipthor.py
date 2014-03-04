@@ -1,5 +1,4 @@
-# Copyright (C) 2008 AG Projects
-# Author: Ruud Klaver <ruud@ag-projects.com>
+# Copyright (C) 2008-2014 AG Projects
 #
 
 """SIP Thor backend"""
