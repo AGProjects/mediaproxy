@@ -47,7 +47,7 @@
 ; to set this option. Leave this option commented to use the default value.
 ;relay_ip = <default host IP>
 
-; The host IP address to return when a session is allocated in th relay. This
+; The host IP address to return when a session is allocated in the relay. This
 ; could be of use in case the relay is behind NAT but it has a 1 to 1 mapping
 ; with a public IP address, like Amazon EC2, for example.
 ;advertised_ip =
