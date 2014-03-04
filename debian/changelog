@@ -1,4 +1,4 @@
-mediaproxy (2.6.0) UNRELEASED; urgency=medium
+mediaproxy (2.6.0) unstable; urgency=medium
 
   * Added ability to relay traffic to selected routable private ranges
   * Added ability to configure the advertised IP address
@@ -8,7 +8,7 @@ mediaproxy (2.6.0) UNRELEASED; urgency=medium
   * Updated dependency for zope interface
   * Bumped Debian Standards-Version
 
- -- Saul Ibarra <saul@ag-projects.com>  Wed, 12 Feb 2014 11:12:20 +0100
+ -- Saul Ibarra <saul@ag-projects.com>  Tue, 04 Mar 2014 14:55:11 +0100
 
 mediaproxy (2.5.2) unstable; urgency=low
 
