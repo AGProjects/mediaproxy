@@ -1,3 +1,9 @@
+mediaproxy (2.6.1) unstable; urgency=medium
+
+  * Fix cutting calls when MediaProxy is not the selected ICE candidate
+
+ -- Saul Ibarra <saul@ag-projects.com>  Tue, 06 May 2014 15:40:00 +0200
+
 mediaproxy (2.6.0) unstable; urgency=medium
 
   * Added ability to relay traffic to selected routable private ranges
