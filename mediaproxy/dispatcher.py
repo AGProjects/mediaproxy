@@ -224,10 +224,14 @@ class RelayServerProtocol(LineOnlyReceiver):
                 if session.relay_ip != self.ip:
                     log.error("session with call_id %s expired at relay %s, but is actually at relay %s, ignoring" % (call_id, self.ip, session.relay_ip))
                     return
-                log.msg("session with call_id %s from relay %s did timeout" % (call_id, session.relay_ip))
-                stats["dialog_id"] = session.dialog_id
-                stats["timed_out"] = True
                 all_streams_ice = all(stream_info["status"] == "unselected ICE candidate" for stream_info in stats["streams"])
+                if all_streams_ice:
+                    log.msg("session with call_id %s from relay %s removed because ICE was used" % (call_id, session.relay_ip))
+                    stats["timed_out"] = False
+                else:
+                    log.msg("session with call_id %s from relay %s did timeout" % (call_id, session.relay_ip))
+                    stats["timed_out"] = True
+                stats["dialog_id"] = session.dialog_id
                 stats["all_streams_ice"] = all_streams_ice
                 self.factory.dispatcher.update_statistics(stats)
                 if session.dialog_id is not None and stats["start_time"] is not None and not all_streams_ice:

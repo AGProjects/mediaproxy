@@ -423,8 +423,11 @@ class MediaStream(object):
         getattr(self, party).remote_sdp = (media_ip, media_port)
 
     def substream_expired(self, substream, reason, timeout_wait):
-        if substream is self.rtp and reason == "no-traffic timeout" and self.caller.uses_ice and self.callee.uses_ice and (substream.caller.got_stun_probing or substream.callee.got_stun_probing):
+        if substream is self.rtp and self.caller.uses_ice and self.callee.uses_ice:
+            log.debug("RTP stream expired for session %s: %s" % (self.session, reason))
             reason = "unselected ICE candidate"
+            if not substream.caller.got_stun_probing and not substream.callee.got_stun_probing:
+                log.debug("unselected ICE candidate for session %s but no STUN was received" % self.session)
         if substream is self.rtcp or (self.is_on_hold and reason=='conntrack timeout'):
             # Forget about the remote addresses, this will cause any
             # re-occurence of the same traffic to be forwarded again
