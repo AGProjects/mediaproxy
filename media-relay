@@ -39,12 +39,6 @@ if __name__ == "__main__":
         sys.exit(1)
 
     try:
-        mediaproxy.dependencies.check()
-    except mediaproxy.DependencyError, e:
-        log.fatal(str(e))
-        sys.exit(1)
-
-    try:
         subprocess.call(['modprobe', 'ip_tables'], env={'PATH': '/usr/sbin:/sbin:/usr/bin:/bin'})
     except OSError, e:
         log.fatal("Cannot start %s: failed to load the ip_tables kernel module: %s" % (fullname, e))
