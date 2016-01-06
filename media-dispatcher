@@ -50,7 +50,7 @@ if __name__ == "__main__":
     from mediaproxy.dispatcher import Dispatcher
 
     if not options.fork:
-        from application.debug.memory import *
+        from application.debug.memory import memory_dump
 
     try:
         dispatcher = Dispatcher()
@@ -63,5 +63,5 @@ if __name__ == "__main__":
     dispatcher.run()
 
     if not options.fork:
-        #from application.debug.memory import *
+        #from application.debug.memory import memory_dump
         memory_dump()
