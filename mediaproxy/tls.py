@@ -1,5 +1,3 @@
-# Copyright (C) 2007-2014 AG Projects.
-#
 
 """TLS support"""
 

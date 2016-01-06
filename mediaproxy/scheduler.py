@@ -1,5 +1,3 @@
-# Copyright (C) 2007-2014 Dan Pascu <dan@ag-projects.com>
-#
 
 """Schedule calls on the twisted reactor"""
 

@@ -1,6 +1,3 @@
-# Copyright (C) 2008 AG Projects
-# Author: Ruud Klaver <ruud@ag-projects.com>
-#
 
 """Implementation of RADIUS accounting"""
 

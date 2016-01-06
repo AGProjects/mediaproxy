@@ -1,5 +1,3 @@
-# Copyright (C) 2008-2014 AG Projects
-#
 
 import re
 

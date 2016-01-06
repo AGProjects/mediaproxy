@@ -1,5 +1,3 @@
-# Copyright (C) 2008-2014 AG Projects
-#
 
 """Implementation of the MediaProxy relay"""
 

@@ -1,5 +1,3 @@
-# Copyright (C) 2008-2014 AG Projects
-#
 
 """Header encoding and decoding rules for communication between the dispatcher and relay components"""
 

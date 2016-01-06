@@ -1,5 +1,3 @@
-# Copyright (C) 2008-2014 AG Projects
-#
 
 import struct
 from time import time

@@ -1,5 +1,3 @@
-# Copyright (C) 2008-2014 AG Projects
-#
 
 from application.configuration import ConfigSection, ConfigSetting
 from application.configuration.datatypes import IPAddress, NetworkRangeList
