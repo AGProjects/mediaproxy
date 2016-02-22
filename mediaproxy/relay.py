@@ -33,8 +33,8 @@ from mediaproxy.tls import X509Credentials
 
 ## Increase the system limit for the maximum number of open file descriptors
 ## to be able to handle connections to all ports in port_range
+fd_limit = RelayConfig.port_range.end - RelayConfig.port_range.start + 1000
 try:
-    fd_limit = RelayConfig.port_range.end - RelayConfig.port_range.start + 1000
     resource.setrlimit(resource.RLIMIT_NOFILE, (fd_limit, fd_limit))
 except ValueError:
     raise RuntimeError("Cannot set resource limit for maximum open file descriptors to %d" % fd_limit)
