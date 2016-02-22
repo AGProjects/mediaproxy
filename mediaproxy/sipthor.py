@@ -2,7 +2,6 @@
 """SIP Thor backend"""
 
 from application import log
-from gnutls.constants import COMP_LZO, COMP_DEFLATE, COMP_NULL
 
 from thor.entities import ThorEntities, GenericThorEntity
 from thor.eventservice import EventServiceClient, ThorEvent
@@ -28,7 +27,6 @@ class SIPThorMediaRelayBase(EventServiceClient, SRVMediaRelayBase):
         self.presence_message = ThorEvent('Thor.Presence', self.node.id)
         self.shutdown_message = ThorEvent('Thor.Leave', self.node.id)
         credentials = X509Credentials(cert_name='relay')
-        credentials.session_params.compressions = (COMP_LZO, COMP_DEFLATE, COMP_NULL)
         self.sipthor_dispatchers = []
         self.additional_dispatchers = []
         EventServiceClient.__init__(self, ThorNetworkConfig.domain, credentials)

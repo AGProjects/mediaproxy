@@ -12,6 +12,7 @@ except: raise RuntimeError("mandatory epoll reactor support is missing from the 
 from application import log
 from application.process import process
 from gnutls.errors import CertificateError, CertificateSecurityError
+from gnutls.interfaces.twisted import TLSContext
 from twisted.protocols.basic import LineOnlyReceiver
 from twisted.internet.error import ConnectionDone, TCPTimedOutError, DNSLookupError
 from twisted.internet.protocol import ClientFactory
@@ -257,6 +258,7 @@ class MediaRelay(MediaRelayBase):
 
     def __init__(self):
         self.cred = X509Credentials(cert_name='relay')
+        self.tls_context = TLSContext(self.cred)
         self.session_manager = SessionManager(self, RelayConfig.port_range.start, RelayConfig.port_range.end)
         self.dispatchers = set()
         self.dispatcher_session_count = {}
@@ -284,7 +286,7 @@ class MediaRelay(MediaRelayBase):
                 log.debug('Adding new dispatcher at %s:%d' % new_dispatcher)
                 dispatcher_addr, dispatcher_port = new_dispatcher
                 factory = DispatcherConnectingFactory(self, dispatcher_addr, dispatcher_port)
-                self.dispatcher_connectors[new_dispatcher] = reactor.connectTLS(dispatcher_addr, dispatcher_port, factory, self.cred)
+                self.dispatcher_connectors[new_dispatcher] = reactor.connectTLS(dispatcher_addr, dispatcher_port, factory, self.tls_context)
         for old_dispatcher in self.dispatchers.difference(dispatchers):
             log.debug('Removing old dispatcher at %s:%d' % old_dispatcher)
             self.old_connectors[old_dispatcher] = self.dispatcher_connectors.pop(old_dispatcher)

@@ -53,7 +53,7 @@ In order to build and install, MediaProxy has the following requirements:
    http://pypi.python.org/pypi/python-application
  - GNU-TLS
    http://www.gnu.org/software/gnutls
- - python-gnutls (at least 1.1.8)
+ - python-gnutls (at least 3.0.0)
    http://pypi.python.org/pypi/python-gnutls
  - python-cjson
    http://pypi.python.org/pypi/python-cjson

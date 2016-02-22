@@ -15,6 +15,7 @@ from application import log
 from application.process import process
 from application.system import unlink
 from gnutls.errors import CertificateSecurityError
+from gnutls.interfaces.twisted import TLSContext
 from twisted.protocols.basic import LineOnlyReceiver
 from twisted.python import failure
 from twisted.internet.error import ConnectionDone, TCPTimedOutError
@@ -484,9 +485,10 @@ class Dispatcher(object):
     def __init__(self):
         self.accounting = [__import__("mediaproxy.interfaces.accounting.%s" % mod.lower(), globals(), locals(), [""]).Accounting() for mod in set(DispatcherConfig.accounting)]
         self.cred = X509Credentials(cert_name='dispatcher')
+        self.tls_context = TLSContext(self.cred)
         self.relay_factory = RelayFactory(self)
         dispatcher_addr, dispatcher_port = DispatcherConfig.listen
-        self.relay_listener = reactor.listenTLS(dispatcher_port, self.relay_factory, self.cred, interface=dispatcher_addr)
+        self.relay_listener = reactor.listenTLS(dispatcher_port, self.relay_factory, self.tls_context, interface=dispatcher_addr)
         self.opensips_factory = OpenSIPSControlFactory(self)
         socket_path = process.runtime_file(DispatcherConfig.socket_path)
         unlink(socket_path)
@@ -495,7 +497,7 @@ class Dispatcher(object):
         self.management_factory = ManagementControlFactory(self)
         management_addr, management_port = DispatcherConfig.listen_management
         if DispatcherConfig.management_use_tls:
-            self.management_listener = reactor.listenTLS(management_port, self.management_factory, self.cred, interface=management_addr)
+            self.management_listener = reactor.listenTLS(management_port, self.management_factory, self.tls_context, interface=management_addr)
         else:
             self.management_listener = reactor.listenTCP(management_port, self.management_factory, interface=management_addr)
 
