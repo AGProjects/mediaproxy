@@ -1,3 +1,9 @@
+mediaproxy (2.6.3) UNRELEASED; urgency=medium
+
+  * Adapt to API changes in python-gnutls 3.0
+
+ -- Saul Ibarra <saul@ag-projects.com>  Mon, 22 Feb 2016 18:12:46 +0100
+
 mediaproxy (2.6.2) unstable; urgency=medium
 
   * Removed runtime dependency check
