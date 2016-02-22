@@ -14,7 +14,7 @@ class DispatcherManagementAddress(NetworkAddress):
 
 
 class AccountingModuleList(StringList):
-    _valid_backends = set(('database', 'radius'))
+    _valid_backends = {'database', 'radius'}
 
     def __new__(cls, value):
         proposed_backends = set(StringList.__new__(cls, value))
