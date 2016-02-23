@@ -2,6 +2,7 @@
 """SIP Thor backend"""
 
 from application import log
+from gnutls.interfaces.twisted import TLSContext
 
 from thor.entities import ThorEntities, GenericThorEntity
 from thor.eventservice import EventServiceClient, ThorEvent
@@ -26,10 +27,11 @@ class SIPThorMediaRelayBase(EventServiceClient, SRVMediaRelayBase):
         self.node = GenericThorEntity(ThorNetworkConfig.node_ip, ["media_relay"], version=__version__)
         self.presence_message = ThorEvent('Thor.Presence', self.node.id)
         self.shutdown_message = ThorEvent('Thor.Leave', self.node.id)
-        credentials = X509Credentials(cert_name='relay')
         self.sipthor_dispatchers = []
         self.additional_dispatchers = []
-        EventServiceClient.__init__(self, ThorNetworkConfig.domain, credentials)
+        credentials = X509Credentials(cert_name='relay')
+        tls_context = TLSContext(credentials)
+        EventServiceClient.__init__(self, ThorNetworkConfig.domain, tls_context)
         SRVMediaRelayBase.__init__(self)
 
     def handle_event(self, event):
