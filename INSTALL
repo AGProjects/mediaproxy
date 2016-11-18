@@ -78,7 +78,7 @@ official public repositories provided by AG Projects.
 Modify your /etc/apt/sources.list depending on the distribution you are using,
 check here for the appropriate lines:
 
-http://mediaproxy.ag-projects.com/wiki/InstallationGuide
+http://mediaproxy.ag-projects.com/projects/mediaproxy/wiki/InstallationGuide
 
 Install the AG Projects debian software signing key:
 
