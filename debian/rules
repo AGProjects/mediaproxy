@@ -3,7 +3,7 @@
 #export DH_VERBOSE=1
 
 %:
-	dh  $@ --with python2,apache2
+	dh $@ --with python2,apache2
 
 override_dh_clean:
 	dh_clean
@@ -11,7 +11,7 @@ override_dh_clean:
 
 override_dh_install:
 	# common
-	install -m 0644 config.ini.sample debian/mediaproxy-common/etc/mediaproxy/config.ini
+	install -m 644 config.ini.sample debian/mediaproxy-common/etc/mediaproxy/config.ini
 	# dispatcher
 	install -D -m 755 media-dispatcher debian/tmp/usr/bin/media-dispatcher
 	sed --in-place 's,/usr/bin/env python,/usr/bin/python,' debian/tmp/usr/bin/media-dispatcher
