@@ -101,7 +101,6 @@ Description: MediaProxy relay for OpenSIPS
 Package: mediaproxy-web-sessions
 Architecture: all
 Depends: ${misc:Depends}, libapache2-mod-php | libapache2-mod-php5
-Recommends: apache2
 Description: MediaProxy sessions web view
  MediaProxy is a distributed far end NAT traversal solution for media streams
  of SIP calls. MediaProxy has a dispatcher running on the same host as the
