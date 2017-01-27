@@ -3,7 +3,7 @@ Section: net
 Priority: optional
 Maintainer: Dan Pascu <dan@ag-projects.com>
 Uploaders: Adrian Georgescu <ag@ag-projects.com>
-Build-Depends: debhelper (>= 9), dh-python, python-all-dev (>= 2.7), python-all-dbg (>= 2.7), libnetfilter-conntrack-dev (>= 0.0.89), iptables-dev (>=1.4.3)
+Build-Depends: debhelper (>= 9), dh-apache2, dh-python, python-all-dev (>= 2.7), python-all-dbg (>= 2.7), libnetfilter-conntrack-dev (>= 0.0.89), iptables-dev (>=1.4.3)
 Standards-Version: 3.9.8
 
 Package: mediaproxy-common
@@ -104,7 +104,8 @@ Description: MediaProxy relay
 
 Package: mediaproxy-web-sessions
 Architecture: all
-Depends: ${misc:Depends}, php5 | php5-cgi
+Depends: ${misc:Depends}, libapache2-mod-php | libapache2-mod-php5
+Recommends: apache2
 Description: MediaProxy sessions web page
  MediaProxy is a distributed far end NAT traversal solution for media streams
  of SIP calls. MediaProxy has a dispatcher running on the same host with the

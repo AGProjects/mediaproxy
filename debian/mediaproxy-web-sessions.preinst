@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -e
+
+if [ "$1" = "upgrade" ] && [ -n "$2" ] && dpkg --compare-versions "$2" le-nl "2.6.4~"; then
+    # we are upgrading from a version that is older than 2.6.4 ($2 is the old version)
+    test -d /etc/mediaproxy/web/media_sessions.conf && rm -rf /etc/mediaproxy/web/media_sessions.conf || true
+    rm -rf /etc/apache2/conf.d/mediaproxy_sessions
+fi
+
+#DEBHELPER#
