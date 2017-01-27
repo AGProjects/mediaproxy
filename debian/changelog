@@ -1,3 +1,9 @@
+mediaproxy (2.6.5) unstable; urgency=medium
+
+  * Fixed installing debian files
+
+ -- Dan Pascu <dan@ag-projects.com>  Fri, 27 Jan 2017 20:09:15 +0200
+
 mediaproxy (2.6.4) unstable; urgency=medium
 
   * Increased debian compatibility level to 9
