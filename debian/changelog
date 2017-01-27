@@ -1,3 +1,14 @@
+mediaproxy (2.6.4) unstable; urgency=medium
+
+  * Increased debian compatibility level to 9
+  * Increased debian standards version
+  * Updated debian uploaders
+  * Added dh-python to debian build dependencies
+  * Fixed mediaproxy-web-sessions debian package
+  * Fixed debian package descriptions
+
+ -- Dan Pascu <dan@ag-projects.com>  Fri, 27 Jan 2017 19:20:46 +0200
+
 mediaproxy (2.6.3) unstable; urgency=medium
 
   * Adapt to API changes in python-gnutls 3.0
