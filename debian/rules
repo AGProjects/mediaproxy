@@ -19,7 +19,7 @@ override_dh_install:
 	install -D -m 755 media-relay debian/tmp/usr/bin/media-relay
 	sed --in-place 's,/usr/bin/env python,/usr/bin/python,' debian/tmp/usr/bin/media-relay
 	# web sessions
-	install -m 0644 web/config/media_sessions.conf.sample debian/mediaproxy-web-sessions/etc/mediaproxy/web/media_sessions.conf
+	install -D -m 644 web/config/media_sessions.conf.sample debian/mediaproxy-web-sessions/etc/mediaproxy/web/media_sessions.conf
 	# install the debug extensions to -dbg package
 	dh_install "debian/tmp/usr/lib/python*/*-packages/mediaproxy/interfaces/system/*_d.so" -p mediaproxy-common-dbg
 	# Continue with regular dh_install
