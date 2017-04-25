@@ -1,3 +1,9 @@
+mediaproxy (2.6.6) unstable; urgency=medium
+
+  * Updated list of non-routable IP addresses and the corresponding RFC
+
+ -- Dan Pascu <dan@ag-projects.com>  Tue, 25 Apr 2017 17:25:49 +0300
+
 mediaproxy (2.6.5) unstable; urgency=medium
 
   * Fixed installing debian files
