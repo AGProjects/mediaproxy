@@ -6,7 +6,7 @@ Do _NOT_ use them in a production environment, as anyone who has downloaded
 mediaproxy will be able to connect to your servers using them.
 
 To generate your own certificates, we recommend you use tinyca available at
-http://tinyca.sm-zone.net/ or directly available as a Debian package.
+https://opsec.eu/src/tinyca/ or directly available as a Debian package.
 
 Using tinyca, you should first generate a certificate authority. Next you
 should go to the Preferences menu and edit the OpenSSL configuration. There
