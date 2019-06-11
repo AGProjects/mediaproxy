@@ -597,7 +597,7 @@ class Session(object):
         active_streams = set()
         for cseq in [self.previous_cseq, self.cseq]:
             if cseq is not None:
-                active_streams.update([stream for stream in self.streams[cseq] if stream.is_alive])
+                active_streams.update({stream for stream in self.streams[cseq] if stream.is_alive})
         if len(active_streams) == 0:
             self.manager.session_expired(self.call_id, self.from_tag)
 
