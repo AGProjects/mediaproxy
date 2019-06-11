@@ -24,7 +24,7 @@ if __name__ == "__main__":
 
     pid_file = options.pid_file
 
-    process.system_config_directory = mediaproxy.system_config_directory
+    process.system_config_directory = mediaproxy.config_directory
     config_file = ConfigFile(mediaproxy.configuration_filename)
     log.level.current = config_file.get_setting("Dispatcher", 'log_level', type=datatypes.LogLevel, default=log.level.DEBUG)
 
