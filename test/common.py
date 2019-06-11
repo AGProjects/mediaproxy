@@ -25,7 +25,7 @@ from twisted.internet import reactor
 from mediaproxy.headers import EncodingDict
 
 class Config(ConfigSection):
-    __cfgfile__ = mediaproxy.configuration_filename
+    __cfgfile__ = mediaproxy.configuration_file
     __section__ = 'Dispatcher'
 
     socket = "/var/run/mediaproxy/dispatcher.sock"

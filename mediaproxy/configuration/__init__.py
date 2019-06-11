@@ -3,12 +3,12 @@ from application.configuration import ConfigSection, ConfigSetting
 from application.configuration.datatypes import IPAddress, NetworkRangeList
 from application.system import host
 
-from mediaproxy import configuration_filename
+from mediaproxy import configuration_file
 from mediaproxy.configuration.datatypes import AccountingModuleList, DispatcherIPAddress, DispatcherAddressList, DispatcherManagementAddress, PortRange, PositiveInteger, SIPThorDomain, X509NameValidator
 
 
 class DispatcherConfig(ConfigSection):
-    __cfgfile__ = configuration_filename
+    __cfgfile__ = configuration_file
     __section__ = 'Dispatcher'
 
     socket_path = "dispatcher.sock"
@@ -25,7 +25,7 @@ class DispatcherConfig(ConfigSection):
 
 
 class RelayConfig(ConfigSection):
-    __cfgfile__ = configuration_filename
+    __cfgfile__ = configuration_file
     __section__ = 'Relay'
 
     relay_ip = ConfigSetting(type=IPAddress, value=host.default_ip)
@@ -44,7 +44,7 @@ class RelayConfig(ConfigSection):
 
 
 class OpenSIPSConfig(ConfigSection):
-    __cfgfile__ = configuration_filename
+    __cfgfile__ = configuration_file
     __section__ = 'OpenSIPS'
 
     socket_path = '/var/run/opensips/socket'
@@ -52,7 +52,7 @@ class OpenSIPSConfig(ConfigSection):
 
 
 class RadiusConfig(ConfigSection):
-    __cfgfile__ = configuration_filename
+    __cfgfile__ = configuration_file
     __section__ = 'Radius'
 
     config_file = "/etc/opensips/radius/client.conf"
@@ -60,7 +60,7 @@ class RadiusConfig(ConfigSection):
 
 
 class DatabaseConfig(ConfigSection):
-    __cfgfile__ = configuration_filename
+    __cfgfile__ = configuration_file
     __section__ = 'Database'
 
     dburi = ""
@@ -72,7 +72,7 @@ class DatabaseConfig(ConfigSection):
 
 
 class TLSConfig(ConfigSection):
-    __cfgfile__ = configuration_filename
+    __cfgfile__ = configuration_file
     __section__ = 'TLS'
 
     certs_path = 'tls'
@@ -80,7 +80,7 @@ class TLSConfig(ConfigSection):
 
 
 class ThorNetworkConfig(ConfigSection):
-    __cfgfile__ = configuration_filename
+    __cfgfile__ = configuration_file
     __section__ = 'ThorNetwork'
 
     domain = ConfigSetting(type=SIPThorDomain, value=None)
