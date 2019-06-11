@@ -238,9 +238,3 @@
 ; Path to OpenSIPS's UNIX filesystem socket from the mi_datagram module.
 ;socket_path = /var/run/opensips/socket
 
-; Maximum number of connections to open with OpenSIPS's mi_datagram socket.
-; Please note that connections will be opened on a need basis depending on
-; load, but never more than the number configured below.
-;
-;max_connections = 10
-

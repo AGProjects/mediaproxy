@@ -292,25 +292,10 @@ class RelayServerProtocol(LineOnlyReceiver):
         self.factory.connection_lost(self)
 
 
-class DialogID(str):
-    def __new__(cls, did):
-        if did is None:
-            return None
-        try:
-            h_entry, h_id = did.split(':')
-        except:
-            log.error("invalid dialog_id value: `%s'" % did)
-            return None
-        instance = str.__new__(cls, did)
-        instance.h_entry = h_entry
-        instance.h_id = h_id
-        return instance
-
-
 class RelaySession(object):
     def __init__(self, relay_ip, command_headers):
         self.relay_ip = relay_ip
-        self.dialog_id = DialogID(command_headers.get('dialog_id'))
+        self.dialog_id = command_headers.get('dialog_id')
         self.expire_time = None
 
 

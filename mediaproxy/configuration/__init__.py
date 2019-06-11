@@ -48,7 +48,7 @@ class OpenSIPSConfig(ConfigSection):
     __section__ = 'OpenSIPS'
 
     socket_path = '/var/run/opensips/socket'
-    max_connections = 10
+    location_table = 'location'
 
 
 class RadiusConfig(ConfigSection):
