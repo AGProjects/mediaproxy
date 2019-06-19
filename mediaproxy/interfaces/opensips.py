@@ -146,7 +146,7 @@ class UNIXSocketProtocol(DatagramProtocol):
             try:
                 code = int(code)
             except ValueError:
-                log.error('Received un-parsable response from OpenSIPS: {!r}'.format(data))
+                log.error('MI response from OpenSIPS cannot be parsed (neither JSON nor status reply)')
                 return
             # we got one of the 'code message' type of replies. This means either parsing error or internal error in OpenSIPS.
             # if we only have one request pending, we can associate the response with it, otherwise is impossible to tell to
@@ -156,15 +156,15 @@ class UNIXSocketProtocol(DatagramProtocol):
                 request.deferred.errback(Failure(NegativeReplyError(code, message)))
                 log.error('MI request {.method} failed with: {} {}'.format(request, code, message))
             else:
-                log.error('Got non-JSON error reply from OpenSIPS that cannot be associated with a request: {!r}'.format(data))
+                log.error('Got MI status reply from OpenSIPS that cannot be associated with a request: {!r}'.format(data))
         else:
             try:
                 request_id = response['id']
             except KeyError:
-                log.error('MI JSON response from OpenSIPS lacks id field: {!r}'.format(response))
+                log.error('MI JSON response from OpenSIPS lacks id field')
                 return
             if request_id not in self.transport.requests:
-                log.error('Received MI response from OpenSIPS with unknown id: {!r}'.format(response))
+                log.error('MI JSON response from OpenSIPS has unknown id: {!r}'.format(request_id))
                 return
             request = self.transport.requests.pop(request_id)
             if 'result' in response:
@@ -173,8 +173,8 @@ class UNIXSocketProtocol(DatagramProtocol):
                 log.error('MI request {0.method} failed with: {1[error][code]} {1[error][message]}'.format(request, response))
                 request.deferred.errback(Failure(NegativeReplyError(response['error']['code'], response['error']['message'])))
             else:
-                log.error('Got invalid MI response from OpenSIPS: {!r}'.format(response))
-                request.deferred.errback(Failure(OpenSIPSError('Invalid response from OpenSIPS')))
+                log.error('Invalid MI JSON response from OpenSIPS')
+                request.deferred.errback(Failure(OpenSIPSError('Invalid MI JSON response from OpenSIPS')))
 
 
 class UNIXSocketConnection(object):
