@@ -28,7 +28,7 @@ class Config(ConfigSection):
     __cfgfile__ = mediaproxy.configuration_file
     __section__ = 'Dispatcher'
 
-    socket = "/var/run/mediaproxy/dispatcher.sock"
+    socket = "/run/mediaproxy/dispatcher.sock"
 
 
 

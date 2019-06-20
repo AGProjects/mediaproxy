@@ -47,7 +47,7 @@ class OpenSIPSConfig(ConfigSection):
     __cfgfile__ = configuration_file
     __section__ = 'OpenSIPS'
 
-    socket_path = '/var/run/opensips/socket'
+    socket_path = '/run/opensips/socket'
     location_table = 'location'
 
 
