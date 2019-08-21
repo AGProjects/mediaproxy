@@ -20,8 +20,6 @@ if __name__ == '__main__':
     parser.add_option("--pid", dest="pid_file", default=default_pid, help="pid file (%s)" % default_pid, metavar="File")
     (options, args) = parser.parse_args()
 
-    pid_file = options.pid_file
-
     process.system_config_directory = mediaproxy.config_directory
     config_file = ConfigFile(mediaproxy.configuration_file)
     log.level.current = config_file.get_setting('Dispatcher', 'log_level', type=datatypes.LogLevel, default=log.level.DEBUG)
@@ -34,7 +32,7 @@ if __name__ == '__main__':
 
     if options.fork:
         try:
-            process.daemonize(pid_file)
+            process.daemonize(options.pid_file)
         except ProcessError, e:
             log.critical('Cannot start %s: %s' % (fullname, e))
             sys.exit(1)

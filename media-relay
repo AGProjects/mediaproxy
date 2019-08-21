@@ -64,8 +64,6 @@ if __name__ == '__main__':
             log.critical('Could not enable conntrack rule counters (check %s): %s' % (CONNTRACK_ACCT_FILE, e))
             sys.exit(1)
 
-    pid_file = options.pid_file
-
     process.system_config_directory = mediaproxy.config_directory
     config_file = ConfigFile(mediaproxy.configuration_file)
     log.level.current = config_file.get_setting('Relay', 'log_level', type=datatypes.LogLevel, default=log.level.DEBUG)
@@ -78,7 +76,7 @@ if __name__ == '__main__':
 
     if options.fork:
         try:
-            process.daemonize(pid_file)
+            process.daemonize(options.pid_file)
         except ProcessError, e:
             log.critical('Cannot start %s: %s' % (fullname, e))
             sys.exit(1)
