@@ -2,7 +2,6 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH "media-dispatcher" 1 "May 28, 2008" "media-dispatcher" "MediaProxy"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -15,10 +14,11 @@
 .\" .br        insert line break
 .\" .sp <n>    insert n+1 empty lines
 .\" for manpage-specific macros, see man(7)
+.TH "media-dispatcher" 1 "Aug 21, 2019" "AG Projects" "SIP Communication Software"
 .SH NAME
-media\-dispatcher \- the MediaProxy dispatcher
+media-dispatcher - The MediaProxy dispatcher
 .SH SYNOPSIS
-.B media\-dispatcher
+.B media-dispatcher
 .RI [ options ]
 .SH DESCRIPTION
 .PP
@@ -49,14 +49,25 @@ can also use encrypted communications if needed.
 Show summary of options.
 .TP
 .B \-\-version
-Show version of program.
+Show program version.
+.TP
+.B \-\-systemd
+Run as a systemd simple service and log to journal.
 .TP
 .B \-\-no\-fork
-Run the process in the foreground (for debugging).
+Run in the foreground and log to terminal (for debugging).
 .TP
-.B \-\-pid=file
-Set the proces pid file to \fB`file'\fP. If not specified the default
-pid file is \fB/var/run/mediaproxy/dispatcher.pid\fP .
+.B \-\-config\-dir=PATH
+Set the configuration directory (default is \fB/etc/mediaproxy\fP).
+.TP
+.B \-\-runtime\-dir=PATH
+Set the runtime directory (default is \fB/run/mediaproxy\fP).
+.TP
+.B \-\-debug
+Enable verbose logging.
+.TP
+.B \-\-debug\-memory
+Enable memory debugging.
 .SH SEE ALSO
 .BR media-relay (1),
 .PP
