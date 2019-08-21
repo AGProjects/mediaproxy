@@ -39,7 +39,7 @@ Description: MediaProxy common files
 
 Package: mediaproxy-dispatcher
 Architecture: all
-Depends: ${python:Depends}, ${misc:Depends}, mediaproxy-common (>= ${source:Version}), lsb-base
+Depends: ${python:Depends}, ${misc:Depends}, mediaproxy-common (>= ${source:Version})
 Description: MediaProxy dispatcher for OpenSIPS
  MediaProxy is a distributed far end NAT traversal solution for media streams
  of SIP calls. MediaProxy has a dispatcher running on the same host as the
@@ -61,7 +61,7 @@ Description: MediaProxy dispatcher for OpenSIPS
 
 Package: mediaproxy-relay
 Architecture: all
-Depends: ${python:Depends}, ${misc:Depends}, mediaproxy-common (>= ${source:Version}), lsb-base
+Depends: ${python:Depends}, ${misc:Depends}, mediaproxy-common (>= ${source:Version})
 Description: MediaProxy relay for OpenSIPS
  MediaProxy is a distributed far end NAT traversal solution for media streams
  of SIP calls. MediaProxy has a dispatcher running on the same host as the

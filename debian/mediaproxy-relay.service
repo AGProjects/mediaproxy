@@ -1,0 +1,14 @@
+[Unit]
+Description=MediaProxy relay
+Documentation=man:media-relay
+After=network.target nss-lookup.target thor-eventserver.service
+
+[Service]
+Type=simple
+Environment=PYTHONUNBUFFERED=yes
+ExecStart=/usr/bin/media-relay --systemd
+Restart=on-abnormal
+LimitCORE=infinity
+
+[Install]
+WantedBy=multi-user.target

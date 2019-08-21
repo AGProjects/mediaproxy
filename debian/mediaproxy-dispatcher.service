@@ -1,0 +1,17 @@
+[Unit]
+Description=MediaProxy dispatcher
+Documentation=man:media-dispatcher
+After=network.target mysqld.service mariadb.service
+
+[Service]
+Type=simple
+RuntimeDirectory=mediaproxy
+RuntimeDirectoryMode=755
+RuntimeDirectoryPreserve=yes
+Environment=PYTHONUNBUFFERED=yes
+ExecStart=/usr/bin/media-dispatcher --systemd
+Restart=on-abnormal
+LimitCORE=infinity
+
+[Install]
+WantedBy=multi-user.target

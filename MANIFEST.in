@@ -1,5 +1,5 @@
 recursive-include debian  changelog compat control copyright rules
-recursive-include debian  *.apache2 *.conf *.docs *.install *.init
+recursive-include debian  *.apache2 *.conf *.docs *.install *.service
 recursive-include debian  *.lintian-overrides *.manpages *.preinst
 recursive-include debian/source  format
 recursive-include doc/man *.1
