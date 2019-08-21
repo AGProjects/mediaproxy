@@ -60,7 +60,7 @@ class RelayClientProtocol(LineOnlyReceiver):
 
     def _send_keepalive(self):
         if self._queued_keepalives >= 3:
-            # 3 keepalives in a row didn't get an answer. assume connection is down.
+            # 3 keepalive messages in a row didn't get an answer. assume connection is down.
             log.error("missed 3 keepalive answers in a row. assuming the connection is down.")
             # do not use loseConnection() as it waits to flush the output buffers.
             reactor.callLater(0, self.transport.connectionLost, failure.Failure(TCPTimedOutError()))
