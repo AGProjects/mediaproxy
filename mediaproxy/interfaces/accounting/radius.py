@@ -61,7 +61,7 @@ class Accounting(object):
 class RadiusAccounting(EventQueue, pyrad.client.Client):
 
     def __init__(self):
-        main_config_file = process.config_file(RadiusConfig.config_file)
+        main_config_file = process.configuration.file(RadiusConfig.config_file)
         if main_config_file is None:
             raise RuntimeError('Cannot find the radius configuration file: %r' % RadiusConfig.config_file)
         try:
@@ -76,7 +76,7 @@ class RadiusAccounting(EventQueue, pyrad.client.Client):
             secret = secrets[server]
             dicts = [RadiusDictionaryFile(config['dictionary'])]
             if RadiusConfig.additional_dictionary:
-                additional_dictionary = process.config_file(RadiusConfig.additional_dictionary)
+                additional_dictionary = process.configuration.file(RadiusConfig.additional_dictionary)
                 if additional_dictionary:
                     dicts.append(RadiusDictionaryFile(additional_dictionary))
                 else:

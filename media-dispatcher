@@ -13,27 +13,30 @@ if __name__ == '__main__':
     fullname = 'MediaProxy Dispatcher'
     description = 'MediaProxy Dispatcher component'
 
-    default_pid = mediaproxy.runtime_directory + '/dispatcher.pid'
+    process.configuration.user_directory = None
+    process.configuration.subdirectory = mediaproxy.mediaproxy_subdirectory
+    process.runtime.subdirectory = mediaproxy.mediaproxy_subdirectory
+
+    default_pid = process.runtime.file('{}.pid'.format(name))
 
     parser = OptionParser(version="%%prog %s" % mediaproxy.__version__)
     parser.add_option("--no-fork", action="store_false", dest="fork", default=1, help="run the process in the foreground (for debugging)")
     parser.add_option("--pid", dest="pid_file", default=default_pid, help="pid file (%s)" % default_pid, metavar="File")
     (options, args) = parser.parse_args()
 
-    process.system_config_directory = mediaproxy.config_directory
     config_file = ConfigFile(mediaproxy.configuration_file)
     log.level.current = config_file.get_setting('Dispatcher', 'log_level', type=datatypes.LogLevel, default=log.level.DEBUG)
 
     try:
-        process.runtime_directory = mediaproxy.runtime_directory
-    except ProcessError, e:
+        process.runtime.create_directory()
+    except ProcessError as e:
         log.critical('Cannot start %s: %s' % (fullname, e))
         sys.exit(1)
 
     if options.fork:
         try:
             process.daemonize(options.pid_file)
-        except ProcessError, e:
+        except ProcessError as e:
             log.critical('Cannot start %s: %s' % (fullname, e))
             sys.exit(1)
         log.use_syslog(name)
@@ -47,9 +50,9 @@ if __name__ == '__main__':
 
     try:
         dispatcher = Dispatcher()
-    except Exception, e:
+    except Exception as e:
         log.critical('Failed to create %s: %s' % (fullname, e))
-        if e.__class__ is not RuntimeError:
+        if type(e) is not RuntimeError:
             log.exception()
         sys.exit(1)
 

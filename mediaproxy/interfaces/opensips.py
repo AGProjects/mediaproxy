@@ -181,7 +181,7 @@ class UNIXSocketConnection(object):
     timeout = 3
 
     def __init__(self):
-        socket_path = process.runtime_file('opensips.sock')
+        socket_path = process.runtime.file('opensips.sock')
         unlink(socket_path)
         self.path = socket_path
         self.transport = reactor.listenUNIXDatagram(self.path, UNIXSocketProtocol())

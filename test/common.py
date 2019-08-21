@@ -11,25 +11,27 @@ import struct
 
 import mediaproxy
 
-from application.system import host
 from application.configuration import *
 from application.process import process
-process.system_config_directory = mediaproxy.config_directory
-
-from twisted.internet.protocol import DatagramProtocol, ClientFactory
-from twisted.protocols.basic import LineOnlyReceiver
-from twisted.internet.task import LoopingCall
-from twisted.internet.defer import Deferred, DeferredList, succeed
+from application.system import host
 from twisted.internet import reactor
+from twisted.internet.defer import Deferred, DeferredList, succeed
+from twisted.internet.protocol import DatagramProtocol, ClientFactory
+from twisted.internet.task import LoopingCall
+from twisted.protocols.basic import LineOnlyReceiver
 
 from mediaproxy.headers import EncodingDict
+
+
+process.configuration.user_directory = None
+process.configuration.subdirectory = mediaproxy.mediaproxy_subdirectory
+
 
 class Config(ConfigSection):
     __cfgfile__ = mediaproxy.configuration_file
     __section__ = 'Dispatcher'
 
     socket = "/run/mediaproxy/dispatcher.sock"
-
 
 
 random_data = os.urandom(512)

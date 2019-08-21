@@ -305,7 +305,7 @@ class RelayFactory(Factory):
         self.dispatcher = dispatcher
         self.relays = {}
         self.shutting_down = False
-        state_file = process.runtime_file("dispatcher_state")
+        state_file = process.runtime.file('dispatcher_state')
         try:
             self.sessions = pickle.load(open(state_file))
         except:
@@ -460,7 +460,7 @@ class RelayFactory(Factory):
         return retval
 
     def _save_state(self, result):
-        pickle.dump(self.sessions, open(process.runtime_file('dispatcher_state'), 'w'))
+        pickle.dump(self.sessions, open(process.runtime.file('dispatcher_state'), 'w'))
 
 
 class Dispatcher(object):
@@ -473,7 +473,7 @@ class Dispatcher(object):
         dispatcher_addr, dispatcher_port = DispatcherConfig.listen
         self.relay_listener = reactor.listenTLS(dispatcher_port, self.relay_factory, self.tls_context, interface=dispatcher_addr)
         self.opensips_factory = OpenSIPSControlFactory(self)
-        socket_path = process.runtime_file(DispatcherConfig.socket_path)
+        socket_path = process.runtime.file(DispatcherConfig.socket_path)
         unlink(socket_path)
         self.opensips_listener = reactor.listenUNIX(socket_path, self.opensips_factory)
         self.opensips_management = opensips.ManagementInterface()

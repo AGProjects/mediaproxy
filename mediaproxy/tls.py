@@ -21,7 +21,7 @@ class FileDescriptor(object):
         self.timestamp = 0
         self.object = None
     def get(self):
-        path = process.config_file(self.path)
+        path = process.configuration.file(self.path)
         if path is None:
             raise RuntimeError('missing or unreadable file: %s' % self.path)
         mtime = os.stat(path)[stat.ST_MTIME]
