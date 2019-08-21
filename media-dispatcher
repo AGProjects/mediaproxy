@@ -51,7 +51,7 @@ if __name__ == '__main__':
         log.capture_output()
     elif options.fork:
         try:
-            process.daemonize(options.pid_file)
+            process.daemonize(pidfile='{}.pid'.format(name))
         except ProcessError as e:
             log.critical('Cannot start %s: %s' % (fullname, e))
             sys.exit(1)
