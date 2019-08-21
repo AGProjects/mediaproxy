@@ -14,7 +14,7 @@ from mediaproxy.configuration import DatabaseConfig
 
 
 if not DatabaseConfig.dburi:
-    raise RuntimeError("Database accounting is enabled, but the database URI is not specified in config.ini")
+    raise RuntimeError('Database accounting is enabled, but the database URI is not specified in config.ini')
 
 connection = connectionForURI(DatabaseConfig.dburi)
 sqlhub.processConnection = connection
@@ -37,13 +37,13 @@ try:
     MediaSessions.createTable(ifNotExists=True)
 except OperationalError as e:
     log.error("cannot create the `%s' table: %s" % (DatabaseConfig.sessions_table, e))
-    log.msg("please make sure that the `%s' user has the CREATE and ALTER rights on the `%s' database" % (connection.user, connection.db))
-    log.msg("then restart the dispatcher, or you can create the table yourself using the following definition:")
-    log.msg("----------------- >8 -----------------")
+    log.info("please make sure that the `%s' user has the CREATE and ALTER rights on the `%s' database" % (connection.user, connection.db))
+    log.info('then restart the dispatcher, or you can create the table yourself using the following definition:')
+    log.info('----------------- >8 -----------------')
     sql, constraints = MediaSessions.createTableSQL()
     statements = ';\n'.join([sql] + constraints) + ';'
-    log.msg(statements)
-    log.msg("----------------- >8 -----------------")
+    log.info(statements)
+    log.info('----------------- >8 -----------------')
     # raise RuntimeError(str(e))
 
 
@@ -69,8 +69,8 @@ class DatabaseAccounting(EventQueue):
     def do_accounting(self, stats):
         sqlrepr = connection.sqlrepr
         names  = ', '.join([DatabaseConfig.callid_column, DatabaseConfig.fromtag_column, DatabaseConfig.totag_column, DatabaseConfig.info_column])
-        values = ', '.join((sqlrepr(v) for v in [stats["call_id"], stats["from_tag"], stats["to_tag"], cjson.encode(stats)]))
-        q = """INSERT INTO %s (%s) VALUES (%s)""" % (DatabaseConfig.sessions_table, names, values)
+        values = ', '.join((sqlrepr(v) for v in [stats['call_id'], stats['from_tag'], stats['to_tag'], cjson.encode(stats)]))
+        q = 'INSERT INTO %s (%s) VALUES (%s)' % (DatabaseConfig.sessions_table, names, values)
         try:
             try:
                 connection.query(q)
@@ -82,5 +82,5 @@ class DatabaseAccounting(EventQueue):
                 else:
                     connection.query(q)
         except DatabaseError as e:
-            log.error("failed to insert record into database: %s" % e)
+            log.error('failed to insert record into database: %s' % e)
 

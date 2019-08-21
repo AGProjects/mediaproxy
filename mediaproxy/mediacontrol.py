@@ -327,7 +327,7 @@ class MediaParty(object):
                 if self.listener_rtp is not None:
                     self.listener_rtp.stopListening()
                 self.manager.set_bad_ports(self.ports)
-                log.warn("Cannot use port pair %d/%d" % self.ports)
+                log.warning('Cannot use port pair %d/%d' % self.ports)
             else:
                 break
 
@@ -682,7 +682,7 @@ class SessionManager(Logger):
         self.closed_byte_counter = 0
         us_taken = int((time() - start_time) * 1000000)
         if us_taken > 10000:
-            log.warn("Aggregate speed calculation time exceeded 10ms: %d us for %d sessions" % (us_taken, len(self.sessions)))
+            log.warning('Aggregate speed calculation time exceeded 10ms: %d us for %d sessions' % (us_taken, len(self.sessions)))
         return KeepRunning
 
     # implemented for IReadDescriptor
@@ -700,7 +700,7 @@ class SessionManager(Logger):
     # port management
     def get_ports(self):
         if len(self.bad_ports) > len(self.ports):
-            log.debug("Excessive amount of bad ports, doing cleanup")
+            log.debug('Excessive amount of bad ports, doing cleanup')
             self.ports.extend(self.bad_ports)
             self.bad_ports = deque()
         try:
@@ -752,9 +752,9 @@ class SessionManager(Logger):
         try:
             session = self.sessions[key]
         except KeyError:
-            log.warn("The dispatcher tried to remove a session which is no longer present on the relay")
+            log.warning('The dispatcher tried to remove a session which is no longer present on the relay')
             return None
-        log.debug("removing session %s" % session)
+        log.debug('removing session %s' % session)
         session.cleanup()
         self.closed_byte_counter += session.relayed_bytes
         del self.sessions[key]
@@ -766,9 +766,9 @@ class SessionManager(Logger):
         try:
             session = self.sessions[key]
         except KeyError:
-            log.warn("A session expired that was no longer present on the relay")
+            log.warning('A session expired that was no longer present on the relay')
             return
-        log.debug("expired session %s" % session)
+        log.debug('expired session %s' % session)
         session.cleanup()
         self.closed_byte_counter += session.relayed_bytes
         del self.sessions[key]

@@ -3,7 +3,7 @@
 """MediaProxy Dispatcher component"""
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     import sys
     from optparse import OptionParser
     from application.process import process, ProcessError
@@ -11,9 +11,9 @@ if __name__ == "__main__":
     from application import log
     import mediaproxy
 
-    name = "media-dispatcher"
-    fullname = "MediaProxy Dispatcher"
-    description = "MediaProxy Dispatcher component"
+    name = 'media-dispatcher'
+    fullname = 'MediaProxy Dispatcher'
+    description = 'MediaProxy Dispatcher component'
 
     default_pid = mediaproxy.runtime_directory + '/dispatcher.pid'
 
@@ -26,23 +26,23 @@ if __name__ == "__main__":
 
     process.system_config_directory = mediaproxy.config_directory
     config_file = ConfigFile(mediaproxy.configuration_file)
-    log.level.current = config_file.get_setting("Dispatcher", 'log_level', type=datatypes.LogLevel, default=log.level.DEBUG)
+    log.level.current = config_file.get_setting('Dispatcher', 'log_level', type=datatypes.LogLevel, default=log.level.DEBUG)
 
     try:
         process.runtime_directory = mediaproxy.runtime_directory
     except ProcessError, e:
-        log.fatal("Cannot start %s: %s" % (fullname, e))
+        log.critical('Cannot start %s: %s' % (fullname, e))
         sys.exit(1)
 
     if options.fork:
         try:
             process.daemonize(pid_file)
         except ProcessError, e:
-            log.fatal("Cannot start %s: %s" % (fullname, e))
+            log.critical('Cannot start %s: %s' % (fullname, e))
             sys.exit(1)
-        log.start_syslog(name)
+        log.use_syslog(name)
 
-    log.msg("Starting %s %s" % (fullname, mediaproxy.__version__))
+    log.info('Starting %s %s' % (fullname, mediaproxy.__version__))
 
     from mediaproxy.dispatcher import Dispatcher
 
@@ -52,9 +52,9 @@ if __name__ == "__main__":
     try:
         dispatcher = Dispatcher()
     except Exception, e:
-        log.fatal("failed to create %s: %s" % (fullname, e))
+        log.critical('Failed to create %s: %s' % (fullname, e))
         if e.__class__ is not RuntimeError:
-            log.err()
+            log.exception()
         sys.exit(1)
 
     dispatcher.run()

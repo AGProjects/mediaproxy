@@ -5,7 +5,7 @@
 from __future__ import with_statement
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     import errno
     import sys
     import subprocess
@@ -16,13 +16,13 @@ if __name__ == "__main__":
     from application.version import Version
     import mediaproxy
 
-    IP_FORWARD_FILE     = "/proc/sys/net/ipv4/ip_forward"
-    CONNTRACK_ACCT_FILE = "/proc/sys/net/netfilter/nf_conntrack_acct"
-    KERNEL_VERSION_FILE = "/proc/sys/kernel/osrelease"
+    IP_FORWARD_FILE     = '/proc/sys/net/ipv4/ip_forward'
+    CONNTRACK_ACCT_FILE = '/proc/sys/net/netfilter/nf_conntrack_acct'
+    KERNEL_VERSION_FILE = '/proc/sys/kernel/osrelease'
 
-    name = "media-relay"
-    fullname = "MediaProxy Relay"
-    description = "MediaProxy Relay component"
+    name = 'media-relay'
+    fullname = 'MediaProxy Relay'
+    description = 'MediaProxy Relay component'
 
     default_pid = mediaproxy.runtime_directory + '/relay.pid'
 
@@ -32,23 +32,23 @@ if __name__ == "__main__":
     (options, args) = parser.parse_args()
 
     if not sys.platform.startswith('linux'):
-        log.fatal("Cannot start %s. A Linux host is required for operation." % fullname)
+        log.critical('Cannot start %s. A Linux host is required for operation.' % fullname)
         sys.exit(1)
 
     try:
         subprocess.call(['modprobe', 'ip_tables'], env={'PATH': '/usr/sbin:/sbin:/usr/bin:/bin'})
     except OSError, e:
-        log.fatal("Cannot start %s: failed to load the ip_tables kernel module: %s" % (fullname, e))
+        log.critical('Cannot start %s: failed to load the ip_tables kernel module: %s' % (fullname, e))
         sys.exit(1)
 
     try:
         kernel_version = Version.parse(open(KERNEL_VERSION_FILE).read().strip())
     except (OSError, IOError, ValueError):
-        log.fatal("Could not determine Linux kernel version")
+        log.critical('Could not determine Linux kernel version')
         sys.exit(1)
 
     if kernel_version < Version(2, 6, 18):
-        log.fatal("Linux kernel version 2.6.18 or newer is required to run the media relay")
+        log.critical('Linux kernel version 2.6.18 or newer is required to run the media relay')
         sys.exit(1)
 
     try:
@@ -57,38 +57,38 @@ if __name__ == "__main__":
         ip_forward = False
 
     if not ip_forward:
-        log.fatal("IP forwarding is not available or not enabled (check %s)" % IP_FORWARD_FILE)
+        log.critical('IP forwarding is not available or not enabled (check %s)' % IP_FORWARD_FILE)
         sys.exit(1)
 
     try:
         with open(CONNTRACK_ACCT_FILE, 'w') as acct_file:
-            acct_file.write("1")
+            acct_file.write('1')
     except (IOError, OSError), e:
         if e.errno != errno.ENOENT:
-            log.fatal("Could not enable conntrack rule counters (check %s): %s" % (CONNTRACK_ACCT_FILE, e))
+            log.critical('Could not enable conntrack rule counters (check %s): %s' % (CONNTRACK_ACCT_FILE, e))
             sys.exit(1)
 
     pid_file = options.pid_file
 
     process.system_config_directory = mediaproxy.config_directory
     config_file = ConfigFile(mediaproxy.configuration_file)
-    log.level.current = config_file.get_setting("Relay", 'log_level', type=datatypes.LogLevel, default=log.level.DEBUG)
+    log.level.current = config_file.get_setting('Relay', 'log_level', type=datatypes.LogLevel, default=log.level.DEBUG)
 
     try:
         process.runtime_directory = mediaproxy.runtime_directory
     except ProcessError, e:
-        log.fatal("Cannot start %s: %s" % (fullname, e))
+        log.critical('Cannot start %s: %s' % (fullname, e))
         sys.exit(1)
 
     if options.fork:
         try:
             process.daemonize(pid_file)
         except ProcessError, e:
-            log.fatal("Cannot start %s: %s" % (fullname, e))
+            log.critical('Cannot start %s: %s' % (fullname, e))
             sys.exit(1)
-        log.start_syslog(name)
+        log.use_syslog(name)
 
-    log.msg("Starting %s %s" % (fullname, mediaproxy.__version__))
+    log.info('Starting %s %s' % (fullname, mediaproxy.__version__))
 
     try:
         from mediaproxy.relay import MediaRelay
@@ -96,9 +96,9 @@ if __name__ == "__main__":
             from application.debug.memory import memory_dump
         relay = MediaRelay()
     except Exception, e:
-        log.fatal("failed to create %s: %s" % (fullname, e))
+        log.critical('Failed to create %s: %s' % (fullname, e))
         if e.__class__ is not RuntimeError:
-            log.err()
+            log.exception()
         sys.exit(1)
 
     relay.run()

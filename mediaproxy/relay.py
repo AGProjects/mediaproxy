@@ -39,13 +39,13 @@ fd_limit = RelayConfig.port_range.end - RelayConfig.port_range.start + 1000
 try:
     resource.setrlimit(resource.RLIMIT_NOFILE, (fd_limit, fd_limit))
 except ValueError:
-    raise RuntimeError("Cannot set resource limit for maximum open file descriptors to %d" % fd_limit)
+    raise RuntimeError('Cannot set resource limit for maximum open file descriptors to %d' % fd_limit)
 else:
     new_limits = resource.getrlimit(resource.RLIMIT_NOFILE)
     if new_limits < (fd_limit, fd_limit):
         raise RuntimeError("Allocated resource limit for maximum open file descriptors is less then requested (%d instead of %d)" % (new_limits[0], fd_limit))
     else:
-        log.msg("Set resource limit for maximum open file descriptors to %d" % fd_limit)
+        log.info('Set resource limit for maximum open file descriptors to %d' % fd_limit)
 
 
 class RelayClientProtocol(LineOnlyReceiver):
@@ -64,17 +64,17 @@ class RelayClientProtocol(LineOnlyReceiver):
     def _send_keepalive(self):
         if self._queued_keepalives >= 3:
             # 3 keepalive messages in a row didn't get an answer. assume connection is down.
-            log.error("missed 3 keepalive answers in a row. assuming the connection is down.")
+            log.error('missed 3 keepalive answers in a row. assuming the connection is down.')
             # do not use loseConnection() as it waits to flush the output buffers.
             reactor.callLater(0, self.transport.connectionLost, failure.Failure(TCPTimedOutError()))
             return None
-        self.transport.write("ping\r\n")
+        self.transport.write('ping\r\n')
         self._queued_keepalives += 1
         return KeepRunning
 
     def connectionMade(self):
         peer = self.transport.getPeer()
-        log.debug("Connected to dispatcher at %s:%d" % (peer.host, peer.port))
+        log.debug('Connected to dispatcher at %s:%d' % (peer.host, peer.port))
         if RelayConfig.passport is not None:
             peer_cert = self.transport.getPeerCertificate()
             if not RelayConfig.passport.accept(peer_cert):
@@ -95,41 +95,41 @@ class RelayClientProtocol(LineOnlyReceiver):
             try:
                 command, seq = line.split()
             except ValueError:
-                log.error("Could not decode command/sequence number pair from dispatcher: %s" % line)
+                log.error('Could not decode command/sequence number pair from dispatcher: %s' % line)
                 return
             if command in self.required_headers:
                 self.command = command
                 self.seq = seq
                 self.headers = DecodingDict()
             else:
-                log.error("Unknown command: %s" % command)
-                self.transport.write("%s error\r\n" % seq)
-        elif line == "":
+                log.error('Unknown command: %s' % command)
+                self.transport.write('%s error\r\n' % seq)
+        elif line == '':
             try:
                 missing_headers = self.required_headers[self.command].difference(self.headers)
                 if missing_headers:
                     for header in missing_headers:
                         log.error("Missing mandatory header '%s' from '%s' command" % (header, self.command))
-                    response = "error"
+                    response = 'error'
                 else:
                     try:
                         response = self.factory.parent.got_command(self.factory.host, self.command, self.headers)
-                    except:
-                        log.err()
-                        response = "error"
+                    except Exception:
+                        log.exception()
+                        response = 'error'
             finally:
-                self.transport.write("%s %s\r\n" % (self.seq, response))
+                self.transport.write('%s %s\r\n' % (self.seq, response))
                 self.command = None
         else:
             try:
                 name, value = line.split(": ", 1)
             except ValueError:
-                log.error("Unable to parse header: %s" % line)
+                log.error('Unable to parse header: %s' % line)
             else:
                 try:
                     self.headers[name] = value
                 except DecodingError, e:
-                    log.error("Could not decode header: %s" % e)
+                    log.error('Could not decode header: %s' % e)
 
 
 class DispatcherConnectingFactory(ClientFactory):
@@ -153,9 +153,9 @@ class DispatcherConnectingFactory(ClientFactory):
     def clientConnectionLost(self, connector, reason):
         self.cancel_delayed()
         if reason.type != ConnectionDone:
-            log.error("Connection with dispatcher at %(host)s:%(port)d was lost: %%s" % connector.__dict__ % reason.value)
+            log.error('Connection with dispatcher at %(host)s:%(port)d was lost: %%s' % connector.__dict__ % reason.value)
         else:
-            log.msg("Connection with dispatcher at %(host)s:%(port)d was closed" % connector.__dict__)
+            log.info('Connection with dispatcher at %(host)s:%(port)d was closed' % connector.__dict__)
         if self.parent.connector_needs_reconnect(connector):
             if isinstance(reason.value, CertificateError) or self.connection_lost:
                 self.delayed = reactor.callLater(RelayConfig.reconnect_delay, connector.connect)
@@ -226,18 +226,18 @@ class SRVMediaRelayBase(object):
         reactor.run(installSignalHandlers=False)
 
     def _handle_SIGHUP(self, *args):
-        log.msg("Received SIGHUP, shutting down after all sessions have expired.")
+        log.info('Received SIGHUP, shutting down after all sessions have expired.')
         reactor.callFromThread(self.shutdown, graceful=True)
 
     def _handle_SIGINT(self, *args):
-        if process._daemon:
-            log.msg("Received SIGINT, shutting down.")
+        if process.daemon:
+            log.info('Received SIGINT, shutting down.')
         else:
-            log.msg("Received KeyboardInterrupt, exiting.")
+            log.info('Received KeyboardInterrupt, exiting.')
         reactor.callFromThread(self.shutdown)
 
     def _handle_SIGTERM(self, *args):
-        log.msg("Received SIGTERM, shutting down.")
+        log.info('Received SIGTERM, shutting down.')
         reactor.callFromThread(self.shutdown)
 
     def shutdown(self, graceful=False):
@@ -297,7 +297,7 @@ class MediaRelay(MediaRelayBase):
         self.dispatchers = dispatchers
 
     def got_command(self, dispatcher, command, headers):
-        if command == "summary":
+        if command == 'summary':
             summary = {'ip'            : RelayConfig.relay_ip,
                        'version'       : __version__,
                        'status'        : self.status,
@@ -306,24 +306,24 @@ class MediaRelay(MediaRelayBase):
                        'stream_count'  : self.session_manager.stream_count,
                        'bps_relayed'   : self.session_manager.bps_relayed}
             return cjson.encode(summary)
-        elif command == "sessions":
+        elif command == 'sessions':
             return cjson.encode(self.session_manager.statistics)
-        elif command == "update":
+        elif command == 'update':
             if self.graceful_shutdown or self.shutting_down:
                 if not self.session_manager.has_session(**headers):
-                    log.debug("cannot add new session: media-relay is shutting down")
+                    log.debug('cannot add new session: media-relay is shutting down')
                     return 'halting'
             try:
                 local_media = self.session_manager.update_session(dispatcher, **headers)
             except RelayPortsExhaustedError:
-                log.error("Could not reserve relay ports for session, all allocated ports are being used")
-                return "error"
+                log.error('Could not reserve relay ports for session, all allocated ports are being used')
+                return 'error'
             if local_media:
-                return " ".join([RelayConfig.advertised_ip or local_media[0][0]] + [str(media[1]) for media in local_media])
+                return ' '.join([RelayConfig.advertised_ip or local_media[0][0]] + [str(media[1]) for media in local_media])
         else: # remove
             session = self.session_manager.remove_session(**headers)
             if session is None:
-                return "error"
+                return 'error'
             else:
                 return cjson.encode(session.statistics)
 
@@ -331,10 +331,10 @@ class MediaRelay(MediaRelayBase):
         connector = self.dispatcher_connectors.get(session.dispatcher)
         if connector is None:
             connector = self.old_connectors.get(session.dispatcher)
-        if connector and connector.state == "connected":
-            connector.transport.write(" ".join(["expired", cjson.encode(session.statistics)]) + "\r\n")
+        if connector and connector.state == 'connected':
+            connector.transport.write(' '.join(['expired', cjson.encode(session.statistics)]) + '\r\n')
         else:
-            log.warn("dispatcher for expired session is no longer online, statistics are lost!")
+            log.warning('dispatcher for expired session is no longer online, statistics are lost!')
 
     def add_session(self, dispatcher):
         self.dispatcher_session_count[dispatcher] = self.dispatcher_session_count.get(dispatcher, 0) + 1

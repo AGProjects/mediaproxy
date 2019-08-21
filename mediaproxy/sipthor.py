@@ -16,15 +16,15 @@ from mediaproxy.relay import SRVMediaRelayBase
 
 if ThorNetworkConfig.domain is None:
     # SIP Thor is installed but disabled. Fake an ImportError to start in standalone media relay mode.
-    log.warn("SIP Thor is installed but disabled from the configuration")
-    raise ImportError("SIP Thor is disabled")
+    log.warning('SIP Thor is installed but disabled from the configuration')
+    raise ImportError('SIP Thor is disabled')
 
 
 class SIPThorMediaRelayBase(EventServiceClient, SRVMediaRelayBase):
-    topics = ["Thor.Members"]
+    topics = ['Thor.Members']
 
     def __init__(self):
-        self.node = GenericThorEntity(ThorNetworkConfig.node_ip, ["media_relay"], version=__version__)
+        self.node = GenericThorEntity(ThorNetworkConfig.node_ip, ['media_relay'], version=__version__)
         self.presence_message = ThorEvent('Thor.Presence', self.node.id)
         self.shutdown_message = ThorEvent('Thor.Leave', self.node.id)
         self.sipthor_dispatchers = []
@@ -36,7 +36,7 @@ class SIPThorMediaRelayBase(EventServiceClient, SRVMediaRelayBase):
 
     def handle_event(self, event):
         if not self.shutting_down:
-            sip_proxy_ips = [node.ip for node in ThorEntities(event.message, role="sip_proxy")]
+            sip_proxy_ips = [node.ip for node in ThorEntities(event.message, role='sip_proxy')]
             self.sipthor_dispatchers = [(ip, DispatcherIPAddress.default_port) for ip in sip_proxy_ips]
             self.update_dispatchers(self.sipthor_dispatchers + self.additional_dispatchers)
 
