@@ -2,15 +2,16 @@
 
 
 if __name__ == '__main__':
+    import mediaproxy
     import errno
     import sys
     import subprocess
-    from optparse import OptionParser
+
     from application import log
     from application.configuration import ConfigFile, datatypes
     from application.process import process, ProcessError
     from application.version import Version
-    import mediaproxy
+    from argparse import ArgumentParser
 
     IP_FORWARD_FILE     = '/proc/sys/net/ipv4/ip_forward'
     CONNTRACK_ACCT_FILE = '/proc/sys/net/netfilter/nf_conntrack_acct'
@@ -24,14 +25,23 @@ if __name__ == '__main__':
     process.configuration.subdirectory = mediaproxy.mediaproxy_subdirectory
     process.runtime.subdirectory = mediaproxy.mediaproxy_subdirectory
 
-    default_pid = process.runtime.file('{}.pid'.format(name))
+    parser = ArgumentParser(usage='%(prog)s [options]')
+    parser.add_argument('--version', action='version', version='%(prog)s {}'.format(mediaproxy.__version__))
+    parser.add_argument('--systemd', action='store_true', help='run as a systemd simple service and log to journal')
+    parser.add_argument('--no-fork', action='store_false', dest='fork', help='run in the foreground and log to the terminal')
+    parser.add_argument('--config-dir', dest='config_directory', default=None, help='the configuration directory ({})'.format(process.configuration.system_directory), metavar='PATH')
+    parser.add_argument('--runtime-dir', dest='runtime_directory', default=None, help='the runtime directory ({})'.format(process.runtime.directory), metavar='PATH')
+    parser.add_argument('--debug', action='store_true', help='enable verbose logging')
+    parser.add_argument('--debug-memory', action='store_true', help='enable memory debugging')
 
-    parser = OptionParser(version="%%prog %s" % mediaproxy.__version__)
-    parser.add_option("--no-fork", action="store_false", dest="fork", default=1, help="run the process in the foreground (for debugging)")
-    parser.add_option("--pid", dest="pid_file", default=default_pid, help="pid file (%s)" % default_pid, metavar="File")
-    (options, args) = parser.parse_args()
+    options = parser.parse_args()
 
     log.Formatter.prefix_format = '{record.levelname:<8s} '
+
+    if options.config_directory is not None:
+        process.configuration.local_directory = options.config_directory
+    if options.runtime_directory is not None:
+        process.runtime.directory = options.runtime_directory
 
     if not sys.platform.startswith('linux'):
         log.critical('Cannot start %s. A Linux host is required for operation.' % fullname)
@@ -39,7 +49,7 @@ if __name__ == '__main__':
 
     try:
         subprocess.call(['modprobe', 'ip_tables'], env={'PATH': '/usr/sbin:/sbin:/usr/bin:/bin'})
-    except OSError, e:
+    except OSError as e:
         log.critical('Cannot start %s: failed to load the ip_tables kernel module: %s' % (fullname, e))
         sys.exit(1)
 
@@ -65,7 +75,7 @@ if __name__ == '__main__':
     try:
         with open(CONNTRACK_ACCT_FILE, 'w') as acct_file:
             acct_file.write('1')
-    except (IOError, OSError), e:
+    except (IOError, OSError) as e:
         if e.errno != errno.ENOENT:
             log.critical('Could not enable conntrack rule counters (check %s): %s' % (CONNTRACK_ACCT_FILE, e))
             sys.exit(1)
@@ -73,10 +83,14 @@ if __name__ == '__main__':
     config_file = ConfigFile(mediaproxy.configuration_file)
     log.level.current = config_file.get_setting('Relay', 'log_level', type=datatypes.LogLevel, default=log.level.DEBUG)
 
-    if options.fork:
+    if options.systemd:
+        from systemd.journal import JournalHandler
+        log.set_handler(JournalHandler(SYSLOG_IDENTIFIER=name))
+        log.capture_output()
+    elif options.fork:
         try:
-            process.daemonize(options.pid_file)
-        except ProcessError, e:
+            process.daemonize(pidfile='{}.pid'.format(name))
+        except ProcessError as e:
             log.critical('Cannot start %s: %s' % (fullname, e))
             sys.exit(1)
         log.use_syslog(name)
@@ -85,17 +99,18 @@ if __name__ == '__main__':
 
     try:
         from mediaproxy.relay import MediaRelay
-        if not options.fork:
+        if options.debug:
+            log.level.current = log.level.DEBUG
+        if options.debug_memory:
             from application.debug.memory import memory_dump
         relay = MediaRelay()
-    except Exception, e:
+    except Exception as e:
         log.critical('Failed to create %s: %s' % (fullname, e))
-        if e.__class__ is not RuntimeError:
+        if type(e) is not RuntimeError:
             log.exception()
         sys.exit(1)
 
     relay.run()
 
-    if not options.fork:
-        #from application.debug.memory import memory_dump
+    if options.debug_memory:
         memory_dump()
