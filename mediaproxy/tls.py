@@ -23,7 +23,7 @@ class FileDescriptor(object):
     def get(self):
         path = process.config_file(self.path)
         if path is None:
-            raise RuntimeError("missing or unreadable file: %s" % self.path)
+            raise RuntimeError('missing or unreadable file: %s' % self.path)
         mtime = os.stat(path)[stat.ST_MTIME]
         if self.timestamp < mtime:
             f = open(path)
@@ -37,26 +37,32 @@ class FileDescriptor(object):
 
 class X509Entity(object):
     type = None
+
     def __init__(self, name_attr):
         self.name_attr = name_attr
         self.descriptors = {}
+
     def __get__(self, obj, type_=None):
         name = getattr(obj or type_, self.name_attr, None)
         if name is None:
             return None
         descriptor = self.descriptors.setdefault(name, FileDescriptor(name, self.type))
         return descriptor.get()
+
     def __set__(self, obj, value):
-        raise AttributeError("cannot set attribute")
+        raise AttributeError('cannot set attribute')
+
     def __delete__(self, obj):
-        raise AttributeError("cannot delete attribute")
+        raise AttributeError('cannot delete attribute')
 
 
 class X509Certificate(X509Entity):
     type = crypto.X509Certificate
 
+
 class X509PrivateKey(X509Entity):
     type = crypto.X509PrivateKey
+
 
 class X509CRL(X509Entity):
     type = crypto.X509CRL
@@ -65,8 +71,8 @@ class X509CRL(X509Entity):
 class X509Credentials(twisted.X509Credentials):
     """SIPThor X509 credentials"""
 
-    X509cert_name = None ## will be defined by each instance
-    X509key_name  = None ## will be defined by each instance
+    X509cert_name = None  # will be defined by each instance
+    X509key_name  = None  # will be defined by each instance
     X509ca_name   = 'ca.pem'
     X509crl_name  = 'crl.pem'
 
@@ -81,4 +87,3 @@ class X509Credentials(twisted.X509Credentials):
         twisted.X509Credentials.__init__(self, self.X509cert, self.X509key, [self.X509ca], [self.X509crl])
         self.verify_peer = True
         self.verify_period = TLSConfig.verify_interval
-
