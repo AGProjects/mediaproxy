@@ -24,6 +24,8 @@ if __name__ == '__main__':
     parser.add_option("--pid", dest="pid_file", default=default_pid, help="pid file (%s)" % default_pid, metavar="File")
     (options, args) = parser.parse_args()
 
+    log.Formatter.prefix_format = '{record.levelname:<8s} '
+
     config_file = ConfigFile(mediaproxy.configuration_file)
     log.level.current = config_file.get_setting('Dispatcher', 'log_level', type=datatypes.LogLevel, default=log.level.DEBUG)
 

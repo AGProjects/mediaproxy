@@ -31,6 +31,8 @@ if __name__ == '__main__':
     parser.add_option("--pid", dest="pid_file", default=default_pid, help="pid file (%s)" % default_pid, metavar="File")
     (options, args) = parser.parse_args()
 
+    log.Formatter.prefix_format = '{record.levelname:<8s} '
+
     if not sys.platform.startswith('linux'):
         log.critical('Cannot start %s. A Linux host is required for operation.' % fullname)
         sys.exit(1)
