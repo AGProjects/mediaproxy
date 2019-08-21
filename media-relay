@@ -2,8 +2,6 @@
 
 """MediaProxy Relay component"""
 
-from __future__ import with_statement
-
 
 if __name__ == '__main__':
     import errno
