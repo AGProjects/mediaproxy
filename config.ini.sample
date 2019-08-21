@@ -108,7 +108,7 @@
 [Dispatcher]
 ; Local socket on which to communicate with OpenSIPS. The OpenSIPS mediaproxy
 ; module should be configured to connect to this socket. If a relative path,
-; /var/run/mediaproxy will be prepended. Default value is dispatcher.sock.
+; the runtime directory will be prepended. Default value is dispatcher.sock.
 ;
 ;socket_path = dispatcher.sock
 
@@ -236,5 +236,5 @@
 ; Configure interaction between the media dispatcher and OpenSIPS
 
 ; Path to OpenSIPS's UNIX filesystem socket from the mi_datagram module.
-;socket_path = /var/run/opensips/socket
+;socket_path = /run/opensips/socket
 
