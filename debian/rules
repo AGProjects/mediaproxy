@@ -3,30 +3,21 @@
 #export DH_VERBOSE=1
 
 %:
-	dh $@ --with python2,apache2
+	dh $@ --with python2,apache2 --buildsystem=pybuild
 
 override_dh_clean:
 	dh_clean
 	rm -rf build dist MANIFEST
 
+override_dh_auto_install:
+	dh_auto_install
+	mv debian/tmp/etc/mediaproxy/config.ini.sample debian/tmp/etc/mediaproxy/config.ini
+
 override_dh_install:
-	# common
-	install -m 644 config.ini.sample debian/mediaproxy-common/etc/mediaproxy/config.ini
-	# dispatcher
-	install -D -m 755 media-dispatcher debian/tmp/usr/bin/media-dispatcher
-	sed --in-place 's,/usr/bin/env python,/usr/bin/python,' debian/tmp/usr/bin/media-dispatcher
-	# relay
-	install -D -m 755 media-relay debian/tmp/usr/bin/media-relay
-	sed --in-place 's,/usr/bin/env python,/usr/bin/python,' debian/tmp/usr/bin/media-relay
-	# web sessions
+	dh_install
 	install -D -m 644 web/config/media_sessions.conf.sample debian/mediaproxy-web-sessions/etc/mediaproxy/web/media_sessions.conf
-	# install the debug extensions to -dbg package
-	dh_install "debian/tmp/usr/lib/python*/*-packages/mediaproxy/interfaces/system/*_d.so" -p mediaproxy-common-dbg
-	# Continue with regular dh_install
-	dh_install -X"*_d.so"
 
-override_dh_strip:
-	# Stripped symbols go into -dbg package
-	dh_strip --dbg-package=mediaproxy-common-dbg
+override_dh_fixperms:
+	dh_fixperms
+	chmod 600 debian/mediaproxy-common/etc/mediaproxy/config.ini
 
-.PHONY: override_dh_clean override_dh_install override_dh_strip

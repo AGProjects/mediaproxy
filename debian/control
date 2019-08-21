@@ -2,40 +2,23 @@ Source: mediaproxy
 Section: net
 Priority: optional
 Maintainer: Dan Pascu <dan@ag-projects.com>
-Uploaders: Adrian Georgescu <ag@ag-projects.com>
-Build-Depends: debhelper (>= 9), dh-apache2, dh-python, python-all-dev (>= 2.7), python-all-dbg (>= 2.7), libnetfilter-conntrack-dev (>= 0.0.89), iptables-dev (>=1.4.3)
+Uploaders: Tijmen de Mes <tijmen@ag-projects.com>
+Build-Depends: debhelper (>= 11), dh-apache2, dh-python, python-all-dev, python-all-dbg, libnetfilter-conntrack-dev, iptables-dev
 Standards-Version: 3.9.8
 
 Package: mediaproxy-common
 Architecture: any
-Depends: ${python:Depends}, ${shlibs:Depends}, ${misc:Depends}, iptables (>= 1.4.3 ), python-application (>= 1.2.8), python-cjson, python-gnutls (>= 3.0.0), python-twisted-core (>= 2.5.0), python-twisted-names, python-zope.interface
-Recommends: python-pyrad (>= 1.1), python-sqlobject
+Depends: ${python:Depends}, ${shlibs:Depends}, ${misc:Depends},
+         iptables,
+         python-application (>= 2.8.0),
+         python-cjson,
+         python-gnutls (>= 3.0.0),
+         python-pyrad,
+         python-sqlobject,
+         python-twisted-core,
+         python-twisted-names,
+         python-zope.interface
 Description: MediaProxy common files
- MediaProxy is a distributed far end NAT traversal solution for media streams
- of SIP calls. MediaProxy has a dispatcher running on the same host as the
- OpenSIPS SIP proxy and multiple media relays distributed over the network.
- The media relays work by manipulating conntrack rules in the Linux kernel to
- create paths that forward the media streams between the 2 SIP user agents
- participating in the call. Because it avoids copying stream data between
- kernel and user space like other implementations, MediaProxy can handle many
- more media streams at a time, being limited only by the network interface
- bandwidth and the Linux kernel network layer processing speed.
- .
- MediaProxy features secure encrypted communication between the dispatcher
- and the relays, advanced accounting capabilities using multiple backends,
- support for any combination of audio and video streams, realtime statistics,
- T.38 fax support as well as automatic load balancing and redundancy among
- the active relays.
- .
- This package includes files common to all MediaProxy packages.
-
-Package: mediaproxy-common-dbg
-Architecture: any
-Priority: extra
-Section: debug
-Depends: ${shlibs:Depends}, ${misc:Depends}, mediaproxy-common (= ${binary:Version})
-Recommends: python-all-dbg
-Description: MediaProxy common files (debug version)
  MediaProxy is a distributed far end NAT traversal solution for media streams
  of SIP calls. MediaProxy has a dispatcher running on the same host as the
  OpenSIPS SIP proxy and multiple media relays distributed over the network.
@@ -100,7 +83,7 @@ Description: MediaProxy relay for OpenSIPS
 
 Package: mediaproxy-web-sessions
 Architecture: all
-Depends: ${misc:Depends}, libapache2-mod-php | libapache2-mod-php5
+Depends: ${misc:Depends}, libapache2-mod-php
 Description: MediaProxy sessions web view
  MediaProxy is a distributed far end NAT traversal solution for media streams
  of SIP calls. MediaProxy has a dispatcher running on the same host as the

@@ -1,9 +1,25 @@
-The certificates in this directory are provided only as samples to make it
-easy for someone to try out MediaProxy for testing/evaluation purposes or to
-have an example of what the certificates need to contain.
+Certificates used by the mediaproxy components:
+
+ca.pem         - Certificate authority
+crl.pem        - Certificate revocation list
+dispatcher.crt - Media dispatcher certificate
+dispatcher.key - Media dispatcher private key
+relay.crt      - Media relay certificate
+relay.key      - Media relay private key
+
+
+IMPORTANT NOTE:
+
+The certificates that come with mediaproxy are provided as samples, which are
+only meant to be used for testing/evaluation purposes or to serve as examples
+for what the certificates need to contain.
 
 Do _NOT_ use them in a production environment, as anyone who has downloaded
 mediaproxy will be able to connect to your servers using them.
+
+The included certificates can either be found in the source tree in the tls
+subdirectory or in /usr/share/doc/mediaproxy-common/tls (on a Debian/Ubuntu
+system; on other Linux distributions the path might be different).
 
 To generate your own certificates, we recommend you use tinyca available at
 https://opsec.eu/src/tinyca/ or directly available as a Debian package.

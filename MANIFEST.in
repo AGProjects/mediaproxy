@@ -1,12 +1,12 @@
-recursive-include debian  changelog compat control copyright pycompat rules
-recursive-include debian  *.dirs *.install *.init *.docs *.manpages
-recursive-include debian  *.apache2 *.conf *.preinst
+recursive-include debian  changelog compat control copyright rules
+recursive-include debian  *.apache2 *.conf *.docs *.install *.init
+recursive-include debian  *.lintian-overrides *.manpages *.preinst
 recursive-include debian/source  format
-recursive-include doc/man *.[1-9]
+recursive-include doc/man *.1
 recursive-include radius  *
 recursive-include test    *.py multitest
-recursive-include tls     .placeholder README *.crt *.key *.pem
+recursive-include tls     README *.crt *.key *.pem
 recursive-include web     *
 prune debian/tmp
 prune debian/mediaproxy-*
-include INSTALL LICENSE MANIFEST.in TODO build_inplace config.ini.sample
+include INSTALL LICENSE MANIFEST.in TODO build_inplace

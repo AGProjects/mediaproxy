@@ -48,6 +48,7 @@ setup(
     ],
 
     packages=['mediaproxy', 'mediaproxy.configuration', 'mediaproxy.interfaces', 'mediaproxy.interfaces.accounting', 'mediaproxy.interfaces.system'],
+    data_files=[('/etc/mediaproxy', ['config.ini.sample']), ('/etc/mediaproxy/radius', ['radius/dictionary']), ('/etc/mediaproxy/tls', ['tls/README'])],
     scripts=scripts,
     ext_modules=ext_modules
 )

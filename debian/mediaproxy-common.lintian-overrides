@@ -1,0 +1,2 @@
+# This file may contain passwords.
+mediaproxy-common: non-standard-file-perm etc/mediaproxy/config.ini 0600 != 0644
