@@ -1,11 +1,6 @@
-This package was debianized by Dan Pascu <dan@ag-projects.com> on
-Tue, 27 May 2008 19:14:45 +0300
+Copyright (C) 2007-2019 AG Projects http://ag-projects.com
 
-Copyright (C) 2007-2008 AG Projects
-
-Authors: Ruud Klaver, Dan Pascu
-
-License
+License GPL-2
 
     This package is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -22,7 +17,4 @@ License
 
 On Debian systems, the complete text of the GNU General Public License can
 be found in `/usr/share/common-licenses/GPL-2'.
-
-The Debian packaging is (C) 2008, Dan Pascu <dan@ag-projects.com> and it is
-licensed under the GPL, see above.
 
