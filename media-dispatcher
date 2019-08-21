@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-"""MediaProxy Dispatcher component"""
-
 
 if __name__ == '__main__':
     import sys
