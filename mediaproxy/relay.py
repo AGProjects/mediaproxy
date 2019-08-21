@@ -4,15 +4,17 @@
 import cjson
 import signal
 import resource
-from time import time
 
-try:    from twisted.internet import epollreactor; epollreactor.install()
-except: raise RuntimeError("mandatory epoll reactor support is missing from the twisted framework")
+try:
+    from twisted.internet import epollreactor; epollreactor.install()
+except:
+    raise RuntimeError('mandatory epoll reactor support is not available from the twisted framework')
 
 from application import log
 from application.process import process
 from gnutls.errors import CertificateError, CertificateSecurityError
 from gnutls.interfaces.twisted import TLSContext
+from time import time
 from twisted.protocols.basic import LineOnlyReceiver
 from twisted.internet.error import ConnectionDone, TCPTimedOutError, DNSLookupError
 from twisted.internet.protocol import ClientFactory
@@ -31,8 +33,8 @@ from mediaproxy.scheduler import RecurrentCall, KeepRunning
 from mediaproxy.tls import X509Credentials
 
 
-## Increase the system limit for the maximum number of open file descriptors
-## to be able to handle connections to all ports in port_range
+# Increase the system limit for the maximum number of open file descriptors
+# to be able to handle connections to all ports in port_range
 fd_limit = RelayConfig.port_range.end - RelayConfig.port_range.start + 1000
 try:
     resource.setrlimit(resource.RLIMIT_NOFILE, (fd_limit, fd_limit))
@@ -44,6 +46,7 @@ else:
         raise RuntimeError("Allocated resource limit for maximum open file descriptors is less then requested (%d instead of %d)" % (new_limits[0], fd_limit))
     else:
         log.msg("Set resource limit for maximum open file descriptors to %d" % fd_limit)
+
 
 class RelayClientProtocol(LineOnlyReceiver):
     noisy = False

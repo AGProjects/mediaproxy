@@ -358,7 +358,7 @@ class RelayFactory(Factory):
     def send_command(self, command, headers):
         try:
             parsed_headers = dict(header.split(": ", 1) for header in headers)
-        except:
+        except Exception:
             raise RelayError("Could not parse headers from OpenSIPs")
         try:
             call_id = parsed_headers["call_id"]
@@ -370,7 +370,7 @@ class RelayFactory(Factory):
             if relay not in self.relays:
                 raise RelayError("Relay for this session (%s) is no longer connected" % relay)
             return self.relays[relay].send_command(command, headers)
-        ## We do not have a session for this call_id or the session is already expired
+        # We do not have a session for this call_id or the session is already expired
         if command == "update":
             preferred_relay = parsed_headers.get("media_relay")
             try_relays = deque(protocol for protocol in self.relays.itervalues() if protocol.active and protocol.ip != preferred_relay)
@@ -385,7 +385,7 @@ class RelayFactory(Factory):
             defer.addCallback(self._add_session, try_relays, call_id, parsed_headers)
             return defer
         elif command == 'remove' and session:
-            ## This is the remove we received for an expired session for which we triggered dialog termination
+            # This is the remove we received for an expired session for which we triggered dialog termination
             del self.sessions[call_id]
             return 'removed'
         else:
@@ -426,7 +426,7 @@ class RelayFactory(Factory):
         return defer
 
     def _got_statistics(self, results):
-        return "[%s]" % ', '.join(result[1:-1] for succeeded, result in results if succeeded and result!='[]')
+        return '[%s]' % ', '.join(result[1:-1] for succeeded, result in results if succeeded and result != '[]')
 
     def connection_lost(self, relay):
         if relay not in self.relays.itervalues():

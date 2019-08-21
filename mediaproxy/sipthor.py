@@ -15,7 +15,7 @@ from mediaproxy.relay import SRVMediaRelayBase
 
 
 if ThorNetworkConfig.domain is None:
-    ## SIP Thor is installed but disabled. Fake an ImportError to start in standalone media relay mode.
+    # SIP Thor is installed but disabled. Fake an ImportError to start in standalone media relay mode.
     log.warn("SIP Thor is installed but disabled from the configuration")
     raise ImportError("SIP Thor is disabled")
 

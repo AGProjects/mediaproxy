@@ -28,14 +28,14 @@ class MediaSessions(SQLObject):
     call_id = StringCol(length=255, dbName=DatabaseConfig.callid_column, notNone=True)
     from_tag = StringCol(length=64, dbName=DatabaseConfig.fromtag_column, notNone=True)
     to_tag = StringCol(length=64, dbName=DatabaseConfig.totag_column)
-    info = BLOBCol(length=2**24-1, dbName=DatabaseConfig.info_column) # 2**24-1 makes it a mediumblob in mysql, that can hold 16 million bytes
-    ## Indexes
+    info = BLOBCol(length=2**24-1, dbName=DatabaseConfig.info_column)  # 2**24-1 makes it a mediumblob in mysql, that can hold 16 million bytes
+    # Indexes
     callid_idx = DatabaseIndex('call_id', 'from_tag', 'to_tag', unique=True)
 
 
 try:
     MediaSessions.createTable(ifNotExists=True)
-except OperationalError, e:
+except OperationalError as e:
     log.error("cannot create the `%s' table: %s" % (DatabaseConfig.sessions_table, e))
     log.msg("please make sure that the `%s' user has the CREATE and ALTER rights on the `%s' database" % (connection.user, connection.db))
     log.msg("then restart the dispatcher, or you can create the table yourself using the following definition:")
@@ -44,11 +44,10 @@ except OperationalError, e:
     statements = ';\n'.join([sql] + constraints) + ';'
     log.msg(statements)
     log.msg("----------------- >8 -----------------")
-    #raise RuntimeError(str(e))
+    # raise RuntimeError(str(e))
 
 
 class Accounting(object):
-
     def __init__(self):
         self.handler = DatabaseAccounting()
 
@@ -64,7 +63,6 @@ class Accounting(object):
 
 
 class DatabaseAccounting(EventQueue):
-
     def __init__(self):
         EventQueue.__init__(self, self.do_accounting)
 
@@ -83,6 +81,6 @@ class DatabaseAccounting(EventQueue):
                     raise e
                 else:
                     connection.query(q)
-        except DatabaseError, e:
+        except DatabaseError as e:
             log.error("failed to insert record into database: %s" % e)
 
