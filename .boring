@@ -1,14 +1,19 @@
-# Boring file regexps:
-(^|/)_darcs($|/)
-(^|/)CVS($|/)
-(^|/)\.svn($|/)
+#
+# Boring file regular expressions
+#
+
+~$
+\#
 (^|/)\.DS_Store$
 (^|/)Thumbs\.db$
-\#
-~$
 (^|/)core(\.[0-9]+)?$
-\.(pyc|pyo|o|so|orig|bak|BAK|prof|wpu|cvsignore)$
-(^|/)config\.ini$
-(^|/)build($|/)
-(^|/)dist($|/)
+\.(pyc|pyo|o|so|orig|rej|prof|bak|BAK|tmp|wpr|wpu|swp|swo|komodoproject)$
+
+(^|/)\.idea($|/)
+(^|/)\.komodotools($|/)
+(^|/)_darcs($|/)
+
 ^MANIFEST$
+^config\.ini$
+^build($|/)
+^dist($|/)
