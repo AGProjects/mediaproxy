@@ -58,7 +58,10 @@ class ControlProtocol(LineOnlyReceiver):
         raise NotImplementedError()
 
     def connectionLost(self, reason=connectionDone):
-        log.debug("Connection to %s lost: %s" % (self.description, reason.value))
+        if isinstance(reason.value, connectionDone.type):
+            log.debug('Connection to {} closed'.format(self.description))
+        else:
+            log.debug('Connection to {} lost: {}'.format(self.description, reason.value))
         self.factory.connection_lost(self)
 
     def reply(self, reply):
