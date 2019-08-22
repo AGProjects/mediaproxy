@@ -113,7 +113,7 @@ class OpenSIPSControlProtocol(ControlProtocol):
 
 
 class ManagementControlProtocol(ControlProtocol):
-    description = 'Management interface client'
+    description = 'Management Interface'
 
     def connectionMade(self):
         if DispatcherConfig.management_use_tls and DispatcherConfig.management_passport is not None:
