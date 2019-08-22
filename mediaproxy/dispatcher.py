@@ -19,7 +19,7 @@ from gnutls.interfaces.twisted import TLSContext
 from twisted.protocols.basic import LineOnlyReceiver
 from twisted.python import failure
 from twisted.internet.error import ConnectionDone, TCPTimedOutError
-from twisted.internet.protocol import Factory
+from twisted.internet.protocol import Factory, connectionDone
 from twisted.internet.defer import Deferred, DeferredList, maybeDeferred, succeed
 from twisted.internet import reactor
 
@@ -39,7 +39,7 @@ class ControlProtocol(LineOnlyReceiver):
     def lineReceived(self, line):
         raise NotImplementedError()
 
-    def connectionLost(self, reason):
+    def connectionLost(self, reason=connectionDone):
         log.debug("Connection to %s lost: %s" % (self.description, reason.value))
         self.factory.connection_lost(self)
 
@@ -272,7 +272,7 @@ class RelayServerProtocol(LineOnlyReceiver):
         else: # update command
             defer.callback(rest)
 
-    def connectionLost(self, reason):
+    def connectionLost(self, reason=connectionDone):
         if reason.type == ConnectionDone:
             log.info('Connection with relay at %s was closed' % self.ip)
         elif reason.type == ConnectionReplaced:
