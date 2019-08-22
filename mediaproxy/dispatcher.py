@@ -30,6 +30,24 @@ from mediaproxy.scheduler import RecurrentCall, KeepRunning
 from mediaproxy.tls import X509Credentials
 
 
+class CommandError(Exception):
+    pass
+
+
+class Command(object):
+    def __init__(self, name, headers=None):
+        self.name = name
+        self.headers = headers or []
+        try:
+            self.parsed_headers = dict(header.split(': ', 1) for header in self.headers)
+        except Exception:
+            raise CommandError('Could not parse command headers')
+
+    @property
+    def call_id(self):
+        return self.parsed_headers.get('call_id')
+
+
 class ControlProtocol(LineOnlyReceiver):
     noisy = False
 
@@ -46,13 +64,13 @@ class ControlProtocol(LineOnlyReceiver):
     def reply(self, reply):
         self.transport.write(reply + "\r\n")
 
-    def _relay_error(self, failure):
-        failure.trap(RelayError)
+    def _error_handler(self, failure):
+        failure.trap(CommandError, RelayError)
         log.error(failure.value)
         self.transport.write("error\r\n")
 
     def _catch_all(self, failure):
-        log.error(failure.getBriefTraceback())
+        log.error(failure.getTraceback())
         self.transport.write("error\r\n")
 
     def _decrement(self, result):
@@ -62,31 +80,37 @@ class ControlProtocol(LineOnlyReceiver):
 
     def _add_callbacks(self, defer):
         defer.addCallback(self.reply)
-        defer.addErrback(self._relay_error)
+        defer.addErrback(self._error_handler)
         defer.addErrback(self._catch_all)
         defer.addBoth(self._decrement)
 
 
 class OpenSIPSControlProtocol(ControlProtocol):
-    description = "OpenSIPS"
+    description = 'OpenSIPS'
 
     def __init__(self):
-        self.line_buf = []
+        self.request_lines = []
         ControlProtocol.__init__(self)
 
     def lineReceived(self, line):
-        if line == "":
-            if self.line_buf:
+        if line == '':
+            if self.request_lines:
                 self.in_progress += 1
-                defer = self.factory.dispatcher.send_command(self.line_buf[0], self.line_buf[1:])
+                defer = maybeDeferred(self.handle_request, self.request_lines)
                 self._add_callbacks(defer)
-                self.line_buf = []
-        elif not line.endswith(": "):
-            self.line_buf.append(line)
+                self.request_lines = []
+        elif not line.endswith(': '):
+            self.request_lines.append(line)
+
+    def handle_request(self, request_lines):
+        command = Command(name=request_lines[0], headers=request_lines[1:])
+        if command.call_id is None:
+            raise CommandError('Request from OpenSIPS is missing the call_id header')
+        return self.factory.dispatcher.send_command(command)
 
 
 class ManagementControlProtocol(ControlProtocol):
-    description = "Management interface client"
+    description = 'Management interface client'
 
     def connectionMade(self):
         if DispatcherConfig.management_use_tls and DispatcherConfig.management_passport is not None:
@@ -96,19 +120,19 @@ class ManagementControlProtocol(ControlProtocol):
                 return
 
     def lineReceived(self, line):
-        if line in ["quit", "exit"]:
+        if line in ['quit', 'exit']:
             self.transport.loseConnection()
-        elif line == "summary":
+        elif line == 'summary':
             defer = self.factory.dispatcher.relay_factory.get_summary()
             self._add_callbacks(defer)
-        elif line == "sessions":
+        elif line == 'sessions':
             defer = self.factory.dispatcher.relay_factory.get_statistics()
             self._add_callbacks(defer)
-        elif line == "version":
+        elif line == 'version':
             self.reply(__version__)
         else:
-            log.error("Unknown command on management interface: %s" % line)
-            self.reply("error")
+            log.error('Unknown command on management interface: %s' % line)
+            self.reply('error')
 
 
 class ControlFactory(Factory):
@@ -175,19 +199,20 @@ class RelayServerProtocol(LineOnlyReceiver):
     def active(self):
         return not self.halting and not self.timedout
 
-    def send_command(self, command, headers):
-        log.debug('Issuing "%s" command to relay at %s' % (command, self.ip))
-        seq = str(self.sequence_number)
+    def send_command(self, command):
+        log.debug('Issuing %r command to relay at %s' % (command.name, self.ip))
+        separator = '\r\n'
+        sequence_number = str(self.sequence_number)
         self.sequence_number += 1
         defer = Deferred()
-        timer = reactor.callLater(DispatcherConfig.relay_timeout, self._timeout, seq, defer)
-        self.commands[seq] = (command, defer, timer)
-        self.transport.write("\r\n".join([" ".join([command, seq])] + headers + ["", ""]))
+        timer = reactor.callLater(DispatcherConfig.relay_timeout, self._timeout, sequence_number)
+        self.commands[sequence_number] = (command, defer, timer)
+        self.transport.write(separator.join(['{} {}'.format(command.name, sequence_number)] + command.headers) + 2*separator)
         return defer
 
-    def _timeout(self, seq, defer):
-        del self.commands[seq]
-        defer.errback(RelayError("Relay at %s timed out" % self.ip))
+    def _timeout(self, sequence_number):
+        command, defer, timer = self.commands.pop(sequence_number)
+        defer.errback(RelayError('%r command failed: relay at %s timed out' % (command.name, self.ip)))
         if self.timedout is False:
             self.timedout = True
             self.disconnect_timer = reactor.callLater(DispatcherConfig.relay_recover_interval, self.transport.connectionLost, failure.Failure(TCPTimedOutError()))
@@ -203,35 +228,35 @@ class RelayServerProtocol(LineOnlyReceiver):
 
     def lineReceived(self, line):
         try:
-            first, rest = line.split(" ", 1)
+            first, rest = line.split(' ', 1)
         except ValueError:
             first = line
-            rest = ""
-        if first == "expired":
+            rest = ''
+        if first == 'expired':
             try:
                 stats = cjson.decode(rest)
             except cjson.DecodeError:
-                log.error("Error decoding JSON from relay at %s" % self.ip)
+                log.error('Error decoding JSON from relay at %s' % self.ip)
             else:
                 call_id = stats['call_id']
                 session = self.factory.sessions.get(call_id, None)
                 if session is None:
-                    log.error("Unknown session with call_id %s expired at relay %s" % (call_id, self.ip))
+                    log.error('Unknown session with call_id %s expired at relay %s' % (call_id, self.ip))
                     return
                 if session.relay_ip != self.ip:
-                    log.error("session with call_id %s expired at relay %s, but is actually at relay %s, ignoring" % (call_id, self.ip, session.relay_ip))
+                    log.error('session with call_id %s expired at relay %s, but is actually at relay %s, ignoring' % (call_id, self.ip, session.relay_ip))
                     return
-                all_streams_ice = all(stream_info["status"] == "unselected ICE candidate" for stream_info in stats["streams"])
+                all_streams_ice = all(stream_info['status'] == 'unselected ICE candidate' for stream_info in stats['streams'])
                 if all_streams_ice:
                     log.info('session with call_id %s from relay %s removed because ICE was used' % (call_id, session.relay_ip))
-                    stats["timed_out"] = False
+                    stats['timed_out'] = False
                 else:
                     log.info('session with call_id %s from relay %s did timeout' % (call_id, session.relay_ip))
-                    stats["timed_out"] = True
-                stats["dialog_id"] = session.dialog_id
-                stats["all_streams_ice"] = all_streams_ice
+                    stats['timed_out'] = True
+                stats['dialog_id'] = session.dialog_id
+                stats['all_streams_ice'] = all_streams_ice
                 self.factory.dispatcher.update_statistics(stats)
-                if session.dialog_id is not None and stats["start_time"] is not None and not all_streams_ice:
+                if session.dialog_id is not None and stats['start_time'] is not None and not all_streams_ice:
                     self.factory.dispatcher.opensips_management.end_dialog(session.dialog_id)
                     session.expire_time = time()
                 else:
@@ -248,28 +273,28 @@ class RelayServerProtocol(LineOnlyReceiver):
         try:
             command, defer, timer = self.commands.pop(first)
         except KeyError:
-            log.error("Got unexpected response from relay at %s: %s" % (self.ip, line))
+            log.error('Got unexpected response from relay at %s: %s' % (self.ip, line))
             return
         timer.cancel()
-        if rest == "error":
-            defer.errback(RelayError("Received error from relay at %s in response to `%s' command" % (self.ip, command)))
-        elif rest == "halting":
+        if rest == 'error':
+            defer.errback(RelayError('Received error from relay at %s in response to %r command' % (self.ip, command.name)))
+        elif rest == 'halting':
             self.halting = True
-            defer.errback(RelayError("Relay at %s is shutting down" % self.ip))
-        elif command == "remove":
+            defer.errback(RelayError('Relay at %s is shutting down' % self.ip))
+        elif command.name == 'remove':
             try:
                 stats = cjson.decode(rest)
             except cjson.DecodeError:
-                log.error("Error decoding JSON from relay at %s" % self.ip)
+                log.error('Error decoding JSON from relay at %s' % self.ip)
             else:
                 call_id = stats['call_id']
                 session = self.factory.sessions[call_id]
-                stats["dialog_id"] = session.dialog_id
-                stats["timed_out"] = False
+                stats['dialog_id'] = session.dialog_id
+                stats['timed_out'] = False
                 self.factory.dispatcher.update_statistics(stats)
                 del self.factory.sessions[call_id]
-            defer.callback("removed")
-        else: # update command
+            defer.callback('removed')
+        else:  # update command
             defer.callback(rest)
 
     def connectionLost(self, reason=connectionDone):
@@ -278,10 +303,10 @@ class RelayServerProtocol(LineOnlyReceiver):
         elif reason.type == ConnectionReplaced:
             log.warning('Old connection with relay at %s was lost' % self.ip)
         else:
-            log.error("Connection with relay at %s was lost: %s" % (self.ip, reason.value))
+            log.error('Connection with relay at %s was lost: %s' % (self.ip, reason.value))
         for command, defer, timer in self.commands.itervalues():
             timer.cancel()
-            defer.errback(RelayError("Relay at %s disconnected" % self.ip))
+            defer.errback(RelayError('%r command failed: relay at %s disconnected' % (command.name, self.ip)))
         if self.timedout is True:
             self.timedout = False
             if self.disconnect_timer.active():
@@ -291,9 +316,9 @@ class RelayServerProtocol(LineOnlyReceiver):
 
 
 class RelaySession(object):
-    def __init__(self, relay_ip, command_headers):
+    def __init__(self, relay_ip, command):
         self.relay_ip = relay_ip
-        self.dialog_id = command_headers.get('dialog_id')
+        self.dialog_id = command.parsed_headers.get('dialog_id')
         self.expire_time = None
 
 
@@ -340,7 +365,7 @@ class RelayFactory(Factory):
         timer = self.cleanup_timers.pop(relay.ip, None)
         if timer is not None:
             timer.cancel()
-        defer = relay.send_command('sessions', [])
+        defer = relay.send_command(Command('sessions'))
         defer.addCallback(self._cb_purge_sessions, relay.ip)
 
     def _cb_purge_sessions(self, result, relay_ip):
@@ -353,24 +378,16 @@ class RelayFactory(Factory):
                     self.dispatcher.opensips_management.end_dialog(session.dialog_id)
                 del self.sessions[session_id]
 
-    def send_command(self, command, headers):
-        try:
-            parsed_headers = dict(header.split(': ', 1) for header in headers)
-        except Exception:
-            raise RelayError('Could not parse headers from OpenSIPs')
-        try:
-            call_id = parsed_headers['call_id']
-        except KeyError:
-            raise RelayError('Missing call_id header')
-        session = self.sessions.get(call_id, None)
+    def send_command(self, command):
+        session = self.sessions.get(command.call_id, None)
         if session and session.expire_time is None:
             relay = session.relay_ip
             if relay not in self.relays:
                 raise RelayError('Relay for this session (%s) is no longer connected' % relay)
-            return self.relays[relay].send_command(command, headers)
+            return self.relays[relay].send_command(command)
         # We do not have a session for this call_id or the session is already expired
-        if command == 'update':
-            preferred_relay = parsed_headers.get("media_relay")
+        if command.name == 'update':
+            preferred_relay = command.parsed_headers.get('media_relay')
             try_relays = deque(protocol for protocol in self.relays.itervalues() if protocol.active and protocol.ip != preferred_relay)
             random.shuffle(try_relays)
             if preferred_relay is not None:
@@ -379,35 +396,35 @@ class RelayFactory(Factory):
                     try_relays.appendleft(protocol)
                 else:
                     log.warning('user requested media_relay %s is not available' % preferred_relay)
-            defer = self._try_next(try_relays, command, headers)
-            defer.addCallback(self._add_session, try_relays, call_id, parsed_headers)
+            defer = self._try_next(try_relays, command)
+            defer.addCallback(self._add_session, try_relays, command)
             return defer
-        elif command == 'remove' and session:
+        elif command.name == 'remove' and session:
             # This is the remove we received for an expired session for which we triggered dialog termination
-            del self.sessions[call_id]
+            del self.sessions[command.call_id]
             return 'removed'
         else:
-            raise RelayError("Got `%s' command from OpenSIPS for unknown session with call-id `%s'" % (command, call_id))
+            raise RelayError('Got {0.name!r} command from OpenSIPS for unknown session with call-id {0.call_id}'.format(command))
 
-    def _add_session(self, result, try_relays, call_id, parsed_headers):
-        self.sessions[call_id] = RelaySession(try_relays[0].ip, parsed_headers)
+    def _add_session(self, result, try_relays, command):
+        self.sessions[command.call_id] = RelaySession(try_relays[0].ip, command)
         return result
 
-    def _relay_error(self, failure, try_relays, command, headers):
+    def _relay_error(self, failure, try_relays, command):
         failure.trap(RelayError)
         failed_relay = try_relays.popleft()
         log.warning('Relay %s failed: %s' % (failed_relay, failure.value))
-        return self._try_next(try_relays, command, headers)
+        return self._try_next(try_relays, command)
 
-    def _try_next(self, try_relays, command, headers):
+    def _try_next(self, try_relays, command):
         if len(try_relays) == 0:
             raise RelayError('No suitable relay found')
-        defer = try_relays[0].send_command(command, headers)
-        defer.addErrback(self._relay_error, try_relays, command, headers)
+        defer = try_relays[0].send_command(command)
+        defer.addErrback(self._relay_error, try_relays, command)
         return defer
 
     def get_summary(self):
-        defer = DeferredList([relay.send_command('summary', []).addErrback(self._summary_error, ip) for ip, relay in self.relays.iteritems()])
+        defer = DeferredList([relay.send_command(Command('summary')).addErrback(self._summary_error, ip) for ip, relay in self.relays.iteritems()])
         defer.addCallback(self._got_summaries)
         return defer
 
@@ -419,7 +436,7 @@ class RelayFactory(Factory):
         return '[%s]' % ', '.join(result for succeeded, result in results if succeeded)
 
     def get_statistics(self):
-        defer = DeferredList([relay.send_command('sessions', []) for relay in self.relays.itervalues()])
+        defer = DeferredList([relay.send_command(Command('sessions')) for relay in self.relays.itervalues()])
         defer.addCallback(self._got_statistics)
         return defer
 
@@ -485,7 +502,7 @@ class Dispatcher(object):
             self.management_listener = reactor.listenTCP(management_port, self.management_factory, interface=management_addr)
 
     def run(self):
-        log.debug('Running with the twisted {0.__class__.__name__}'.format(reactor))
+        log.debug('Using {0.__class__.__name__}'.format(reactor))
         process.signals.add_handler(signal.SIGHUP, self._handle_SIGHUP)
         process.signals.add_handler(signal.SIGINT, self._handle_SIGINT)
         process.signals.add_handler(signal.SIGTERM, self._handle_SIGTERM)
@@ -493,8 +510,8 @@ class Dispatcher(object):
             accounting_module.start()
         reactor.run(installSignalHandlers=False)
 
-    def send_command(self, command, headers):
-        return maybeDeferred(self.relay_factory.send_command, command, headers)
+    def send_command(self, command):
+        return maybeDeferred(self.relay_factory.send_command, command)
 
     def update_statistics(self, stats):
         log.debug('Got statistics: %s' % stats)
