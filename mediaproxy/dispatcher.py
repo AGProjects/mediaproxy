@@ -65,16 +65,16 @@ class ControlProtocol(LineOnlyReceiver):
         self.factory.connection_lost(self)
 
     def reply(self, reply):
-        self.transport.write(reply + "\r\n")
+        self.transport.write(reply + self.delimiter)
 
     def _error_handler(self, failure):
         failure.trap(CommandError, RelayError)
         log.error(failure.value)
-        self.transport.write("error\r\n")
+        self.reply('error')
 
     def _catch_all(self, failure):
         log.error(failure.getTraceback())
-        self.transport.write("error\r\n")
+        self.reply('error')
 
     def _decrement(self, result):
         self.in_progress = 0
@@ -204,14 +204,16 @@ class RelayServerProtocol(LineOnlyReceiver):
 
     def send_command(self, command):
         log.debug('Issuing %r command to relay at %s' % (command.name, self.ip))
-        separator = '\r\n'
         sequence_number = str(self.sequence_number)
         self.sequence_number += 1
         defer = Deferred()
         timer = reactor.callLater(DispatcherConfig.relay_timeout, self._timeout, sequence_number)
         self.commands[sequence_number] = (command, defer, timer)
-        self.transport.write(separator.join(['{} {}'.format(command.name, sequence_number)] + command.headers) + 2*separator)
+        self.transport.write(self.delimiter.join(['{} {}'.format(command.name, sequence_number)] + command.headers) + 2*self.delimiter)
         return defer
+
+    def reply(self, reply):
+        self.transport.write(reply + self.delimiter)
 
     def _timeout(self, sequence_number):
         command, defer, timer = self.commands.pop(sequence_number)
@@ -265,13 +267,13 @@ class RelayServerProtocol(LineOnlyReceiver):
                 else:
                     del self.factory.sessions[call_id]
             return
-        elif first == "ping":
+        elif first == 'ping':
             if self.timedout is True:
                 self.timedout = False
                 if self.disconnect_timer.active():
                     self.disconnect_timer.cancel()
                 self.disconnect_timer = None
-            self.transport.write("pong\r\n")
+            self.reply('pong')
             return
         try:
             command, defer, timer = self.commands.pop(first)

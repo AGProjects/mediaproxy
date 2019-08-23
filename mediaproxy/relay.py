@@ -68,9 +68,12 @@ class RelayClientProtocol(LineOnlyReceiver):
             # do not use loseConnection() as it waits to flush the output buffers.
             reactor.callLater(0, self.transport.connectionLost, failure.Failure(TCPTimedOutError()))
             return None
-        self.transport.write('ping\r\n')
+        self.transport.write('ping' + self.delimiter)
         self._queued_keepalives += 1
         return KeepRunning
+
+    def reply(self, reply):
+        self.transport.write(reply + self.delimiter)
 
     def connectionMade(self):
         peer = self.transport.getPeer()
@@ -103,7 +106,7 @@ class RelayClientProtocol(LineOnlyReceiver):
                 self.headers = DecodingDict()
             else:
                 log.error('Unknown command: %s' % command)
-                self.transport.write('%s error\r\n' % seq)
+                self.reply('{} error'.format(seq))
         elif line == '':
             missing_headers = self.required_headers[self.command].difference(self.headers)
             if missing_headers:
@@ -117,7 +120,7 @@ class RelayClientProtocol(LineOnlyReceiver):
                 except Exception:
                     log.exception()
                     response = 'error'
-            self.transport.write('%s %s\r\n' % (self.seq, response))
+            self.reply('{} {}'.format(self.seq, response))
             self.command = None
         else:
             try:
@@ -330,7 +333,7 @@ class MediaRelay(MediaRelayBase):
         if connector is None:
             connector = self.old_connectors.get(session.dispatcher)
         if connector and connector.state == 'connected':
-            connector.transport.write(' '.join(['expired', cjson.encode(session.statistics)]) + '\r\n')
+            connector.transport.write(' '.join(['expired', cjson.encode(session.statistics)]) + connector.factory.protocol.delimiter)
         else:
             log.warning('dispatcher for expired session is no longer online, statistics are lost!')
 

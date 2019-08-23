@@ -62,8 +62,8 @@ class OpenSIPSControlClientProtocol(LineOnlyReceiver):
 
     def _send_command(self, command, headers):
         self.defer = Deferred()
-        data = "\r\n".join([command] + ["%s: %s" % item for item in headers.iteritems()] + ["", ""])
-        #print "writing on socket:\n%s" % data
+        data = self.delimiter.join([command] + ['%s: %s' % item for item in headers.iteritems()]) + 2*self.delimiter
+        # print("writing on socket:\n%s" % data)
         self.transport.write(data)
         return self.defer
 
