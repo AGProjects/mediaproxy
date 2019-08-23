@@ -104,21 +104,20 @@ class RelayClientProtocol(LineOnlyReceiver):
                 log.error('Unknown command: %s' % command)
                 self.transport.write('%s error\r\n' % seq)
         elif line == '':
-            try:
-                missing_headers = self.required_headers[self.command].difference(self.headers)
-                if missing_headers:
-                    for header in missing_headers:
-                        log.error("Missing mandatory header '%s' from '%s' command" % (header, self.command))
+            missing_headers = self.required_headers[self.command].difference(self.headers)
+            if missing_headers:
+                for header in missing_headers:
+                    log.error('Missing mandatory header %r from %r command' % (header, self.command))
+                response = 'error'
+            else:
+                # noinspection PyBroadException
+                try:
+                    response = self.factory.parent.got_command(self.factory.host, self.command, self.headers)
+                except Exception:
+                    log.exception()
                     response = 'error'
-                else:
-                    try:
-                        response = self.factory.parent.got_command(self.factory.host, self.command, self.headers)
-                    except Exception:
-                        log.exception()
-                        response = 'error'
-            finally:
-                self.transport.write('%s %s\r\n' % (self.seq, response))
-                self.command = None
+            self.transport.write('%s %s\r\n' % (self.seq, response))
+            self.command = None
         else:
             try:
                 name, value = line.split(": ", 1)
