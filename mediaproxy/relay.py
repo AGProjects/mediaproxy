@@ -251,8 +251,7 @@ class SRVMediaRelayBase(object):
 
 
 try:
-    from mediaproxy.sipthor import SIPThorMediaRelayBase
-    MediaRelayBase = SIPThorMediaRelayBase
+    from mediaproxy.sipthor import SIPThorMediaRelayBase as MediaRelayBase
 except ImportError:
     MediaRelayBase = SRVMediaRelayBase
 
