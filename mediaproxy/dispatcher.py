@@ -147,9 +147,9 @@ class ControlFactory(Factory):
         self.shutting_down = False
 
     def buildProtocol(self, addr):
-        prot = Factory.buildProtocol(self, addr)
-        self.protocols.append(prot)
-        return prot
+        protocol = Factory.buildProtocol(self, addr)
+        self.protocols.append(protocol)
+        return protocol
 
     def connection_lost(self, prot):
         self.protocols.remove(prot)
@@ -357,9 +357,9 @@ class RelayFactory(Factory):
     def buildProtocol(self, addr):
         ip = addr.host
         log.debug('Connection from relay at %s' % ip)
-        prot = Factory.buildProtocol(self, addr)
-        prot.ip = ip
-        return prot
+        protocol = Factory.buildProtocol(self, addr)
+        protocol.ip = ip
+        return protocol
 
     def new_relay(self, relay):
         old_relay = self.relays.pop(relay.ip, None)
