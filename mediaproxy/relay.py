@@ -256,8 +256,8 @@ try:
 except ImportError:
     MediaRelayBase = SRVMediaRelayBase
 
-class MediaRelay(MediaRelayBase):
 
+class MediaRelay(MediaRelayBase):
     def __init__(self):
         self.cred = X509Credentials(cert_name='relay')
         self.tls_context = TLSContext(self.cred)
@@ -269,7 +269,7 @@ class MediaRelay(MediaRelayBase):
         self.shutting_down = False
         self.graceful_shutdown = False
         self.start_time = time()
-        MediaRelayBase.__init__(self)
+        super(MediaRelay, self).__init__()
 
     @property
     def status(self):
