@@ -17,7 +17,7 @@ from gnutls.interfaces.twisted import TLSContext
 from time import time
 from twisted.protocols.basic import LineOnlyReceiver
 from twisted.internet.error import ConnectionDone, TCPTimedOutError, DNSLookupError
-from twisted.internet.protocol import ClientFactory
+from twisted.internet.protocol import ClientFactory, connectionDone
 from twisted.internet.defer import DeferredList, succeed
 from twisted.internet import reactor
 from twisted.python import failure
@@ -80,7 +80,7 @@ class RelayClientProtocol(LineOnlyReceiver):
                 self.transport.loseConnection(CertificateSecurityError('peer certificate not accepted'))
         self._connection_watcher = RecurrentCall(RelayConfig.keepalive_interval, self._send_keepalive)
 
-    def connectionLost(self, reason):
+    def connectionLost(self, reason=connectionDone):
         if self._connection_watcher is not None:
             self._connection_watcher.cancel()
             self._connection_watcher = None
