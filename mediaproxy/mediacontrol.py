@@ -428,7 +428,7 @@ class MediaStream(object):
                 log.debug("unselected ICE candidate for session %s but no STUN was received" % self.session)
         if substream is self.rtcp or (self.is_on_hold and reason=='conntrack timeout'):
             # Forget about the remote addresses, this will cause any
-            # re-occurence of the same traffic to be forwarded again
+            # re-occurrence of the same traffic to be forwarded again
             substream.caller.remote.forget()
             substream.caller.listener.protocol.send_packet_count = 0
             substream.callee.remote.forget()
