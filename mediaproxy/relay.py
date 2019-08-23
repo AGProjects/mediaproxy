@@ -58,6 +58,7 @@ class RelayClientProtocol(LineOnlyReceiver):
     def __init__(self):
         self.command = None
         self.seq = None
+        self.headers = DecodingDict()
         self._connection_watcher = None
         self._queued_keepalives = 0
 
