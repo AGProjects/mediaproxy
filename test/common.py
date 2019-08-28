@@ -1,9 +1,7 @@
 # Copyright (C) 2008 AG Projects
 #
 
-import sys
-sys.path.append(".")
-sys.path.append("..")
+import sys; sys.path.extend(['.', '..'])
 import os
 import random
 import string
@@ -31,11 +29,11 @@ class Config(ConfigSection):
     __cfgfile__ = mediaproxy.configuration_file
     __section__ = 'Dispatcher'
 
-    socket = "/run/mediaproxy/dispatcher.sock"
+    socket = '/run/mediaproxy/dispatcher.sock'
 
 
 random_data = os.urandom(512)
-stun_data = struct.pack("!HHIIII", 0x0001, 0, 0x2112A442, 0, 0, 0)
+stun_data = struct.pack('!HHIIII', 0x0001, 0, 0x2112A442, 0, 0, 0)
 default_host_ip = host.default_ip
 
 
@@ -45,17 +43,17 @@ class OpenSIPSControlClientProtocol(LineOnlyReceiver):
         self.defer = None
 
     def lineReceived(self, line):
-        if line == "error":
-            print "got error from dispatcher!"
+        if line == 'error':
+            print('got error from dispatcher!')
             reactor.stop()
         elif self.defer is not None:
-            print "got ip/ports from dispatcher: %s" % line
-            ip, ports = line.split(" ", 1)
+            print('got ip/ports from dispatcher: %s' % line)
+            ip, ports = line.split(' ', 1)
             defer = self.defer
             self.defer = None
             defer.callback((ip, [int(i) for i in ports.split()]))
         else:
-            print "got reply from dispatcher: %s" % line
+            print('got reply from dispatcher: %s' % line)
             defer = self.defer
             self.defer = None
             defer.callback(line)
@@ -63,15 +61,15 @@ class OpenSIPSControlClientProtocol(LineOnlyReceiver):
     def _send_command(self, command, headers):
         self.defer = Deferred()
         data = self.delimiter.join([command] + ['%s: %s' % item for item in headers.iteritems()]) + 2*self.delimiter
-        # print("writing on socket:\n%s" % data)
+        # print('writing on socket:\n%s' % data)
         self.transport.write(data)
         return self.defer
 
     def update(self, **kw_args):
-        return self._send_command("update", EncodingDict(kw_args))
+        return self._send_command('update', EncodingDict(kw_args))
 
     def remove(self, **kw_args):
-        return self._send_command("remove", EncodingDict(kw_args))
+        return self._send_command('remove', EncodingDict(kw_args))
 
 
 class OpenSIPSConnectorFactory(ClientFactory):
@@ -98,23 +96,23 @@ class MediaReceiverProtocol(DatagramProtocol):
     def datagramReceived(self, data, (host, port)):
         if not self.received_media:
             self.received_media = True
-            print "received media %d for %s from %s:%d" % (self.index, self.endpoint.name, host, port)
+            print('received media %d for %s from %s:%d' % (self.index, self.endpoint.name, host, port))
             self.defer.callback(None)
 
     def connectionRefused(self):
-        print "connection refused for media %d for %s" % (self.index, self.endpoint.name)
+        print('connection refused for media %d for %s' % (self.index, self.endpoint.name))
 
 
 class Endpoint(object):
 
     def __init__(self, sip_uri, user_agent, is_caller):
         if is_caller:
-            self.name = "caller"
+            self.name = 'caller'
         else:
-            self.name = "callee"
+            self.name = 'callee'
         self.sip_uri = sip_uri
         self.user_agent = user_agent
-        self.tag = "".join(random.sample(string.ascii_lowercase, 8))
+        self.tag = ''.join(random.sample(string.ascii_lowercase, 8))
         self.connectors = []
         self.media = []
         self.cseq = 1
@@ -133,7 +131,7 @@ class Endpoint(object):
 
     def get_media(self, use_old_hold):
         if use_old_hold:
-            ip = "0.0.0.0"
+            ip = '0.0.0.0'
         else:
             ip = default_host_ip
         return [(media_type, ip, port, direction, parameters) for media_type, port, direction, parameters in self.media]
@@ -171,7 +169,7 @@ class Session(object):
     def __init__(self, caller, callee):
         self.caller = caller
         self.callee = callee
-        self.call_id = "".join(random.sample(string.ascii_letters, 24))
+        self.call_id = ''.join(random.sample(string.ascii_letters, 24))
 
     def _get_parties(self, party):
         party = getattr(self, party)
@@ -183,7 +181,7 @@ class Session(object):
 
     def do_update(self, opensips, party, type, is_final, use_old_hold=False):
         party, other = self._get_parties(party)
-        if type == "request":
+        if type == 'request':
             from_tag = party.tag
             to_tag = other.tag
             from_uri = party.sip_uri
@@ -200,7 +198,7 @@ class Session(object):
         else:
             defer = opensips.update(call_id=self.call_id, from_tag=from_tag, to_tag=to_tag, from_uri=from_uri, to_uri=to_uri, cseq=cseq, user_agent=party.user_agent, media=party.get_media(use_old_hold), type=type, dialog_id='1234567890')
         if is_final:
-            if type == "request":
+            if type == 'request':
                 party.cseq += 1
             else:
                 other.cseq += 1
@@ -208,7 +206,8 @@ class Session(object):
 
     def do_remove(self, opensips, party):
         party, other = self._get_parties(party)
-        opensips.remove(call_id = self.call_id, from_tag = party.tag, to_tag = other.tag)
+        opensips.remove(call_id=self.call_id, from_tag=party.tag, to_tag=other.tag)
+
 
 def connect_to_dispatcher():
     factory = OpenSIPSConnectorFactory()
