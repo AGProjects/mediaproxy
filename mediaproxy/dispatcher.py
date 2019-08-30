@@ -365,6 +365,15 @@ class RelaySession(object):
         self.logger = SessionLogger(self)
         self.expire_time = None
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        del state['logger']
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self.logger = SessionLogger(self)
+
 
 class RelayFactory(Factory):
     protocol = RelayServerProtocol
