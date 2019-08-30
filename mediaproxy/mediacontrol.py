@@ -543,8 +543,6 @@ class Session(object):
                 for stream in current_streams[len(media_list):]:
                     log.debug("Stream rejected by not being included in the SDP answer: %s" % stream)
                     stream.cleanup("rejected")
-                    if stream.start_time is None:
-                        stream.start_time = now
             for stream, (media_type, media_ip, media_port, media_direction, media_parameters) in zip(current_streams, media_list):
                 if stream.media_type != media_type:
                     raise ValueError('Media types do not match: "%s" and "%s"' % (stream.media_type, media_type))
