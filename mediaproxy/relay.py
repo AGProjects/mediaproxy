@@ -180,7 +180,6 @@ class DispatcherConnectingFactory(ClientFactory):
 
 
 class SRVMediaRelayBase(object):
-
     def __init__(self):
         self.srv_monitor = RecurrentCall(RelayConfig.dns_check_interval, self._do_lookup)
         self._do_lookup()
@@ -225,6 +224,7 @@ class SRVMediaRelayBase(object):
         process.signals.add_handler(signal.SIGHUP, self._handle_SIGHUP)
         process.signals.add_handler(signal.SIGINT, self._handle_SIGINT)
         process.signals.add_handler(signal.SIGTERM, self._handle_SIGTERM)
+        process.signals.add_handler(signal.SIGUSR1, self._handle_SIGUSR1)
         reactor.run(installSignalHandlers=False)
 
     def _handle_SIGHUP(self, *args):
@@ -241,6 +241,14 @@ class SRVMediaRelayBase(object):
     def _handle_SIGTERM(self, *args):
         log.info('Received SIGTERM, shutting down.')
         reactor.callFromThread(self.shutdown)
+
+    def _handle_SIGUSR1(self, *args):
+        if log.level.current != log.level.DEBUG:
+            log.level.current = log.level.DEBUG
+            log.info('Switched logging level to DEBUG')
+        else:
+            log.info('Switched logging level to {}'.format(RelayConfig.log_level))
+            log.level.current = RelayConfig.log_level
 
     def shutdown(self, graceful=False):
         raise NotImplementedError()

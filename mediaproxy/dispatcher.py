@@ -556,6 +556,7 @@ class Dispatcher(object):
         process.signals.add_handler(signal.SIGHUP, self._handle_SIGHUP)
         process.signals.add_handler(signal.SIGINT, self._handle_SIGINT)
         process.signals.add_handler(signal.SIGTERM, self._handle_SIGTERM)
+        process.signals.add_handler(signal.SIGUSR1, self._handle_SIGUSR1)
         for accounting_module in self.accounting:
             accounting_module.start()
         reactor.run(installSignalHandlers=False)
@@ -586,6 +587,14 @@ class Dispatcher(object):
     def _handle_SIGTERM(self, *args):
         log.info('Received SIGTERM, shutting down.')
         reactor.callFromThread(self._shutdown)
+
+    def _handle_SIGUSR1(self, *args):
+        if log.level.current != log.level.DEBUG:
+            log.level.current = log.level.DEBUG
+            log.info('Switched logging level to DEBUG')
+        else:
+            log.info('Switched logging level to {}'.format(DispatcherConfig.log_level))
+            log.level.current = DispatcherConfig.log_level
 
     def _shutdown(self):
         defer = DeferredList([result for result in [self.opensips_listener.stopListening(), self.management_listener.stopListening(), self.relay_listener.stopListening()] if result is not None])

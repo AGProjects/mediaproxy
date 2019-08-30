@@ -57,6 +57,8 @@ class SIPThorMediaRelayBase(EventServiceClient, SRVMediaRelayBase):
     def _handle_SIGTERM(self, *args):
         SRVMediaRelayBase._handle_SIGTERM(self, *args)
 
+    def _handle_SIGUSR1(self, *args):
+        SRVMediaRelayBase._handle_SIGUSR1(self, *args)
+
     def shutdown(self, graceful=False):
         raise NotImplementedError()
-

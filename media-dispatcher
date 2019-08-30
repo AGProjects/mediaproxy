@@ -6,7 +6,6 @@ if __name__ == '__main__':
     import sys
 
     from application import log
-    from application.configuration import ConfigFile, datatypes
     from application.process import process, ProcessError
     from argparse import ArgumentParser
 
@@ -36,9 +35,6 @@ if __name__ == '__main__':
     if options.runtime_directory is not None:
         process.runtime.directory = options.runtime_directory
 
-    config_file = ConfigFile(mediaproxy.configuration_file)
-    log.level.current = config_file.get_setting('Dispatcher', 'log_level', type=datatypes.LogLevel, default=log.level.DEBUG)
-
     try:
         process.runtime.create_directory()
     except ProcessError as e:
@@ -60,9 +56,10 @@ if __name__ == '__main__':
     log.info('Starting %s %s' % (fullname, mediaproxy.__version__))
 
     from mediaproxy.dispatcher import Dispatcher
+    from mediaproxy.configuration import DispatcherConfig
 
-    if options.debug:
-        log.level.current = log.level.DEBUG
+    log.level.current = log.level.DEBUG if options.debug else DispatcherConfig.log_level
+
     if options.debug_memory:
         from application.debug.memory import memory_dump
 

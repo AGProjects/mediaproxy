@@ -1,6 +1,7 @@
 
+from application import log
 from application.configuration import ConfigSection, ConfigSetting
-from application.configuration.datatypes import IPAddress, NetworkRangeList
+from application.configuration.datatypes import IPAddress, LogLevel, NetworkRangeList
 from application.system import host
 
 from mediaproxy import configuration_file
@@ -22,6 +23,7 @@ class DispatcherConfig(ConfigSection):
     accounting = ConfigSetting(type=AccountingModuleList, value=[])
     passport = ConfigSetting(type=X509NameValidator, value=None)
     management_passport = ConfigSetting(type=X509NameValidator, value=None)
+    log_level = ConfigSetting(type=LogLevel, value=log.level.INFO)
 
 
 class RelayConfig(ConfigSection):
@@ -41,6 +43,7 @@ class RelayConfig(ConfigSection):
     reconnect_delay = PositiveInteger(10)
     passport = ConfigSetting(type=X509NameValidator, value=None)
     routable_private_ranges = ConfigSetting(type=NetworkRangeList, value=[])
+    log_level = ConfigSetting(type=LogLevel, value=log.level.INFO)
 
 
 class OpenSIPSConfig(ConfigSection):

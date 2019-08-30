@@ -8,7 +8,6 @@ if __name__ == '__main__':
     import subprocess
 
     from application import log
-    from application.configuration import ConfigFile, datatypes
     from application.process import process, ProcessError
     from application.version import Version
     from argparse import ArgumentParser
@@ -80,9 +79,6 @@ if __name__ == '__main__':
             log.critical('Could not enable conntrack rule counters (check %s): %s' % (CONNTRACK_ACCT_FILE, e))
             sys.exit(1)
 
-    config_file = ConfigFile(mediaproxy.configuration_file)
-    log.level.current = config_file.get_setting('Relay', 'log_level', type=datatypes.LogLevel, default=log.level.DEBUG)
-
     if options.systemd:
         from systemd.journal import JournalHandler
         log.set_handler(JournalHandler(SYSLOG_IDENTIFIER=name))
@@ -107,8 +103,8 @@ if __name__ == '__main__':
 
     try:
         from mediaproxy.relay import MediaRelay
-        if options.debug:
-            log.level.current = log.level.DEBUG
+        from mediaproxy.configuration import RelayConfig
+        log.level.current = log.level.DEBUG if options.debug else RelayConfig.log_level
         if options.debug_memory:
             from application.debug.memory import memory_dump
         relay = MediaRelay()
