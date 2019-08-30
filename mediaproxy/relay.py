@@ -77,7 +77,7 @@ class RelayClientProtocol(LineOnlyReceiver):
 
     def connectionMade(self):
         peer = self.transport.getPeer()
-        log.debug('Connected to dispatcher at %s:%d' % (peer.host, peer.port))
+        log.info('Connected to dispatcher at %s:%d' % (peer.host, peer.port))
         if RelayConfig.passport is not None:
             peer_cert = self.transport.getPeerCertificate()
             if not RelayConfig.passport.accept(peer_cert):
@@ -284,35 +284,35 @@ class MediaRelay(MediaRelayBase):
         dispatchers = set(dispatchers)
         for new_dispatcher in dispatchers.difference(self.dispatchers):
             if new_dispatcher in self.old_connectors.iterkeys():
-                log.debug('Restoring old dispatcher at %s:%d' % new_dispatcher)
+                log.info('Restoring old dispatcher at %s:%d' % new_dispatcher)
                 self.dispatcher_connectors[new_dispatcher] = self.old_connectors.pop(new_dispatcher)
             else:
-                log.debug('Adding new dispatcher at %s:%d' % new_dispatcher)
+                log.info('Adding new dispatcher at %s:%d' % new_dispatcher)
                 dispatcher_addr, dispatcher_port = new_dispatcher
                 factory = DispatcherConnectingFactory(self, dispatcher_addr, dispatcher_port)
                 self.dispatcher_connectors[new_dispatcher] = reactor.connectTLS(dispatcher_addr, dispatcher_port, factory, self.tls_context)
         for old_dispatcher in self.dispatchers.difference(dispatchers):
-            log.debug('Removing old dispatcher at %s:%d' % old_dispatcher)
+            log.info('Removing old dispatcher at %s:%d' % old_dispatcher)
             self.old_connectors[old_dispatcher] = self.dispatcher_connectors.pop(old_dispatcher)
             self._check_disconnect(old_dispatcher)
         self.dispatchers = dispatchers
 
     def got_command(self, dispatcher, command, headers):
         if command == 'summary':
-            summary = {'ip'            : RelayConfig.relay_ip,
-                       'version'       : __version__,
-                       'status'        : self.status,
-                       'uptime'        : int(time() - self.start_time),
-                       'session_count' : len(self.session_manager.sessions),
-                       'stream_count'  : self.session_manager.stream_count,
-                       'bps_relayed'   : self.session_manager.bps_relayed}
+            summary = {'ip': RelayConfig.relay_ip,
+                       'version': __version__,
+                       'status': self.status,
+                       'uptime': int(time() - self.start_time),
+                       'session_count': len(self.session_manager.sessions),
+                       'stream_count': self.session_manager.stream_count,
+                       'bps_relayed': self.session_manager.bps_relayed}
             return cjson.encode(summary)
         elif command == 'sessions':
             return cjson.encode(self.session_manager.statistics)
         elif command == 'update':
             if self.graceful_shutdown or self.shutting_down:
                 if not self.session_manager.has_session(**headers):
-                    log.debug('cannot add new session: media-relay is shutting down')
+                    log.info('cannot add new session: media-relay is shutting down')
                     return 'halting'
             try:
                 local_media = self.session_manager.update_session(dispatcher, **headers)
@@ -321,7 +321,7 @@ class MediaRelay(MediaRelayBase):
                 return 'error'
             if local_media:
                 return ' '.join([RelayConfig.advertised_ip or local_media[0][0]] + [str(media[1]) for media in local_media])
-        else: # remove
+        else:  # command == 'remove'
             session = self.session_manager.remove_session(**headers)
             if session is None:
                 return 'error'

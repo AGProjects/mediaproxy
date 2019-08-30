@@ -1,11 +1,13 @@
 
+import hashlib
 import struct
-from time import time
-from collections import deque
-from operator import attrgetter
-from itertools import chain
 
 from application import log
+from base64 import b64encode as base64_encode
+from itertools import chain
+from collections import deque
+from operator import attrgetter
+from time import time
 from twisted.internet import reactor
 from twisted.internet.interfaces import IReadDescriptor
 from twisted.internet.protocol import DatagramProtocol
@@ -18,51 +20,71 @@ from mediaproxy.interfaces.system import _conntrack
 from mediaproxy.iputils import is_routable_ip
 from mediaproxy.scheduler import RecurrentCall, KeepRunning
 
-
-UDP_TIMEOUT_FILE = "/proc/sys/net/ipv4/netfilter/ip_conntrack_udp_timeout_stream"
+UDP_TIMEOUT_FILE = '/proc/sys/net/ipv4/netfilter/ip_conntrack_udp_timeout_stream'
 
 rtp_payloads = {
-     0: "G711u", 1: "1016",  2: "G721",  3: "GSM",  4: "G723",  5: "DVI4", 6: "DVI4",
-     7: "LPC",   8: "G711a", 9: "G722", 10: "L16", 11: "L16",  14: "MPA", 15: "G728",
-    18: "G729", 25: "CelB", 26: "JPEG", 28: "nv",  31: "H261", 32: "MPV", 33: "MP2T",
-    34: "H263"
+    0: 'G711u', 1: '1016', 2: 'G721', 3: 'GSM', 4: 'G723', 5: 'DVI4', 6: 'DVI4',
+    7: 'LPC', 8: 'G711a', 9: 'G722', 10: 'L16', 11: 'L16', 14: 'MPA', 15: 'G728',
+    18: 'G729', 25: 'CelB', 26: 'JPEG', 28: 'nv', 31: 'H261', 32: 'MPV', 33: 'MP2T',
+    34: 'H263'
 }
+
 
 class RelayPortsExhaustedError(Exception):
     pass
 
 
 if RelayConfig.relay_ip is None:
-    raise RuntimeError("Could not determine default host IP; either add default route or specify relay IP manually")
+    raise RuntimeError('Could not determine default host IP; either add default route or specify relay IP manually')
+
+
+class SessionLogger(log.ContextualLogger):
+    def __init__(self, session):
+        super(SessionLogger, self).__init__(logger=log.get_logger())  # use the main logger as backend
+        self.session_id = session.session_id
+
+    def apply_context(self, message):
+        return '[session {0.session_id}] {1}'.format(self, message) if message != '' else ''
 
 
 class Address(object):
     """Representation of an endpoint address"""
+
     def __init__(self, host, port, in_use=True, got_rtp=False):
         self.host = host
         self.port = port
         self.in_use = self.__nonzero__() and in_use
         self.got_rtp = got_rtp
+
     def __len__(self):
         return 2
+
     def __nonzero__(self):
         return None not in (self.host, self.port)
+
     def __getitem__(self, index):
         return (self.host, self.port)[index]
+
     def __contains__(self, item):
         return item in (self.host, self.port)
+
     def __iter__(self):
         yield self.host
         yield self.port
+
     def __str__(self):
-        return self.__nonzero__() and ("%s:%d" % (self.host, self.port)) or "Unknown"
+        return self.__nonzero__() and ('%s:%d' % (self.host, self.port)) or 'Unknown'
+
     def __repr__(self):
-        return "%s(%r, %r, in_use=%r, got_rtp=%r)" % (self.__class__.__name__, self.host, self.port, self.in_use, self.got_rtp)
+        return '%s(%r, %r, in_use=%r, got_rtp=%r)' % (self.__class__.__name__, self.host, self.port, self.in_use, self.got_rtp)
+
     def forget(self):
         self.host, self.port, self.in_use, self.got_rtp = None, None, False, False
+
     @property
     def unknown(self):
         return None in (self.host, self.port)
+
     @property
     def obsolete(self):
         return self.__nonzero__() and not self.in_use
@@ -74,25 +96,32 @@ class Counters(dict):
         for k, v in other.iteritems():
             n[k] += v
         return n
+
     def __iadd__(self, other):
         for k, v in other.iteritems():
             self[k] += v
         return self
+
     @property
     def caller_bytes(self):
         return self['caller_bytes']
+
     @property
     def callee_bytes(self):
         return self['callee_bytes']
+
     @property
     def caller_packets(self):
         return self['caller_packets']
+
     @property
     def callee_packets(self):
         return self['callee_packets']
+
     @property
     def relayed_bytes(self):
         return self['caller_bytes'] + self['callee_bytes']
+
     @property
     def relayed_packets(self):
         return self['caller_packets'] + self['callee_packets']
@@ -146,7 +175,7 @@ def _stun_test(data):
     # Check if data is a STUN request and if it's a binding request
     if len(data) < 20:
         return False, False
-    msg_type, msg_len, magic = struct.unpack("!HHI", data[:8])
+    msg_type, msg_len, magic = struct.unpack('!HHI', data[:8])
     if msg_type & 0xc == 0 and magic == 0x2112A442:
         if msg_type == 0x0001:
             return True, True
@@ -155,25 +184,26 @@ def _stun_test(data):
     else:
         return False, False
 
-class MediaSubParty(object):
 
+class MediaSubParty(object):
     def __init__(self, substream, listener):
         self.substream = substream
+        self.logger = substream.logger
         self.listener = listener
         self.listener.protocol.cb_func = self.got_data
         self.remote = Address(None, None)
         host = self.listener.protocol.transport.getHost()
         self.local = Address(host.host, host.port)
         self.timer = None
-        self.codec = "Unknown"
+        self.codec = 'Unknown'
         self.got_stun_probing = False
         self.reset()
 
     def reset(self):
         if self.timer and self.timer.active():
             self.timer.cancel()
-        self.timer = reactor.callLater(RelayConfig.stream_timeout, self.substream.expired, "no-traffic timeout", RelayConfig.stream_timeout)
-        self.remote.in_use = False # keep remote address around but mark it as obsolete
+        self.timer = reactor.callLater(RelayConfig.stream_timeout, self.substream.expired, 'no-traffic timeout', RelayConfig.stream_timeout)
+        self.remote.in_use = False  # keep remote address around but mark it as obsolete
         self.remote.got_rtp = False
         self.got_stun_probing = False
         self.listener.protocol.send_packet_count = 0
@@ -181,13 +211,13 @@ class MediaSubParty(object):
     def before_hold(self):
         if self.timer and self.timer.active():
             self.timer.cancel()
-        self.timer = reactor.callLater(RelayConfig.on_hold_timeout, self.substream.expired, "on hold timeout", RelayConfig.on_hold_timeout)
+        self.timer = reactor.callLater(RelayConfig.on_hold_timeout, self.substream.expired, 'on hold timeout', RelayConfig.on_hold_timeout)
 
     def after_hold(self):
         if self.timer and self.timer.active():
             self.timer.cancel()
         if not self.remote.in_use:
-            self.timer = reactor.callLater(RelayConfig.stream_timeout, self.substream.expired, "no-traffic timeout", RelayConfig.stream_timeout)
+            self.timer = reactor.callLater(RelayConfig.stream_timeout, self.substream.expired, 'no-traffic timeout', RelayConfig.stream_timeout)
 
     def got_data(self, host, port, data):
         if (host, port) == tuple(self.remote):
@@ -203,7 +233,7 @@ class MediaSubParty(object):
             # we have learnt the remote IP/port
             self.remote.host, self.remote.port = host, port
             self.remote.in_use = True
-            log.debug("Got traffic information for stream: %s" % self.substream.stream)
+            self.logger.info('discovered peer: %s' % self.substream.stream)
         is_stun, is_binding_request = _stun_test(data)
         self.substream.send_data(self, data, is_stun)
         if not self.remote.got_rtp and not is_stun:
@@ -213,18 +243,18 @@ class MediaSubParty(object):
                 if self.timer.active():
                     self.timer.cancel()
                 self.timer = None
-            if self.codec == "Unknown" and self.substream is self.substream.stream.rtp:
+            if self.codec == 'Unknown' and self.substream is self.substream.stream.rtp:
                 try:
                     pt = ord(data[1]) & 127
                 except IndexError:
                     pass
                 else:
                     if pt > 95:
-                        self.codec = "Dynamic(%d)" % pt
+                        self.codec = 'Dynamic(%d)' % pt
                     elif pt in rtp_payloads:
                         self.codec = rtp_payloads[pt]
                     else:
-                        self.codec = "Unknown(%d)" % pt
+                        self.codec = 'Unknown(%d)' % pt
             self.substream.check_create_conntrack()
         if is_binding_request:
             self.got_stun_probing = True
@@ -238,9 +268,9 @@ class MediaSubParty(object):
 
 
 class MediaSubStream(object):
-
     def __init__(self, stream, listener_caller, listener_callee):
         self.stream = stream
+        self.logger = stream.logger
         self.forwarding_rule = None
         self.caller = MediaSubParty(self, listener_caller)
         self.callee = MediaSubParty(self, listener_callee)
@@ -266,7 +296,7 @@ class MediaSubStream(object):
             self.forwarding_rule = None
 
     def reset(self, party):
-        if party == "caller":
+        if party == 'caller':
             self.caller.reset()
         else:
             self.callee.reset()
@@ -297,7 +327,7 @@ class MediaSubStream(object):
             timeout_wait = int(open(UDP_TIMEOUT_FILE).read())
         except:
             timeout_wait = 0
-        self.expired("conntrack timeout", timeout_wait)
+        self.expired('conntrack timeout', timeout_wait)
 
     def expired(self, reason, timeout_wait):
         self._stop_relaying()
@@ -311,9 +341,9 @@ class MediaSubStream(object):
 
 
 class MediaParty(object):
-
     def __init__(self, stream):
         self.manager = stream.session.manager
+        self.logger = stream.logger
         self._remote_sdp = None
         self.is_on_hold = False
         self.uses_ice = False
@@ -327,7 +357,7 @@ class MediaParty(object):
                 if self.listener_rtp is not None:
                     self.listener_rtp.stopListening()
                 self.manager.set_bad_ports(self.ports)
-                log.warning('Cannot use port pair %d/%d' % self.ports)
+                self.logger.warning('Cannot use port pair %d/%d' % self.ports)
             else:
                 break
 
@@ -337,6 +367,7 @@ class MediaParty(object):
     def _set_remote_sdp(self, (ip, port)):
         self._remote_sdp = ip, port
         self.listener_rtp.protocol.set_remote_sdp(ip, port)
+
     remote_sdp = property(_get_remote_sdp, _set_remote_sdp)
 
     def cleanup(self):
@@ -345,46 +376,47 @@ class MediaParty(object):
         self.manager.free_ports(self.ports)
         self.manager = None
 
-class MediaStream(object):
 
+class MediaStream(object):
     def __init__(self, session, media_type, media_ip, media_port, direction, media_parameters, initiating_party):
         self.is_alive = True
-        self.session = session
+        self.session = session  # type: Session
+        self.logger = session.logger
         self.media_type = media_type
         self.caller = MediaParty(self)
         self.callee = MediaParty(self)
         self.rtp = MediaSubStream(self, self.caller.listener_rtp, self.callee.listener_rtp)
         self.rtcp = MediaSubStream(self, self.caller.listener_rtcp, self.callee.listener_rtcp)
         getattr(self, initiating_party).remote_sdp = (media_ip, media_port)
-        getattr(self, initiating_party).uses_ice = (media_parameters.get("ice", "no") == "yes")
+        getattr(self, initiating_party).uses_ice = (media_parameters.get('ice', 'no') == 'yes')
         self.check_hold(initiating_party, direction, media_ip)
         self.create_time = time()
         self.first_media_time = None
         self.start_time = None
         self.end_time = None
-        self.status = "active"
+        self.status = 'active'
         self.timeout_wait = 0
 
     def __str__(self):
         if self.caller.remote_sdp is None:
-            src = "Unknown"
+            src = 'Unknown'
         else:
-            src = "%s:%d" % self.caller.remote_sdp
+            src = '%s:%d' % self.caller.remote_sdp
         if self.caller.is_on_hold:
-            src += " ON HOLD"
+            src += ' ON HOLD'
         if self.caller.uses_ice:
-            src += " (ICE)"
+            src += ' (ICE)'
         if self.callee.remote_sdp is None:
-            dst = "Unknown"
+            dst = 'Unknown'
         else:
-            dst = "%s:%d" % self.callee.remote_sdp
+            dst = '%s:%d' % self.callee.remote_sdp
         if self.callee.is_on_hold:
-            dst += " ON HOLD"
+            dst += ' ON HOLD'
         if self.callee.uses_ice:
-            dst += " (ICE)"
+            dst += ' (ICE)'
         rtp = self.rtp
         rtcp = self.rtcp
-        return "(%s) %s (RTP: %s, RTCP: %s) <-> %s <-> %s <-> %s (RTP: %s, RTCP: %s)" % (
+        return '(%s) %s (RTP: %s, RTCP: %s) <-> %s <-> %s <-> %s (RTP: %s, RTCP: %s)' % (
             self.media_type, src, rtp.caller.remote, rtcp.caller.remote, rtp.caller.local, rtp.callee.local, dst, rtp.callee.remote, rtcp.callee.remote)
 
     @property
@@ -398,21 +430,21 @@ class MediaStream(object):
     def check_hold(self, party, direction, ip):
         previous_hold = self.is_on_hold
         party = getattr(self, party)
-        if direction == "sendonly" or direction == "inactive":
+        if direction == 'sendonly' or direction == 'inactive':
             party.is_on_hold = True
-        elif ip == "0.0.0.0":
+        elif ip == '0.0.0.0':
             party.is_on_hold = True
         else:
             party.is_on_hold = False
         if previous_hold and not self.is_on_hold:
             for substream in [self.rtp, self.rtcp]:
                 for subparty in [substream.caller, substream.callee]:
-                    self.status = "active"
+                    self.status = 'active'
                     subparty.after_hold()
         if not previous_hold and self.is_on_hold:
             for substream in [self.rtp, self.rtcp]:
                 for subparty in [substream.caller, substream.callee]:
-                    self.status = "on hold"
+                    self.status = 'on hold'
                     subparty.before_hold()
 
     def reset(self, party, media_ip, media_port):
@@ -422,11 +454,11 @@ class MediaStream(object):
 
     def substream_expired(self, substream, reason, timeout_wait):
         if substream is self.rtp and self.caller.uses_ice and self.callee.uses_ice:
-            log.debug("RTP stream expired for session %s: %s" % (self.session, reason))
-            reason = "unselected ICE candidate"
+            reason = 'unselected ICE candidate'
+            self.logger.info('RTP stream expired: {}'.format(reason))
             if not substream.caller.got_stun_probing and not substream.callee.got_stun_probing:
-                log.debug("unselected ICE candidate for session %s but no STUN was received" % self.session)
-        if substream is self.rtcp or (self.is_on_hold and reason=='conntrack timeout'):
+                self.logger.info('unselected ICE candidate, but no STUN was received')
+        if substream is self.rtcp or (self.is_on_hold and reason == 'conntrack timeout'):
             # Forget about the remote addresses, this will cause any
             # re-occurrence of the same traffic to be forwarded again
             substream.caller.remote.forget()
@@ -439,7 +471,7 @@ class MediaStream(object):
             self.timeout_wait = timeout_wait
             session.stream_expired(self)
 
-    def cleanup(self, status="closed"):
+    def cleanup(self, status='closed'):
         if self.is_alive:
             self.is_alive = False
             self.status = status
@@ -452,10 +484,10 @@ class MediaStream(object):
 
 
 class Session(object):
-
-    def __init__(self, manager, dispatcher, call_id, from_tag, from_uri, to_tag, to_uri, cseq, user_agent, media_list, is_downstream, is_caller_cseq, mark = 0):
+    def __init__(self, manager, dispatcher, call_id, from_tag, from_uri, to_tag, to_uri, cseq, user_agent, media_list, is_downstream, is_caller_cseq, mark=0):
         self.manager = manager
         self.dispatcher = dispatcher
+        self.session_id = base64_encode(hashlib.md5(call_id).digest()).rstrip('=')
         self.call_id = call_id
         self.from_tag = from_tag
         self.to_tag = None
@@ -469,14 +501,13 @@ class Session(object):
         self.streams = {}
         self.start_time = None
         self.end_time = None
+        self.logger = SessionLogger(self)
+        self.logger.info('created (call-id: {0.call_id} from-tag: {0.from_tag})'.format(self))
         self.update_media(cseq, to_tag, user_agent, media_list, is_downstream, is_caller_cseq)
-
-    def __str__(self):
-        return "%s: %s (%s) --> %s" % (self.call_id, self.from_uri, self.from_tag, self.to_uri)
 
     def update_media(self, cseq, to_tag, user_agent, media_list, is_downstream, is_caller_cseq):
         if self.cseq is None:
-            old_cseq = (0,0)
+            old_cseq = (0, 0)
         else:
             old_cseq = self.cseq
         if is_caller_cseq:
@@ -486,24 +517,23 @@ class Session(object):
         else:
             cseq = (old_cseq[0], cseq)
         if is_downstream:
-            party = "caller"
+            party = 'caller'
             if self.caller_ua is None:
                 self.caller_ua = user_agent
         else:
-            party = "callee"
+            party = 'callee'
             if self.callee_ua is None:
                 self.callee_ua = user_agent
         if self.cseq is None or cseq > self.cseq:
             if not media_list:
                 return
-            log.debug("Received new SDP offer")
+            self.logger.info('got SDP offer')
             self.streams[cseq] = new_streams = []
             if self.cseq is None:
                 old_streams = []
             else:
                 old_streams = self.streams[self.cseq]
             for media_type, media_ip, media_port, media_direction, media_parameters in media_list:
-                stream = None
                 for old_stream in old_streams:
                     old_remote = getattr(old_stream, party).remote_sdp
                     if old_remote is not None:
@@ -513,14 +543,16 @@ class Session(object):
                     if old_stream.is_alive and old_stream.media_type == media_type and ((media_ip, media_port) in ((old_ip, old_port), ('0.0.0.0', old_port), (old_ip, 0))):
                         stream = old_stream
                         stream.check_hold(party, media_direction, media_ip)
-                        log.debug("Found matching existing stream: %s" % stream)
+                        if media_port == 0:
+                            self.logger.info('disabled stream: %s', stream)
+                        else:
+                            self.logger.info('retained stream: %s', stream)
                         break
-                if stream is None:
+                else:
                     stream = MediaStream(self, media_type, media_ip, media_port, media_direction, media_parameters, party)
-                    log.debug("Added new stream: %s" % stream)
+                    self.logger.info('proposed stream: %s' % stream)
                 if media_port == 0:
                     stream.cleanup()
-                    log.debug("Stream explicitly closed: %s" % stream)
                 new_streams.append(stream)
             if self.previous_cseq is not None:
                 for stream in self.streams[self.previous_cseq]:
@@ -529,7 +561,7 @@ class Session(object):
             self.previous_cseq = self.cseq
             self.cseq = cseq
         elif self.cseq == cseq:
-            log.debug("Received updated SDP answer")
+            self.logger.info('got SDP answer')
             now = time()
             if self.start_time is None:
                 self.start_time = now
@@ -541,33 +573,36 @@ class Session(object):
                 return
             if len(media_list) < len(current_streams):
                 for stream in current_streams[len(media_list):]:
-                    log.debug("Stream rejected by not being included in the SDP answer: %s" % stream)
-                    stream.cleanup("rejected")
+                    self.logger.info('removed! stream: %s' % stream)
+                    stream.cleanup('rejected')
             for stream, (media_type, media_ip, media_port, media_direction, media_parameters) in zip(current_streams, media_list):
                 if stream.media_type != media_type:
-                    raise ValueError('Media types do not match: "%s" and "%s"' % (stream.media_type, media_type))
+                    raise ValueError('Media types do not match: %r and %r' % (stream.media_type, media_type))
                 if media_port == 0:
-                    log.debug("Stream explicitly rejected: %s" % stream)
-                    stream.cleanup("rejected")
+                    if stream.is_alive:
+                        self.logger.info('rejected stream: %s' % stream)
+                    else:
+                        self.logger.info('disabled stream: %s' % stream)
+                    stream.cleanup('rejected')
                     continue
                 stream.check_hold(party, media_direction, media_ip)
                 party_info = getattr(stream, party)
-                party_info.uses_ice = (media_parameters.get("ice", "no") == "yes")
-                if party_info.remote_sdp is None or party_info.remote_sdp[0] == "0.0.0.0":
+                party_info.uses_ice = (media_parameters.get('ice', 'no') == 'yes')
+                if party_info.remote_sdp is None or party_info.remote_sdp[0] == '0.0.0.0':
                     party_info.remote_sdp = (media_ip, media_port)
-                    log.debug("Got initial answer from %s for stream: %s" % (party, stream))
+                    self.logger.info('accepted stream: %s' % stream)
                 else:
                     if party_info.remote_sdp[1] != media_port or (party_info.remote_sdp[0] != media_ip != '0.0.0.0'):
                         stream.reset(party, media_ip, media_port)
-                        log.debug("Updated %s for stream: %s" % (party, stream))
+                        self.logger.info('updating stream: %s' % stream)
                     else:
-                        log.debug("Unchanged stream: %s" % stream)
+                        self.logger.info('retained stream: %s' % stream)
             if self.previous_cseq is not None:
                 for stream in [stream for stream in self.streams[self.previous_cseq] if stream not in current_streams]:
-                    log.debug("Removing old stream: %s" % stream)
+                    self.logger.info('removing stream: %s' % stream)
                     stream.cleanup()
         else:
-            log.debug("Received old CSeq %d:%d, ignoring" % cseq)
+            self.logger.info('got old CSeq %d:%d, ignoring' % cseq)
 
     def get_local_media(self, is_downstream, cseq, is_caller_cseq):
         if is_caller_cseq:
@@ -579,9 +614,9 @@ class Session(object):
         except ValueError:
             return None
         if is_downstream:
-            retval = [(stream.status in ["active", "on hold"]) and tuple(stream.rtp.callee.local) or (stream.rtp.callee.local.host, 0) for stream in self.streams[cseq]]
+            retval = [(stream.status in ['active', 'on hold']) and tuple(stream.rtp.callee.local) or (stream.rtp.callee.local.host, 0) for stream in self.streams[cseq]]
         else:
-            retval = [(stream.status in ["active", "on hold"]) and tuple(stream.rtp.caller.local) or (stream.rtp.caller.local.host, 0) for stream in self.streams[cseq]]
+            retval = [(stream.status in ['active', 'on hold']) and tuple(stream.rtp.caller.local) or (stream.rtp.caller.local.host, 0) for stream in self.streams[cseq]]
         return retval
 
     def cleanup(self):
@@ -622,7 +657,7 @@ class Session(object):
         stats['callee_ua'] = self.callee_ua or 'Unknown'
         stats['streams'] = streams = []
         stream_attributes = ('media_type', 'status', 'timeout_wait')
-        for stream in sorted(all_streams, key=attrgetter('start_time')):
+        for stream in sorted(all_streams, key=attrgetter('start_time')):  # type: MediaStream
             info = dict((name, getattr(stream, name)) for name in stream_attributes)
             info['caller_codec'] = stream.rtp.caller.codec
             info['callee_codec'] = stream.rtp.callee.codec
@@ -659,12 +694,12 @@ class SessionManager(Logger):
 
     def __init__(self, relay, start_port, end_port):
         self.relay = relay
-        self.ports = deque((i, i+1) for i in xrange(start_port, end_port, 2))
+        self.ports = deque((i, i + 1) for i in xrange(start_port, end_port, 2))
         self.bad_ports = deque()
         self.sessions = {}
         self.watcher = _conntrack.ExpireWatcher()
-        self.active_byte_counter = 0 # relayed byte counter for sessions active during last speed measurement
-        self.closed_byte_counter = 0 # relayed byte counter for sessions closed after last speed measurement
+        self.active_byte_counter = 0  # relayed byte counter for sessions active during last speed measurement
+        self.closed_byte_counter = 0  # relayed byte counter for sessions closed after last speed measurement
         self.bps_relayed = 0
         if RelayConfig.traffic_sampling_period > 0:
             self.speed_calculator = RecurrentCall(RelayConfig.traffic_sampling_period, self._measure_speed)
@@ -730,19 +765,17 @@ class SessionManager(Logger):
         key = self._find_session_key(call_id, from_tag, to_tag)
         if key:
             session = self.sessions[key]
-            log.debug("updating existing session %s" % session)
-            is_downstream = (session.from_tag != from_tag) ^ (type == "request")
+            is_downstream = (session.from_tag != from_tag) ^ (type == 'request')
             is_caller_cseq = (session.from_tag == from_tag)
             session.update_media(cseq, to_tag, user_agent, media, is_downstream, is_caller_cseq)
-        elif type == "reply" and not media:
+        elif type == 'reply' and not media:
             return None
         else:
-            is_downstream = type == "request"
+            is_downstream = type == 'request'
             is_caller_cseq = True
             session = Session(self, dispatcher, call_id, from_tag, from_uri, to_tag, to_uri, cseq, user_agent, media, is_downstream, is_caller_cseq)
             self.sessions[(call_id, from_tag)] = session
             self.relay.add_session(dispatcher)
-            log.debug("created new session %s" % session)
         return session.get_local_media(is_downstream, cseq, is_caller_cseq)
 
     def remove_session(self, call_id, from_tag, to_tag=None, **kw):
@@ -752,7 +785,7 @@ class SessionManager(Logger):
         except KeyError:
             log.warning('The dispatcher tried to remove a session which is no longer present on the relay')
             return None
-        log.debug('removing session %s' % session)
+        session.logger.info('removed')
         session.cleanup()
         self.closed_byte_counter += session.relayed_bytes
         del self.sessions[key]
@@ -764,9 +797,9 @@ class SessionManager(Logger):
         try:
             session = self.sessions[key]
         except KeyError:
-            log.warning('A session expired that was no longer present on the relay')
+            log.warning('A session expired but is no longer present on the relay')
             return
-        log.debug('expired session %s' % session)
+        session.logger.info('expired')
         session.cleanup()
         self.closed_byte_counter += session.relayed_bytes
         del self.sessions[key]
@@ -791,4 +824,3 @@ class SessionManager(Logger):
                 if stream.is_alive:
                     stream_count[stream.media_type] = stream_count.get(stream.media_type, 0) + 1
         return stream_count
-
