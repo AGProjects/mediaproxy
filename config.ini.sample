@@ -16,7 +16,7 @@
 ;dispatchers = example.com 1.2.3.4:12345
 
 ; Specify extra checks to be performed on the dispatcher TLS credentials before
-; considering the connection with the dispatcher succesful. The passport is
+; considering the connection with the dispatcher successful. The passport is
 ; specified as a list of attribute/value pairs in the form:
 ;   AN:value[, AN:value...]
 ; where the attribute name (AN) is one of the available attribute names from
@@ -32,7 +32,7 @@
 ; dispatcher certificate subject has organization set to "AG Projects" and
 ; the common name ends with "dispatcher". To specify that no additional
 ; identity checks need to be performed, use the keyword None. If passport
-; is None, then only the certificate signature is verified agains the
+; is None, then only the certificate signature is verified against the
 ; certificate authority in tls/ca.pem (signature is always verified even
 ; when passport is None).
 ;
@@ -92,7 +92,7 @@
 ;
 ;reconnect_delay = 10
 
-; How often to sample the aggregate ammount of data processed by the relay, in
+; How often to sample the aggregate amount of data processed by the relay, in
 ; order to compute an average of the relayed traffic over that period. The
 ; value is expressed in seconds and the default value is 15 seconds.
 ; Use 0 to disable it in case you have to many streams processed by the relay
@@ -137,7 +137,7 @@
 ;management_use_tls = yes
 
 ; Specify extra checks to be performed on the relay TLS credentials before
-; considering the connection with the relay succesful. The passport is
+; considering the connection with the relay successful. The passport is
 ; specified as a list of attribute/value pairs in the form:
 ;   AN:value[, AN:value...]
 ; where the attribute name (AN) is one of the available attribute names from
@@ -153,7 +153,7 @@
 ; certificate subject has organization set to "AG Projects" and the common
 ; name starts with "relay". To specify that no additional identity checks
 ; need to be performed, use the keyword None. If passport is None, then only
-; the certificate signature is verified agains the certificate authority in
+; the certificate signature is verified against the certificate authority in
 ; tls/ca.pem (signature is always verified even when passport is None).
 ;
 ; Default value is None.
@@ -162,7 +162,7 @@
 
 ; This option is similar to passport above, but applies to the management
 ; interface connections instead of relay connections. It specifies extra
-; checks to be performed on the TLS credentials suplied by an entity that
+; checks to be performed on the TLS credentials supplied by an entity that
 ; connects to the management interface. Please consult passport above for
 ; a detailed description of the possible values for this option.
 ;
@@ -224,8 +224,8 @@
 [Radius]
 ; This section needs to be configured if radius accounting is enabled
 
-; OpenSIPS RADIUS configuration file. All RADIUS cofiguration parameters will
-; be read from this file, including dictionary files.
+; OpenSIPS RADIUS configuration file. All RADIUS configuration parameters
+; will be read from this file, including dictionary files.
 ;
 ;config_file = /etc/opensips/radius/client.conf
 
