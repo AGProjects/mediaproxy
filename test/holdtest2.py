@@ -15,7 +15,7 @@ from common import *
 def phase1(protocol, session):
     print('setting up audio stream')
     caller_media = session.caller.set_media([('audio', 40000, 'sendrecv', {})])
-    callee_media = session.callee.set_media([('audio', 50000, 'sendrecv', {})])
+    callee_media = session.callee.set_media([('audio', 30000, 'sendrecv', {})])
     media_defer = DeferredList([caller_media, callee_media])
     defer = succeed(None)
     defer.addCallback(caller_update, protocol, session, media_defer, phase2)
@@ -25,7 +25,7 @@ def phase1(protocol, session):
 def phase2(result, protocol, session):
     print('setting stream on hold')
     session.caller.set_media([('audio', 40000, 'sendrecv', {})])
-    session.callee.set_media([('audio', 50000, 'sendrecv', {})])
+    session.callee.set_media([('audio', 30000, 'sendrecv', {})])
     defer = session.do_update(protocol, 'caller', 'request', False, True)
     defer.addCallback(callee_update_hold, protocol, session)
     return defer
@@ -56,7 +56,7 @@ def stop_media_hold(result, protocol, session):
 def phase3(result, protocol, session):
     print('continuing audio stream')
     caller_media = session.caller.set_media([('audio', 40000, 'sendrecv', {})])
-    callee_media = session.callee.set_media([('audio', 50000, 'sendrecv', {})])
+    callee_media = session.callee.set_media([('audio', 30000, 'sendrecv', {})])
     media_defer = DeferredList([caller_media, callee_media])
     defer = succeed(None)
     defer.addCallback(caller_update, protocol, session, media_defer, kthxbye)

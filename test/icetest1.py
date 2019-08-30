@@ -87,7 +87,7 @@ if __name__ == '__main__':
     caller = Endpoint('Alice <alice@example.com>', 'Caller UA', True)
     caller_media = caller.set_media([('audio', 40000, 'sendrecv', {'ice': 'yes'})])
     callee = Endpoint('Bob <bob@example.com>', 'Callee UA', False)
-    callee_media = callee.set_media([('audio', 50000, 'sendrecv', {'ice': 'yes'})])
+    callee_media = callee.set_media([('audio', 30000, 'sendrecv', {'ice': 'yes'})])
     session = Session(caller, callee)
     connector, defer = connect_to_dispatcher()
     defer.addCallback(caller_update, session, caller_media, callee_media)

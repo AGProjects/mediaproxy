@@ -58,7 +58,7 @@ def stop_media(result, protocol, session):
 def change_callee(result, protocol, session):
     print('sending new update for callee')
     caller_media = session.caller.set_media([('audio', 40000, 'sendrecv', {})])
-    callee_media = session.callee.set_media([('audio', 50000, 'sendrecv', {})])
+    callee_media = session.callee.set_media([('audio', 30000, 'sendrecv', {})])
     media_defer = DeferredList([caller_media, callee_media])
     defer = session.do_update(protocol, 'callee', 'request', False)
     defer.addCallback(change_caller, protocol, session, media_defer)
@@ -107,7 +107,7 @@ if __name__ == '__main__':
     caller = Endpoint('Alice <alice@example.com>', 'Caller UA', True)
     caller_media = caller.set_media([('audio', 40000, 'sendrecv', {}), ('video', 40010, 'sendrecv', {})])
     callee = Endpoint('Bob <bob@example.com>', 'Callee UA', False)
-    callee_media = callee.set_media([('audio', 50000, 'sendrecv', {}), ('video', 50010, 'sendrecv', {})])
+    callee_media = callee.set_media([('audio', 30000, 'sendrecv', {}), ('video', 30010, 'sendrecv', {})])
     session = Session(caller, callee)
     connector, defer = connect_to_dispatcher()
     defer.addCallback(caller_update, session, caller_media, callee_media)
