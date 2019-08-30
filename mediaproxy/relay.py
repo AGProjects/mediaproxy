@@ -221,34 +221,29 @@ class SRVMediaRelayBase(object):
         raise NotImplementedError()
 
     def run(self):
-        process.signals.add_handler(signal.SIGHUP, self._handle_SIGHUP)
-        process.signals.add_handler(signal.SIGINT, self._handle_SIGINT)
-        process.signals.add_handler(signal.SIGTERM, self._handle_SIGTERM)
-        process.signals.add_handler(signal.SIGUSR1, self._handle_SIGUSR1)
+        process.signals.add_handler(signal.SIGHUP, self._handle_signal)
+        process.signals.add_handler(signal.SIGINT, self._handle_signal)
+        process.signals.add_handler(signal.SIGTERM, self._handle_signal)
+        process.signals.add_handler(signal.SIGUSR1, self._handle_signal)
         reactor.run(installSignalHandlers=False)
 
-    def _handle_SIGHUP(self, *args):
-        log.info('Received SIGHUP, shutting down after all sessions have expired.')
-        reactor.callFromThread(self.shutdown, graceful=True)
+    def stop(self, graceful=False):
+        reactor.callFromThread(self.shutdown, graceful=graceful)
 
-    def _handle_SIGINT(self, *args):
-        if process.daemon:
-            log.info('Received SIGINT, shutting down.')
+    def _handle_signal(self, signum, frame):
+        if signum == signal.SIGUSR1:
+            # toggle debugging
+            if log.level.current != log.level.DEBUG:
+                log.level.current = log.level.DEBUG
+                log.info('Switched logging level to DEBUG')
+            else:
+                log.info('Switched logging level to {}'.format(RelayConfig.log_level))
+                log.level.current = RelayConfig.log_level
         else:
-            log.info('Received KeyboardInterrupt, exiting.')
-        reactor.callFromThread(self.shutdown)
-
-    def _handle_SIGTERM(self, *args):
-        log.info('Received SIGTERM, shutting down.')
-        reactor.callFromThread(self.shutdown)
-
-    def _handle_SIGUSR1(self, *args):
-        if log.level.current != log.level.DEBUG:
-            log.level.current = log.level.DEBUG
-            log.info('Switched logging level to DEBUG')
-        else:
-            log.info('Switched logging level to {}'.format(RelayConfig.log_level))
-            log.level.current = RelayConfig.log_level
+            # terminate program
+            signal_map = {signal.SIGTERM: 'Terminated', signal.SIGINT: 'Interrupted', signal.SIGHUP: 'Graceful shutdown'}
+            log.info(signal_map.get(signum, 'Received signal {}, exiting.'.format(signum)))
+            self.stop(graceful=(signum == signal.SIGHUP))
 
     def shutdown(self, graceful=False):
         raise NotImplementedError()

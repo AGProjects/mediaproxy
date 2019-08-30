@@ -45,20 +45,11 @@ class SIPThorMediaRelayBase(EventServiceClient, SRVMediaRelayBase):
             self.additional_dispatchers = [result[1] for result in results if result[0] and result[1] is not None]
             self.update_dispatchers(self.sipthor_dispatchers + self.additional_dispatchers)
 
+    def _handle_signal(self, signum, frame):
+        SRVMediaRelayBase._handle_signal(self, signum, frame)
+
     def update_dispatchers(self, dispatchers):
         raise NotImplementedError()
-
-    def _handle_SIGHUP(self, *args):
-        SRVMediaRelayBase._handle_SIGHUP(self, *args)
-
-    def _handle_SIGINT(self, *args):
-        SRVMediaRelayBase._handle_SIGINT(self, *args)
-
-    def _handle_SIGTERM(self, *args):
-        SRVMediaRelayBase._handle_SIGTERM(self, *args)
-
-    def _handle_SIGUSR1(self, *args):
-        SRVMediaRelayBase._handle_SIGUSR1(self, *args)
 
     def shutdown(self, graceful=False):
         raise NotImplementedError()

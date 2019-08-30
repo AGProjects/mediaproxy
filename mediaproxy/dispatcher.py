@@ -553,13 +553,16 @@ class Dispatcher(object):
 
     def run(self):
         log.debug('Using {0.__class__.__name__}'.format(reactor))
-        process.signals.add_handler(signal.SIGHUP, self._handle_SIGHUP)
-        process.signals.add_handler(signal.SIGINT, self._handle_SIGINT)
-        process.signals.add_handler(signal.SIGTERM, self._handle_SIGTERM)
-        process.signals.add_handler(signal.SIGUSR1, self._handle_SIGUSR1)
+        process.signals.add_handler(signal.SIGHUP, self._handle_signal)
+        process.signals.add_handler(signal.SIGINT, self._handle_signal)
+        process.signals.add_handler(signal.SIGTERM, self._handle_signal)
+        process.signals.add_handler(signal.SIGUSR1, self._handle_signal)
         for accounting_module in self.accounting:
             accounting_module.start()
         reactor.run(installSignalHandlers=False)
+
+    def stop(self):
+        reactor.callFromThread(self._shutdown)
 
     def send_command(self, command):
         return maybeDeferred(self.relay_factory.send_command, command)
@@ -573,28 +576,20 @@ class Dispatcher(object):
                 except Exception, e:
                     log.exception('An unhandled error occurred while doing accounting: %s' % e)
 
-    def _handle_SIGHUP(self, *args):
-        log.info('Received SIGHUP, shutting down.')
-        reactor.callFromThread(self._shutdown)
-
-    def _handle_SIGINT(self, *args):
-        if process.daemon:
-            log.info('Received SIGINT, shutting down.')
+    def _handle_signal(self, signum, frame):
+        if signum == signal.SIGUSR1:
+            # toggle debugging
+            if log.level.current != log.level.DEBUG:
+                log.level.current = log.level.DEBUG
+                log.info('Switched logging level to DEBUG')
+            else:
+                log.info('Switched logging level to {}'.format(DispatcherConfig.log_level))
+                log.level.current = DispatcherConfig.log_level
         else:
-            log.info('Received KeyboardInterrupt, exiting.')
-        reactor.callFromThread(self._shutdown)
-
-    def _handle_SIGTERM(self, *args):
-        log.info('Received SIGTERM, shutting down.')
-        reactor.callFromThread(self._shutdown)
-
-    def _handle_SIGUSR1(self, *args):
-        if log.level.current != log.level.DEBUG:
-            log.level.current = log.level.DEBUG
-            log.info('Switched logging level to DEBUG')
-        else:
-            log.info('Switched logging level to {}'.format(DispatcherConfig.log_level))
-            log.level.current = DispatcherConfig.log_level
+            # terminate program
+            signal_map = {signal.SIGTERM: 'Terminated', signal.SIGINT: 'Interrupted', signal.SIGHUP: 'Hangup'}
+            log.info(signal_map.get(signum, 'Received signal {}, exiting.'.format(signum)))
+            self.stop()
 
     def _shutdown(self):
         defer = DeferredList([result for result in [self.opensips_listener.stopListening(), self.management_listener.stopListening(), self.relay_listener.stopListening()] if result is not None])
