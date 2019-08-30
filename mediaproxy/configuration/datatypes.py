@@ -111,6 +111,3 @@ class X509NameValidator(crypto.X509Name):
                 elif validator_attr != cert_attr:
                     return False
         return True
-
-
-
