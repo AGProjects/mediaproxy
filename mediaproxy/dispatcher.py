@@ -386,7 +386,7 @@ class RelayFactory(Factory):
         state_file = process.runtime.file('dispatcher_state')
         try:
             self.sessions = pickle.load(open(state_file))
-        except:
+        except Exception:
             self.sessions = {}
             self.cleanup_timers = {}
         else:
