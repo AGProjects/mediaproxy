@@ -3,7 +3,6 @@
 
 from application import log
 from gnutls.interfaces.twisted import TLSContext
-
 from thor.entities import ThorEntities, GenericThorEntity
 from thor.eventservice import EventServiceClient, ThorEvent
 from thor.tls import X509Credentials
@@ -20,7 +19,8 @@ if ThorNetworkConfig.domain is None:
     raise ImportError('SIP Thor is disabled')
 
 
-class SIPThorMediaRelayBase(EventServiceClient, SRVMediaRelayBase):
+# noinspection PyAbstractClass
+class SIPThorMediaRelayBase(SRVMediaRelayBase, EventServiceClient):
     topics = ['Thor.Members']
 
     def __init__(self):
@@ -45,11 +45,5 @@ class SIPThorMediaRelayBase(EventServiceClient, SRVMediaRelayBase):
             self.additional_dispatchers = [result[1] for result in results if result[0] and result[1] is not None]
             self.update_dispatchers(self.sipthor_dispatchers + self.additional_dispatchers)
 
-    def _handle_signal(self, signum, frame):
-        SRVMediaRelayBase._handle_signal(self, signum, frame)
-
-    def update_dispatchers(self, dispatchers):
-        raise NotImplementedError()
-
-    def shutdown(self, graceful=False):
-        raise NotImplementedError()
+    def _shutdown_done(self):
+        EventServiceClient._shutdown(self)

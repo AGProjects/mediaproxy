@@ -181,6 +181,7 @@ class DispatcherConnectingFactory(ClientFactory):
 
 class SRVMediaRelayBase(object):
     def __init__(self):
+        self.shutting_down = False
         self.srv_monitor = RecurrentCall(RelayConfig.dns_check_interval, self._do_lookup)
         self._do_lookup()
 
@@ -228,7 +229,7 @@ class SRVMediaRelayBase(object):
         reactor.run(installSignalHandlers=False)
 
     def stop(self, graceful=False):
-        reactor.callFromThread(self.shutdown, graceful=graceful)
+        reactor.callFromThread(self._shutdown, graceful=graceful)
 
     def _handle_signal(self, signum, frame):
         if signum == signal.SIGUSR1:
@@ -245,15 +246,12 @@ class SRVMediaRelayBase(object):
             log.info(signal_map.get(signum, 'Received signal {}, exiting.'.format(signum)))
             self.stop(graceful=(signum == signal.SIGHUP))
 
-    def shutdown(self, graceful=False):
+    def _shutdown(self, graceful=False):
         raise NotImplementedError()
 
-    def on_shutdown(self):
-        pass
-
-    def _shutdown(self):
+    @staticmethod
+    def _shutdown_done():
         reactor.stop()
-        self.on_shutdown()
 
 
 try:
@@ -348,7 +346,7 @@ class MediaRelay(MediaRelayBase):
         if self.dispatcher_session_count[dispatcher] == 0:
             del self.dispatcher_session_count[dispatcher]
         if self.graceful_shutdown and not self.dispatcher_session_count:
-            self.shutdown()
+            self._shutdown()
         elif dispatcher in self.old_connectors:
             self._check_disconnect(dispatcher)
 
@@ -361,7 +359,7 @@ class MediaRelay(MediaRelayBase):
             if old_state == "disconnected":
                 del self.old_connectors[dispatcher]
                 if self.shutting_down and len(self.dispatcher_connectors) + len(self.old_connectors) == 0:
-                    self._shutdown()
+                    self._shutdown_done()
 
     def connector_needs_reconnect(self, connector):
         if connector in self.dispatcher_connectors.values():
@@ -376,10 +374,10 @@ class MediaRelay(MediaRelayBase):
                         break
             if self.shutting_down:
                 if len(self.old_connectors) == 0:
-                    self._shutdown()
+                    self._shutdown_done()
             return False
 
-    def shutdown(self, graceful=False):
+    def _shutdown(self, graceful=False):
         if graceful:
             self.graceful_shutdown = True
             if self.dispatcher_session_count:
@@ -389,7 +387,6 @@ class MediaRelay(MediaRelayBase):
             self.srv_monitor.cancel()
             self.session_manager.cleanup()
             if len(self.dispatcher_connectors) + len(self.old_connectors) == 0:
-                self._shutdown()
+                self._shutdown_done()
             else:
                 self.update_dispatchers([])
-
