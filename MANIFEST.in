@@ -1,12 +1,28 @@
-recursive-include debian  changelog compat control copyright rules
-recursive-include debian  *.apache2 *.conf *.docs *.install *.service
-recursive-include debian  *.lintian-overrides *.manpages *.preinst
-recursive-include debian/source  format
-recursive-include doc/man *.1
-recursive-include radius  *
-recursive-include test    *.py multitest
-recursive-include tls     README *.crt *.key *.pem
-recursive-include web     *
-prune debian/tmp
-prune debian/mediaproxy-*
-include INSTALL LICENSE MANIFEST.in TODO build_inplace
+include LICENSE
+include INSTALL
+include README
+include TODO
+include MANIFEST.in
+include build_inplace
+
+include debian/changelog
+include debian/compat
+include debian/control
+include debian/copyright
+include debian/rules
+include debian/source/format
+include debian/*.apache2
+include debian/*.conf
+include debian/*.docs
+include debian/*.install
+include debian/*.lintian-overrides
+include debian/*.manpages
+include debian/*.preinst
+include debian/*.service
+
+recursive-include test *.py multitest
+
+graft doc
+graft radius
+graft tls
+graft web
