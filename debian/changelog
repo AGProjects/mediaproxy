@@ -1,3 +1,71 @@
+mediaproxy (3.0.0) unstable; urgency=medium
+
+  * Renewed TLS certificates for another 10 years
+  * Avoid leaking variable outside list comprehension
+  * Updated opensips interface to use json
+  * Renamed configuration_filename to configuration_file
+  * Renamed system_config_directory to config_directory
+  * Streamlined error logging for the OpenSIPS MI interface
+  * Use new runtime directory
+  * Adapted to logging API changes in python-application 2.8.0
+  * Adapted to process API changes in python-application 2.8.0
+  * Adjusted logging prefixes
+  * Refactored the media-dispatcher and media-relay scripts
+    - Use the argparse module for parsing command line arguments
+    - Replaced --pid with --config-dir and --runtime-dir options
+    - Added --debug and --debug-memory options
+    - Added --systemd command line option
+  * Updated manual pages
+  * Added code to wait for the network to be available when starting
+  * Adjusted runtime directory in sample config file
+  * Update license files
+  * Refactored setup.py
+  * Refactored the debian build system
+    - Increased debian compatibility level to 11
+    - Removed no longer necessary files
+    - Replaced the mediaproxy-common-dbg package with a dbgsym package
+    - Removed no longer needed version checks from some dependencies
+    - Switched to using the pybuild build system
+    - Simplified the debian rules file
+  * Switched from init scripts to systemd service files
+  * Fixed pidfile argument to process.daemonize()
+  * Align method signature with parent
+  * Refactored code to simplify future changes to logging
+  * Fixed message when connection is closed cleanly
+  * Changed management interface name
+  * Removed redundant comment
+  * Align method signature with parent class
+  * Removed unnecessary try/finally
+  * Set attribute in __init__
+  * Use super to call parent to avoid dumb IDE warning
+  * Simplified conditional import
+  * Use the protocol's delimiter instead of hardcoded values
+  * Fixed dialog ids in tests
+  * Removed redundant code
+  * Changed ports used by tests to be different from those used by mediaproxy
+  * Updated boring file
+  * Improved logging
+  * Fixed attribute name
+  * Fixed some PEP-8 violations
+  * Removed no longer needed future import
+  * Removed unnecessary docstrings from top level scripts
+  * Removed unnecessary variable
+  * Added code to toggle verbose logging by sending SIGUSR1 to the process
+  * Simplified signal handlers
+  * Fixed issue with pickling RelaySession
+  * Fixed exception handling
+  * Fixed graceful shutdown when running with SIPThor
+  * Made MANIFEST.in more explicit and avoid unnecessary prune commands
+  * Pass command line arguments from build_inplace to setup.py
+  * Cleanup after build_inplace
+  * Removed commented out variable in debian rules
+  * Explicitly use python2 in shebang lines
+  * Updated tinyca URL
+  * Updated copyright years
+  * Increased debian standards version to 4.5.0
+
+ -- Dan Pascu <dan@ag-projects.com>  Fri, 14 Feb 2020 13:49:09 +0200
+
 mediaproxy (2.6.6) unstable; urgency=medium
 
   * Updated list of non-routable IP addresses and the corresponding RFC
