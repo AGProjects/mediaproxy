@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Dan Pascu <dan@ag-projects.com>
 Uploaders: Tijmen de Mes <tijmen@ag-projects.com>
 Build-Depends: debhelper (>= 11), dh-apache2, dh-python, python-all-dev, python-all-dbg, libnetfilter-conntrack-dev, iptables-dev
-Standards-Version: 3.9.8
+Standards-Version: 4.5.0
 
 Package: mediaproxy-common
 Architecture: any
