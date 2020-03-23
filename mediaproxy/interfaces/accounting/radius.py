@@ -87,7 +87,7 @@ class RadiusAccounting(EventQueue, pyrad.client.Client):
         except Exception:
             log.critical('cannot read the RADIUS configuration file')
             raise
-        pyrad.client.Client.__init__(self, server, 1812, acctport, secret, raddict)
+        pyrad.client.Client.__init__(self, server, 1812, acctport, 3799, secret, raddict)
         self.timeout = timeout
         self.retries = retries
         if 'bindaddr' in config and config['bindaddr'] != '*':

@@ -11,7 +11,7 @@ Architecture: any
 Depends: ${python:Depends}, ${shlibs:Depends}, ${misc:Depends},
          iptables,
          python-application (>= 2.8.0),
-         python-cjson,
+         python-cjson (>= 2.1),
          python-gnutls (>= 3.0.0),
          python-pyrad,
          python-sqlobject,
