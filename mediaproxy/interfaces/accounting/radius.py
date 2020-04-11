@@ -72,12 +72,16 @@ class RadiusAccounting(EventQueue, pyrad.client.Client):
                 server, acctport = server.split(':')
                 acctport = int(acctport)
             except ValueError:
+                log.info('Could not load additional RADIUS dictionary file: %r' % RadiusConfig.additional_dictionary)
                 acctport = 1813
+            log.info('Using RADIUS server at %s:%d' % *(server, acctport))
             secret = secrets[server]
+            log.info("Using RADIUS dictionary file %s" % config['dictionary'])
             dicts = [RadiusDictionaryFile(config['dictionary'])]
             if RadiusConfig.additional_dictionary:
                 additional_dictionary = process.configuration.file(RadiusConfig.additional_dictionary)
                 if additional_dictionary:
+                    log.info("Using additional RADIUS dictionary file %s" % RadiusConfig.additional_dictionary)
                     dicts.append(RadiusDictionaryFile(additional_dictionary))
                 else:
                     log.warning('Could not load additional RADIUS dictionary file: %r' % RadiusConfig.additional_dictionary)
@@ -85,7 +89,7 @@ class RadiusAccounting(EventQueue, pyrad.client.Client):
             timeout = int(config['radius_timeout'])
             retries = int(config['radius_retries'])
         except Exception:
-            log.critical('cannot read the RADIUS configuration file')
+            log.critical('cannot read the RADIUS configuration file %s' % RadiusConfig.config_file)
             raise
         pyrad.client.Client.__init__(self, server, 1812, acctport, 3799, secret, raddict)
         self.timeout = timeout
