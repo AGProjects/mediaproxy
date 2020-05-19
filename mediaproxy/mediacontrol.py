@@ -41,7 +41,7 @@ if RelayConfig.relay_ip is None:
 class SessionLogger(log.ContextualLogger):
     def __init__(self, session):
         super(SessionLogger, self).__init__(logger=log.get_logger())  # use the main logger as backend
-        self.session_id = session.session_id
+        self.session_id = session.call_id
 
     def apply_context(self, message):
         return '[session {0.session_id}] {1}'.format(self, message) if message != '' else ''

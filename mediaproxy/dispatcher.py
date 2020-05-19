@@ -71,7 +71,7 @@ class ProtocolLogger(log.ContextualLogger):
 class SessionLogger(log.ContextualLogger):
     def __init__(self, session):
         super(SessionLogger, self).__init__(logger=log.get_logger())  # use the main logger as backend
-        self.session_id = session.session_id
+        self.session_id = session.call_id
         self.relay_ip = session.relay_ip
 
     def apply_context(self, message):
