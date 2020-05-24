@@ -495,7 +495,7 @@ class Session(object):
         self.start_time = None
         self.end_time = None
         self.logger = SessionLogger(self)
-        self.logger.info('created (call-id: {0.call_id} from-tag: {0.from_tag})'.format(self))
+        self.logger.info('created: from-tag {0.from_tag})'.format(self))
         self.update_media(cseq, to_tag, user_agent, media_list, is_downstream, is_caller_cseq)
 
     def update_media(self, cseq, to_tag, user_agent, media_list, is_downstream, is_caller_cseq):
