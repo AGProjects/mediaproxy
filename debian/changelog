@@ -1,3 +1,10 @@
+mediaproxy (3.0.2) unstable; urgency=medium
+
+  * Fix removing expired sessions
+  * Add SIP call-id to logging
+
+ -- Adrian Georgescu <ag@ag-projects.com>  Sun, 07 Jun 2020 13:38:01 +0200
+
 mediaproxy (3.0.1) unstable; urgency=medium
 
   * Updated debian dependency to pyrad>=2.1
