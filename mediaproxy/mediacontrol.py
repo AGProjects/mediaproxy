@@ -459,10 +459,18 @@ class MediaStream(object):
             if not substream.caller.got_stun_probing and not substream.callee.got_stun_probing:
                 self.logger.info('unselected ICE candidate, but no STUN was received')
 
-        session = self.session
-        self.cleanup(reason)
-        self.timeout_wait = timeout_wait
-        session.stream_expired(self)
+        if substream is self.rtcp:
+            # Forget about the remote addresses, this will cause any
+            # re-occurrence of the same traffic to be forwarded again
+            substream.caller.remote.forget()
+            substream.caller.listener.protocol.send_packet_count = 0
+            substream.callee.remote.forget()
+            substream.callee.listener.protocol.send_packet_count = 0
+        else:
+            session = self.session
+            self.cleanup(reason)
+            self.timeout_wait = timeout_wait
+            session.stream_expired(self)
 
     def cleanup(self, status='closed'):
         if self.is_alive:
