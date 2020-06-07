@@ -659,6 +659,11 @@ class Session(object):
         stats['streams'] = streams = []
         stream_attributes = ('media_type', 'status', 'timeout_wait')
         for stream in sorted(all_streams, key=attrgetter('start_time')):  # type: MediaStream
+            if stream.status in ('closed', 'conntrack timeout'):
+                # these streams must be purged
+                stream.cleanup()
+                continue
+
             info = dict((name, getattr(stream, name)) for name in stream_attributes)
             info['caller_codec'] = stream.rtp.caller.codec
             info['callee_codec'] = stream.rtp.callee.codec
