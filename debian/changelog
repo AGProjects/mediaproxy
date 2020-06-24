@@ -1,3 +1,9 @@
+mediaproxy (3.0.3) unstable; urgency=medium
+
+  * Remove invalid argument to loseConnection
+
+ -- Adrian Georgescu <ag@ag-projects.com>  Wed, 24 Jun 2020 22:59:19 +0200
+
 mediaproxy (3.0.2) unstable; urgency=medium
 
   * Fix removing expired sessions
