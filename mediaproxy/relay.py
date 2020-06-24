@@ -81,7 +81,7 @@ class RelayClientProtocol(LineOnlyReceiver):
         if RelayConfig.passport is not None:
             peer_cert = self.transport.getPeerCertificate()
             if not RelayConfig.passport.accept(peer_cert):
-                self.transport.loseConnection(CertificateSecurityError('peer certificate not accepted'))
+                self.transport.loseConnection()
         self._connection_watcher = RecurrentCall(RelayConfig.keepalive_interval, self._send_keepalive)
 
     def connectionLost(self, reason=connectionDone):

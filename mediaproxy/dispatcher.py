@@ -150,7 +150,7 @@ class ManagementControlProtocol(ControlProtocol):
         if DispatcherConfig.management_use_tls and DispatcherConfig.management_passport is not None:
             peer_cert = self.transport.getPeerCertificate()
             if not DispatcherConfig.management_passport.accept(peer_cert):
-                self.transport.loseConnection(CertificateSecurityError('peer certificate not accepted'))
+                self.transport.loseConnection()
                 return
 
     def lineReceived(self, line):
@@ -262,7 +262,7 @@ class RelayServerProtocol(LineOnlyReceiver):
         if DispatcherConfig.passport is not None:
             peer_cert = self.transport.getPeerCertificate()
             if not DispatcherConfig.passport.accept(peer_cert):
-                self.transport.loseConnection(CertificateSecurityError('peer certificate not accepted'))
+                self.transport.loseConnection()
                 return
         self.authenticated = True
         self.factory.new_relay(self)
