@@ -293,9 +293,13 @@ class MediaRelay(MediaRelayBase):
                 factory = DispatcherConnectingFactory(self, dispatcher_addr, dispatcher_port)
                 self.dispatcher_connectors[new_dispatcher] = reactor.connectTLS(dispatcher_addr, dispatcher_port, factory, self.tls_context)
         for old_dispatcher in self.dispatchers.difference(dispatchers):
-            log.info('Removing old dispatcher at %s:%d' % old_dispatcher)
-            self.old_connectors[old_dispatcher] = self.dispatcher_connectors.pop(old_dispatcher)
-            self._check_disconnect(old_dispatcher)
+            try:
+                self.old_connectors[old_dispatcher] = self.dispatcher_connectors.pop(old_dispatcher)
+            except KeyError:
+                pass
+            else:
+                log.info('Removing old dispatcher at %s:%d' % old_dispatcher)
+                self._check_disconnect(old_dispatcher)
         self.dispatchers = dispatchers
 
     def got_command(self, dispatcher, command, headers):
