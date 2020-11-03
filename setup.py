@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 
 import re
 import sys
@@ -12,7 +12,7 @@ title, description = re.findall(r'^\s*([^\n]+)\s+(.*)$', readme, re.DOTALL)[0]
 
 # media-relay is not supported on non-linux platforms
 #
-if sys.platform == 'linux2':
+if 'linux' in sys.platform:
     scripts = ['media-relay', 'media-dispatcher']
     ext_modules = [Extension(name='mediaproxy.interfaces.system._conntrack',
                              sources=['mediaproxy/interfaces/system/_conntrack.c'],

@@ -122,7 +122,10 @@ class RadiusAccounting(EventQueue, pyrad.client.Client):
             if stream['post_dial_delay'] is not None:
                 attrs['Acct-Delay-Time'] = int(stream['post_dial_delay'])
                 break
+        if isinstance(self.secret, str):
+            scr_bn = self.secret.encode('utf-8')
+            self.secret = scr_bn
         try:
             self.SendPacket(self.CreateAcctPacket(**attrs))
-        except Exception, e:
+        except Exception as e:
             log.error('Failed to send radius accounting record: %s' % e)

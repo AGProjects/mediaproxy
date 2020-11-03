@@ -33,7 +33,7 @@ class RecurrentCall(object):
             self.now, self.next = self.next, self.next + self.period
         result = self.func(*self.args, **self.kwargs)
         if result is KeepRunning:
-            delay = max(self.next-time(), 0)
+            delay = max(self.next - time(), 0)
             self.callid = reactor.callLater(delay, self)
     def cancel(self):
         if self.callid is not None:

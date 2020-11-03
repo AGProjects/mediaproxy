@@ -1,7 +1,7 @@
 
 """Implementation of database accounting"""
 
-import cjson
+import json
 
 from application import log
 from application.python.queue import EventQueue
@@ -69,12 +69,12 @@ class DatabaseAccounting(EventQueue):
     def do_accounting(self, stats):
         sqlrepr = connection.sqlrepr
         names  = ', '.join([DatabaseConfig.callid_column, DatabaseConfig.fromtag_column, DatabaseConfig.totag_column, DatabaseConfig.info_column])
-        values = ', '.join((sqlrepr(v) for v in [stats['call_id'], stats['from_tag'], stats['to_tag'], cjson.encode(stats)]))
+        values = ', '.join((sqlrepr(v) for v in [stats['call_id'], stats['from_tag'], stats['to_tag'], json.dumps(stats)]))
         q = 'INSERT INTO %s (%s) VALUES (%s)' % (DatabaseConfig.sessions_table, names, values)
         try:
             try:
                 connection.query(q)
-            except ProgrammingError, e:
+            except ProgrammingError as e:
                 try:
                     MediaSessions.createTable(ifNotExists=True)
                 except OperationalError:

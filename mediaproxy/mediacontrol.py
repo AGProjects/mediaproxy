@@ -13,7 +13,7 @@ from twisted.internet.interfaces import IReadDescriptor
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet.error import CannotListenError
 from twisted.python.log import Logger
-from zope.interface import implements
+from zope.interface import implementer
 
 from mediaproxy.configuration import RelayConfig
 from mediaproxy.interfaces.system import _conntrack
@@ -53,13 +53,13 @@ class Address(object):
     def __init__(self, host, port, in_use=True, got_rtp=False):
         self.host = host
         self.port = port
-        self.in_use = self.__nonzero__() and in_use
+        self.in_use = self.__bool__() and in_use
         self.got_rtp = got_rtp
 
     def __len__(self):
         return 2
 
-    def __nonzero__(self):
+    def __bool__(self):
         return None not in (self.host, self.port)
 
     def __getitem__(self, index):
@@ -73,7 +73,7 @@ class Address(object):
         yield self.port
 
     def __str__(self):
-        return self.__nonzero__() and ('%s:%d' % (self.host, self.port)) or 'Unknown'
+        return self.__bool__() and ('%s:%d' % (self.host, self.port)) or 'Unknown'
 
     def __repr__(self):
         return '%s(%r, %r, in_use=%r, got_rtp=%r)' % (self.__class__.__name__, self.host, self.port, self.in_use, self.got_rtp)
@@ -87,18 +87,18 @@ class Address(object):
 
     @property
     def obsolete(self):
-        return self.__nonzero__() and not self.in_use
+        return self.__bool__() and not self.in_use
 
 
 class Counters(dict):
     def __add__(self, other):
         n = Counters(self)
-        for k, v in other.iteritems():
+        for k, v in other.items():
             n[k] += v
         return n
 
     def __iadd__(self, other):
-        for k, v in other.iteritems():
+        for k, v in other.items():
             self[k] += v
         return self
 
@@ -136,7 +136,8 @@ class StreamListenerProtocol(DatagramProtocol):
         self.send_packet_count = 0
         self.stun_queue = []
 
-    def datagramReceived(self, data, (host, port)):
+    def datagramReceived(self, data, addr):
+        (host, port) = addr
         if self.cb_func is not None:
             self.cb_func(host, port, data)
 
@@ -245,7 +246,7 @@ class MediaSubParty(object):
                 self.timer = None
             if self.codec == 'Unknown' and self.substream is self.substream.stream.rtp:
                 try:
-                    pt = ord(data[1]) & 127
+                    pt = data[1] & 127
                 except IndexError:
                     pass
                 else:
@@ -364,7 +365,8 @@ class MediaParty(object):
     def _get_remote_sdp(self):
         return self._remote_sdp
 
-    def _set_remote_sdp(self, (ip, port)):
+    def _set_remote_sdp(self, addr):
+        (ip, port) = addr
         self._remote_sdp = ip, port
         self.listener_rtp.protocol.set_remote_sdp(ip, port)
 
@@ -488,7 +490,7 @@ class Session(object):
     def __init__(self, manager, dispatcher, call_id, from_tag, from_uri, to_tag, to_uri, cseq, user_agent, media_list, is_downstream, is_caller_cseq, mark=0):
         self.manager = manager
         self.dispatcher = dispatcher
-        self.session_id = base64_encode(hashlib.md5(call_id).digest()).rstrip('=')
+        self.session_id = base64_encode(hashlib.md5(call_id.encode()).digest()).rstrip(b'=')
         self.call_id = call_id
         self.from_tag = from_tag
         self.to_tag = None
@@ -611,7 +613,7 @@ class Session(object):
         else:
             pos = 1
         try:
-            cseq = max(key for key in self.streams.keys() if key[pos] == cseq)
+            cseq = max(key for key in list(self.streams.keys()) if key[pos] == cseq)
         except ValueError:
             return None
         if is_downstream:
@@ -647,11 +649,11 @@ class Session(object):
 
     @property
     def relayed_bytes(self):
-        return sum(stream.counters.relayed_bytes for stream in set(chain(*self.streams.itervalues())))
+        return sum(stream.counters.relayed_bytes for stream in set(chain(*iter(self.streams.values()))))
 
     @property
     def statistics(self):
-        all_streams = set(chain(*self.streams.itervalues()))
+        all_streams = set(chain(*iter(self.streams.values())))
         attributes = ('call_id', 'from_tag', 'from_uri', 'to_tag', 'to_uri', 'start_time', 'duration')
         stats = dict((name, getattr(self, name)) for name in attributes)
         stats['caller_ua'] = self.caller_ua or 'Unknown'
@@ -691,11 +693,11 @@ class Session(object):
 
 
 class SessionManager(Logger):
-    implements(IReadDescriptor)
+    @implementer(IReadDescriptor)
 
     def __init__(self, relay, start_port, end_port):
         self.relay = relay
-        self.ports = deque((i, i + 1) for i in xrange(start_port, end_port, 2))
+        self.ports = deque((i, i + 1) for i in range(start_port, end_port, 2))
         self.bad_ports = deque()
         self.sessions = {}
         self.watcher = _conntrack.ExpireWatcher()
@@ -710,7 +712,7 @@ class SessionManager(Logger):
 
     def _measure_speed(self):
         start_time = time()
-        current_byte_counter = sum(session.relayed_bytes for session in self.sessions.itervalues())
+        current_byte_counter = sum(session.relayed_bytes for session in self.sessions.values())
         self.bps_relayed = 8 * (current_byte_counter + self.closed_byte_counter - self.active_byte_counter) / RelayConfig.traffic_sampling_period
         self.active_byte_counter = current_byte_counter
         self.closed_byte_counter = 0
@@ -810,18 +812,18 @@ class SessionManager(Logger):
     def cleanup(self):
         if self.speed_calculator is not None:
             self.speed_calculator.cancel()
-        for key in self.sessions.keys():
+        for key in list(self.sessions.keys()):
             self.session_expired(*key)
 
     @property
     def statistics(self):
-        return [session.statistics for session in self.sessions.itervalues()]
+        return [session.statistics for session in self.sessions.values()]
 
     @property
     def stream_count(self):
         stream_count = {}
-        for session in self.sessions.itervalues():
-            for stream in set(chain(*session.streams.itervalues())):
+        for session in self.sessions.values():
+            for stream in set(chain(*iter(session.streams.values()))):
                 if stream.is_alive:
                     stream_count[stream.media_type] = stream_count.get(stream.media_type, 0) + 1
         return stream_count

@@ -1,7 +1,7 @@
 
 import json
 import socket
-import urlparse
+import urllib.parse
 
 from abc import ABCMeta, abstractmethod, abstractproperty
 from application import log
@@ -41,9 +41,7 @@ class NegativeReplyError(OpenSIPSError):
         return '[{0.code}] {0.message}'.format(self)
 
 
-class Request(object):
-    __metaclass__ = ABCMeta
-
+class Request(object, metaclass=ABCMeta):
     method = abstractproperty()
 
     @abstractmethod
@@ -114,24 +112,24 @@ class GetOnlineDevices(Request):
             if response.type is NegativeReplyError and response.value.code == 404:
                 return []
             return response
-        return [ContactData(contact) for contact in response[u'Contacts']]
+        return [ContactData(contact) for contact in response['Contacts']]
 
 
 class ContactData(dict):
-    __fields__ = {u'contact', u'expires', u'received', u'user_agent'}
+    __fields__ = {'contact', 'expires', 'received', 'user_agent'}
 
     def __init__(self, data):
-        super(ContactData, self).__init__({key: value for key, value in ((key.lower().replace(u'-', u'_'), value) for key, value in data.iteritems()) if key in self.__fields__})
-        self.setdefault(u'user_agent', None)
-        if u'received' in self:
-            parsed_received = urlparse.parse_qs(self[u'received'])
-            if u'target' in parsed_received:
-                self[u'NAT_contact'] = parsed_received[u'target'][0]
+        super(ContactData, self).__init__({key: value for key, value in ((key.lower().replace('-', '_'), value) for key, value in data.items()) if key in self.__fields__})
+        self.setdefault('user_agent', None)
+        if 'received' in self:
+            parsed_received = urllib.parse.parse_qs(self['received'])
+            if 'target' in parsed_received:
+                self['NAT_contact'] = parsed_received['target'][0]
             else:
-                self[u'NAT_contact'] = self[u'received']
-            del self[u'received']
+                self['NAT_contact'] = self['received']
+            del self['received']
         else:
-            self[u'NAT_contact'] = self[u'contact']
+            self['NAT_contact'] = self['contact']
 
 
 class UNIXSocketProtocol(DatagramProtocol):
@@ -189,7 +187,7 @@ class UNIXSocketConnection(object):
         reactor.addSystemEventTrigger('during', 'shutdown', self.close)
 
     def close(self):
-        for request in self.transport.requests.values():
+        for request in list(self.transport.requests.values()):
             if not request.deferred.called:
                 request.deferred.errback(Error('shutting down'))
         self.transport.requests.clear()
@@ -215,9 +213,7 @@ class UNIXSocketConnection(object):
             self.transport.requests.pop(request.id)
 
 
-class ManagementInterface(object):
-    __metaclass__ = Singleton
-    
+class ManagementInterface(object, metaclass=Singleton):
     def __init__(self):
         self.connection = UNIXSocketConnection()
 

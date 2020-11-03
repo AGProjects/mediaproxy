@@ -43,26 +43,27 @@ class OpenSIPSControlClientProtocol(LineOnlyReceiver):
         self.defer = None
 
     def lineReceived(self, line):
+        line = line.decode()
         if line == 'error':
             print('got error from dispatcher!')
             reactor.stop()
         elif self.defer is not None:
-            print('got ip/ports from dispatcher: %s' % line)
+            print(('got ip/ports from dispatcher: %s' % line))
             ip, ports = line.split(' ', 1)
             defer = self.defer
             self.defer = None
             defer.callback((ip, [int(i) for i in ports.split()]))
         else:
-            print('got reply from dispatcher: %s' % line)
+            print(('got reply from dispatcher: %s' % line))
             defer = self.defer
             self.defer = None
             defer.callback(line)
 
     def _send_command(self, command, headers):
         self.defer = Deferred()
-        data = self.delimiter.join([command] + ['%s: %s' % item for item in headers.iteritems()]) + 2*self.delimiter
-        # print('writing on socket:\n%s' % data)
-        self.transport.write(data)
+        data = self.delimiter.decode().join([command] + ['%s: %s' % item for item in headers.items()]) + 2 * self.delimiter.decode()
+        print('writing on socket:\n%s' % data)
+        self.transport.write(data.encode())
         return self.defer
 
     def update(self, **kw_args):
@@ -93,14 +94,15 @@ class MediaReceiverProtocol(DatagramProtocol):
         self.received_media = False
         self.defer = Deferred()
 
-    def datagramReceived(self, data, (host, port)):
+    def datagramReceived(self, data, addr):
+        (host, port) = addr
         if not self.received_media:
             self.received_media = True
-            print('received media %d for %s from %s:%d' % (self.index, self.endpoint.name, host, port))
+            print(('received media %d for %s from %s:%d' % (self.index, self.endpoint.name, host, port)))
             self.defer.callback(None)
 
     def connectionRefused(self):
-        print('connection refused for media %d for %s' % (self.index, self.endpoint.name))
+        print(('connection refused for media %d for %s' % (self.index, self.endpoint.name)))
 
 
 class Endpoint(object):

@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 
 # Copyright (C) 2008 AG Projects
 #
@@ -30,7 +30,9 @@ def callee_update(callee_addr, protocol, session, caller_media, callee_media):
     return defer
 
 
-def do_media((caller_ip, caller_ports), (callee_ip, callee_ports), protocol, session, caller_media, callee_media):
+def do_media(caller_addr, callee_addr, protocol, session, caller_media, callee_media):
+    (caller_ip, caller_ports) = caller_addr
+    (callee_ip, callee_ports) = callee_addr
     print('starting media for both parties')
     session.caller.start_media(caller_ip, caller_ports)
     session.callee.start_media(callee_ip, callee_ports)
@@ -64,14 +66,16 @@ def change_callee(result, protocol, session):
     return defer
 
 
-def change_caller((caller_ip, caller_ports), protocol, session, media_defer):
+def change_caller(caller_addr, protocol, session, media_defer):
+    (caller_ip, caller_ports) = caller_addr
     print('sending new update for caller')
     defer = session.do_update(protocol, 'caller', 'reply', True)
     defer.addCallback(start_new_media, protocol, session, media_defer, caller_ip, caller_ports)
     return defer
 
 
-def start_new_media((callee_ip, callee_ports), protocol, session, media_defer, caller_ip, caller_ports):
+def start_new_media(callee_addr, protocol, session, media_defer, caller_ip, caller_ports):
+    (callee_ip, callee_ports) = callee_addr
     print('starting new media')
     session.caller.start_media(caller_ip, caller_ports)
     session.callee.start_media(callee_ip, callee_ports)

@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 
 # Copyright (C) 2008 AG Projects
 #
@@ -31,7 +31,9 @@ def callee_update(callee_addr, protocol, session, caller_media, callee_media):
     return defer
 
 
-def do_media((caller_ip, caller_ports), (callee_ip, callee_ports), protocol, session, caller_media, callee_media):
+def do_media(caller_addr, callee_addr, protocol, session, caller_media, callee_media):
+    (caller_ip, caller_ports) = caller_addr
+    (callee_ip, callee_ports) = callee_addr
     print('starting media for both parties')
     session.caller.start_media(caller_ip, caller_ports)
     session.callee.start_media(callee_ip, callee_ports)
@@ -47,7 +49,8 @@ def caller_ack(result, protocol, session, callee_ip, callee_ports):
     return defer
 
 
-def wait((callee_ack_ip, callee_ack_ports), protocol, session, callee_ip, callee_ports):
+def wait(callee_ack_addr, protocol, session, callee_ip, callee_ports):
+    (callee_ack_ip, callee_ack_ports) = callee_ack_addr
     print('waiting 5 seconds')
     assert (callee_ack_ip == callee_ip)
     assert (callee_ack_ports == callee_ports)

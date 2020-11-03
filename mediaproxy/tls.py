@@ -16,6 +16,7 @@ from mediaproxy.configuration import TLSConfig
 class FileDescriptor(object):
     def __init__(self, name, type):
         certs_path = os.path.normpath(TLSConfig.certs_path)
+#        print(f"Tls config from {certs_path}")
         self.path = os.path.join(certs_path, name)
         self.klass = type
         self.timestamp = 0
@@ -84,6 +85,7 @@ class X509Credentials(twisted.X509Credentials):
     def __init__(self, cert_name):
         self.X509cert_name = '%s.crt' % cert_name
         self.X509key_name = '%s.key' % cert_name
+#        print(f"cert file called {cert_name}")
         twisted.X509Credentials.__init__(self, self.X509cert, self.X509key, [self.X509ca], [self.X509crl])
         self.verify_peer = True
         self.verify_period = TLSConfig.verify_interval

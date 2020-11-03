@@ -53,7 +53,7 @@ class MediaProxyHeaders(object):
     @staticmethod
     def encode_media(value):
         try:
-            return ','.join(':'.join([type, ip, str(port), direction] + ['%s=%s' % (k, v) for k, v in parameters.iteritems()]) for type, ip, port, direction, parameters in value)
+            return ','.join(':'.join([type, ip, str(port), direction] + ['%s=%s' % (k, v) for k, v in parameters.items()]) for type, ip, port, direction, parameters in value)
         except:
             raise EncodingError("Ill-formatted media information")
 
@@ -77,9 +77,9 @@ class CodingDict(dict):
         if not args and not kwargs:
             it = []
         elif kwargs:
-            it = kwargs.iteritems()
+            it = iter(kwargs.items())
         elif isinstance(args[0], dict):
-            it = args[0].iteritems()
+            it = iter(args[0].items())
         else:
             try:
                 it = iter(args[0])

@@ -49,7 +49,7 @@ class PortRange(object):
     """A port range in the form start:end with start and end being even numbers in the [1024, 65536] range"""
     def __init__(self, value):
         self.start, self.end = [int(p) for p in value.split(':', 1)]
-        allowed = xrange(1024, 65537, 2)
+        allowed = range(1024, 65537, 2)
         if not (self.start in allowed and self.end in allowed and self.start < self.end):
             raise ValueError("bad range: %r: ports must be even numbers in the range [1024, 65536] with start < end" % value)
     def __repr__(self):
@@ -69,7 +69,7 @@ class SIPThorDomain(str):
     def __new__(cls, name):
         if name is None:
             return None
-        elif not isinstance(name, basestring):
+        elif not isinstance(name, str):
             raise TypeError("domain name must be a string, unicode or None")
         if name.lower() == 'none':
             return None

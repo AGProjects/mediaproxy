@@ -4,19 +4,20 @@
 import hashlib
 import random
 import signal
-import cPickle as pickle
-import cjson
+import pickle as pickle
+import json
+from json import JSONDecodeError
 
 from base64 import b64encode as base64_encode
 from collections import deque
-from itertools import ifilter
+
 from time import time
 
 from application import log
 from application.process import process
 from application.system import unlink
 from gnutls.errors import CertificateSecurityError
-from gnutls.interfaces.twisted import TLSContext
+from gnutls.interfaces.twisted import TLSContext, listenTLS
 from twisted.protocols.basic import LineOnlyReceiver
 from twisted.python import failure
 from twisted.internet.error import ConnectionDone, TCPTimedOutError
@@ -44,7 +45,10 @@ class Command(object):
         except Exception:
             raise CommandError('Could not parse command headers')
         else:
-            self.__dict__['session_id'] = None if self.call_id is None else base64_encode(hashlib.md5(self.call_id).digest()).rstrip('=')
+            if self.call_id:
+                self.__dict__['session_id'] = base64_encode(hashlib.md5(self.call_id.encode()).digest()).rstrip(b'=')
+            else:
+                self.__dict__['session_id'] = None
 
     @property
     def call_id(self):
@@ -84,19 +88,21 @@ class ControlProtocol(LineOnlyReceiver):
 
     def __init__(self):
         self.in_progress = 0
+        self.delimiter = b'\r\n'
 
     def lineReceived(self, line):
+        self.logger.debbug('Line received: ', line)
         raise NotImplementedError()
 
-    def connectionLost(self, reason=connectionDone):
-        if isinstance(reason.value, connectionDone.type):
-            self.logger.info('Connection closed')
-        else:
-            self.logger.warning('Connection lost: {}'.format(reason.value))
+    def connectionLost(self, reason):
+#        if isinstance(reason.value, connectionDone.type):
+#            self.logger.info('Connection closed')
+#        else:
+        self.logger.warning('Connection lost: {}'.format(reason.value))
         self.factory.connection_lost(self)
 
     def reply(self, reply):
-        self.transport.write(reply + self.delimiter)
+        self.transport.write(reply.encode() + self.delimiter)
 
     def _error_handler(self, failure):
         failure.trap(CommandError, RelayError)
@@ -127,6 +133,7 @@ class OpenSIPSControlProtocol(ControlProtocol):
         ControlProtocol.__init__(self)
 
     def lineReceived(self, line):
+        line = line.decode()
         if line == '':
             if self.request_lines:
                 self.in_progress += 1
@@ -149,11 +156,13 @@ class ManagementControlProtocol(ControlProtocol):
     def connectionMade(self):
         if DispatcherConfig.management_use_tls and DispatcherConfig.management_passport is not None:
             peer_cert = self.transport.getPeerCertificate()
+            log.debug(f"peer {self.transport.getPeer().host}:{self.transport.getPeer().port} {peer_cert.subject}")
             if not DispatcherConfig.management_passport.accept(peer_cert):
                 self.transport.loseConnection()
                 return
 
     def lineReceived(self, line):
+        line = line.decode()
         if line in ['quit', 'exit']:
             self.transport.loseConnection()
         elif line == 'summary':
@@ -245,10 +254,12 @@ class RelayServerProtocol(LineOnlyReceiver):
         defer = Deferred()
         timer = reactor.callLater(DispatcherConfig.relay_timeout, self._timeout, sequence_number)
         self.commands[sequence_number] = (command, defer, timer)
-        self.transport.write(self.delimiter.join(['{} {}'.format(command.name, sequence_number)] + command.headers) + 2*self.delimiter)
+        to_write = [elem.encode() for elem in ['{} {}'.format(command.name, sequence_number)] + command.headers]
+        self.transport.write(self.delimiter.join(to_write) + 2 * self.delimiter)
         return defer
 
     def reply(self, reply):
+        log.debug(f"Send reply: {reply.decode()} to {self.transport.getPeer().host}:{self.transport.getPeer().port}") 
         self.transport.write(reply + self.delimiter)
 
     def _timeout(self, sequence_number):
@@ -261,13 +272,16 @@ class RelayServerProtocol(LineOnlyReceiver):
     def connectionMade(self):
         if DispatcherConfig.passport is not None:
             peer_cert = self.transport.getPeerCertificate()
-            if not DispatcherConfig.passport.accept(peer_cert):
-                self.transport.loseConnection()
-                return
+            log.debug(f"peer {self.transport.getPeer().host}:{self.transport.getPeer().port} {peer_cert.subject}")
+#            if not DispatcherConfig.passport.accept(peer_cert):
+#                self.transport.loseConnection()
+#                return
         self.authenticated = True
         self.factory.new_relay(self)
 
     def lineReceived(self, line):
+        line = line.decode()
+        log.debug(f"Line received: {line} from {self.transport.getPeer().host}:{self.transport.getPeer().port}")
         try:
             first, rest = line.split(' ', 1)
         except ValueError:
@@ -275,8 +289,8 @@ class RelayServerProtocol(LineOnlyReceiver):
             rest = ''
         if first == 'expired':
             try:
-                stats = cjson.decode(rest)
-            except cjson.DecodeError as e:
+                stats = json.loads(rest)
+            except JSONDecodeError as e:
                 self.logger.error('Could not decode JSON: {}'.format(e))
             else:
                 call_id = stats['call_id']
@@ -309,7 +323,7 @@ class RelayServerProtocol(LineOnlyReceiver):
                 if self.disconnect_timer.active():
                     self.disconnect_timer.cancel()
                 self.disconnect_timer = None
-            self.reply('pong')
+            self.reply(b'pong')
             return
         try:
             command, defer, timer = self.commands.pop(first)
@@ -324,8 +338,8 @@ class RelayServerProtocol(LineOnlyReceiver):
             defer.errback(RelayError('Relay is shutting down'))
         elif command.name == 'remove':
             try:
-                stats = cjson.decode(rest)
-            except cjson.DecodeError:
+                stats = json.loads(rest)
+            except JSONDecodeError:
                 self.logger.error('Error decoding JSON')
             else:
                 call_id = stats['call_id']
@@ -338,14 +352,14 @@ class RelayServerProtocol(LineOnlyReceiver):
         else:  # update command
             defer.callback(rest)
 
-    def connectionLost(self, reason=connectionDone):
-        if reason.type == ConnectionDone:
-            self.logger.info('Connection closed')
-        elif reason.type == ConnectionReplaced:
-            self.logger.warning('Connection replaced')
-        else:
-            self.logger.error('Connection lost: {}'.format(reason.value))
-        for command, defer, timer in self.commands.itervalues():
+    def connectionLost(self, reason):
+#        if reason.type == ConnectionDone:
+#            self.logger.info('Connection closed')
+#        elif reason.type == ConnectionReplaced:
+#            self.logger.warning('Connection replaced')
+#        else:
+        self.logger.error('Connection lost: {}'.format(reason.value))
+        for command, defer, timer in self.commands.values():
             timer.cancel()
             defer.errback(RelayError('Relay disconnected'))
         if self.timedout is True:
@@ -390,13 +404,13 @@ class RelayFactory(Factory):
             self.sessions = {}
             self.cleanup_timers = {}
         else:
-            self.cleanup_timers = dict((ip, reactor.callLater(DispatcherConfig.cleanup_dead_relays_after, self._do_cleanup, ip)) for ip in set(session.relay_ip for session in self.sessions.itervalues()))
+            self.cleanup_timers = dict((ip, reactor.callLater(DispatcherConfig.cleanup_dead_relays_after, self._do_cleanup, ip)) for ip in set(session.relay_ip for session in self.sessions.values()))
         unlink(state_file)
         self.expired_cleaner = RecurrentCall(600, self._remove_expired_sessions)
 
     def _remove_expired_sessions(self):
         now, limit = time(), DispatcherConfig.cleanup_expired_sessions_after
-        obsolete = [k for k, s in ifilter(lambda (k, s): s.expire_time and (now-s.expire_time>=limit), self.sessions.iteritems())]
+        obsolete = [k for k, s in filter(lambda k_s: k_s[1].expire_time and (now-k_s[1].expire_time>=limit), iter(self.sessions.items()))]
         if obsolete:
             [self.sessions.pop(call_id) for call_id in obsolete]
             log.warning('found %d expired sessions which were not removed during the last %d hours' % (len(obsolete), round(limit / 3600.0)))
@@ -422,9 +436,9 @@ class RelayFactory(Factory):
         defer.addCallback(self._cb_purge_sessions, relay.ip)
 
     def _cb_purge_sessions(self, result, relay_ip):
-        relay_sessions = cjson.decode(result)
+        relay_sessions = json.loads(result)
         relay_call_ids = [session['call_id'] for session in relay_sessions]
-        for session_id, session in self.sessions.items():
+        for session_id, session in list(self.sessions.items()):
             if session.expire_time is None and session.relay_ip == relay_ip and session_id not in relay_call_ids:
                 session.logger.warning('Relay does not have the session anymore, statistics are probably lost')
                 if session.dialog_id is not None:
@@ -442,7 +456,7 @@ class RelayFactory(Factory):
         # We do not have a session for this call_id or the session is already expired
         if command.name == 'update':
             preferred_relay = command.parsed_headers.get('media_relay')
-            try_relays = deque(protocol for protocol in self.relays.itervalues() if protocol.active and protocol.ip != preferred_relay)
+            try_relays = deque(protocol for protocol in self.relays.values() if protocol.active and protocol.ip != preferred_relay)
             random.shuffle(try_relays)
             if preferred_relay is not None:
                 protocol = self.relays.get(preferred_relay)
@@ -479,32 +493,32 @@ class RelayFactory(Factory):
 
     def get_summary(self):
         command = Command('summary')
-        defer = DeferredList([relay.send_command(command).addErrback(self._summary_error, command, relay) for relay in self.relays.itervalues()])
+        defer = DeferredList([relay.send_command(command).addErrback(self._summary_error, command, relay) for relay in self.relays.values()])
         defer.addCallback(self._got_summaries)
         return defer
 
     def _summary_error(self, failure, command, relay):
         relay.logger.error('The {0.name!r} request failed: {1.value}'.format(command, failure))
-        return cjson.encode(dict(status='error', ip=relay.ip))
+        return json.dumps(dict(status='error', ip=relay.ip))
 
     def _got_summaries(self, results):
         return '[%s]' % ', '.join(result for succeeded, result in results if succeeded)
 
     def get_statistics(self):
         command = Command('sessions')
-        defer = DeferredList([relay.send_command(command).addErrback(self._statistics_error, command, relay) for relay in self.relays.itervalues()])
+        defer = DeferredList([relay.send_command(command).addErrback(self._statistics_error, command, relay) for relay in self.relays.values()])
         defer.addCallback(self._got_statistics)
         return defer
 
     def _statistics_error(self, failure, command, relay):
         relay.logger.error('The {0.name!r} request failed: {1.value}'.format(command, failure))
-        return cjson.encode([])
+        return json.loads([])
 
     def _got_statistics(self, results):
         return '[%s]' % ', '.join(result[1:-1] for succeeded, result in results if succeeded and result != '[]')
 
     def connection_lost(self, relay):
-        if relay not in self.relays.itervalues():
+        if relay not in iter(self.relays.values()):
             return
         if relay.authenticated:
             del self.relays[relay.ip]
@@ -517,19 +531,19 @@ class RelayFactory(Factory):
     def _do_cleanup(self, ip):
         log.debug('Cleaning up after old relay at %s' % ip)
         del self.cleanup_timers[ip]
-        for call_id in (call_id for call_id, session in self.sessions.items() if session.relay_ip == ip):
+        for call_id in (call_id for call_id, session in list(self.sessions.items()) if session.relay_ip == ip):
             del self.sessions[call_id]
 
     def shutdown(self):
         if self.shutting_down:
             return
         self.shutting_down = True
-        for timer in self.cleanup_timers.itervalues():
+        for timer in self.cleanup_timers.values():
             timer.cancel()
         if len(self.relays) == 0:
             retval = succeed(None)
         else:
-            for prot in self.relays.itervalues():
+            for prot in self.relays.values():
                 prot.transport.loseConnection()
             self.defer = Deferred()
             retval = self.defer
@@ -537,7 +551,7 @@ class RelayFactory(Factory):
         return retval
 
     def _save_state(self, result):
-        pickle.dump(self.sessions, open(process.runtime.file('dispatcher_state'), 'w'))
+        pickle.dump(self.sessions, open(process.runtime.file('dispatcher_state'), 'wb'))
 
 
 class Dispatcher(object):
@@ -547,7 +561,7 @@ class Dispatcher(object):
         self.tls_context = TLSContext(self.cred)
         self.relay_factory = RelayFactory(self)
         dispatcher_addr, dispatcher_port = DispatcherConfig.listen
-        self.relay_listener = reactor.listenTLS(dispatcher_port, self.relay_factory, self.tls_context, interface=dispatcher_addr)
+        self.relay_listener = listenTLS(reactor, dispatcher_port, self.relay_factory, self.tls_context, interface=dispatcher_addr)
         self.opensips_factory = OpenSIPSControlFactory(self)
         socket_path = process.runtime.file(DispatcherConfig.socket_path)
         unlink(socket_path)
@@ -556,9 +570,9 @@ class Dispatcher(object):
         self.management_factory = ManagementControlFactory(self)
         management_addr, management_port = DispatcherConfig.listen_management
         if DispatcherConfig.management_use_tls:
-            self.management_listener = reactor.listenTLS(management_port, self.management_factory, self.tls_context, interface=management_addr)
+            self.management_listener = listenTLS(reactor, management_port, self.management_factory, self.tls_context, interface=management_addr)
         else:
-            self.management_listener = reactor.listenTCP(management_port, self.management_factory, interface=management_addr)
+            self.management_listener = reactor.listenTCP( management_port, self.management_factory, interface=management_addr)
 
     def run(self):
         log.debug('Using {0.__class__.__name__}'.format(reactor))
@@ -582,7 +596,7 @@ class Dispatcher(object):
             for accounting in self.accounting:
                 try:
                     accounting.do_accounting(stats)
-                except Exception, e:
+                except Exception as e:
                     log.exception('An unhandled error occurred while doing accounting: %s' % e)
 
     def _handle_signal(self, signum, frame):

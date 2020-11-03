@@ -1,14 +1,16 @@
 
 """Implementation of the MediaProxy relay"""
 
-import cjson
+import json
 import signal
 import resource
 
+"""
 try:
     from twisted.internet import epollreactor; epollreactor.install()
 except:
     raise RuntimeError('mandatory epoll reactor support is not available from the twisted framework')
+"""
 
 from application import log
 from application.process import process
@@ -16,6 +18,7 @@ from gnutls.errors import CertificateError, CertificateSecurityError
 from gnutls.interfaces.twisted import TLSContext
 from time import time
 from twisted.protocols.basic import LineOnlyReceiver
+from twisted.protocols.policies import TimeoutMixin
 from twisted.internet.error import ConnectionDone, TCPTimedOutError, DNSLookupError
 from twisted.internet.protocol import ClientFactory, connectionDone
 from twisted.internet.defer import DeferredList, succeed
@@ -35,6 +38,7 @@ from mediaproxy.tls import X509Credentials
 
 # Increase the system limit for the maximum number of open file descriptors
 # to be able to handle connections to all ports in port_range
+
 fd_limit = RelayConfig.port_range.end - RelayConfig.port_range.start + 1000
 try:
     resource.setrlimit(resource.RLIMIT_NOFILE, (fd_limit, fd_limit))
@@ -48,7 +52,7 @@ else:
         log.info('Set resource limit for maximum open file descriptors to %d' % fd_limit)
 
 
-class RelayClientProtocol(LineOnlyReceiver):
+class RelayClientProtocol(LineOnlyReceiver, TimeoutMixin):
     noisy = False
     required_headers = {'update': {'call_id', 'from_tag', 'from_uri', 'to_uri', 'cseq', 'user_agent', 'type'},
                         'remove': {'call_id', 'from_tag'},
@@ -68,19 +72,22 @@ class RelayClientProtocol(LineOnlyReceiver):
             # do not use loseConnection() as it waits to flush the output buffers.
             reactor.callLater(0, self.transport.connectionLost, failure.Failure(TCPTimedOutError()))
             return None
-        self.transport.write('ping' + self.delimiter)
+        self.transport.write(b'ping' + self.delimiter)
         self._queued_keepalives += 1
         return KeepRunning
 
     def reply(self, reply):
-        self.transport.write(reply + self.delimiter)
+        log.debug(f"Send reply: {reply} to {self.transport.getPeer().host}:{self.transport.getPeer().port}")
+        self.transport.write(reply.encode() + self.delimiter)
 
     def connectionMade(self):
         peer = self.transport.getPeer()
         log.info('Connected to dispatcher at %s:%d' % (peer.host, peer.port))
         if RelayConfig.passport is not None:
             peer_cert = self.transport.getPeerCertificate()
+            log.debug(f"peer {self.transport.getPeer().host}:{self.transport.getPeer().port} {peer_cert.subject}")
             if not RelayConfig.passport.accept(peer_cert):
+                log.debug("Media dispatcher certificate %s refused" % peer_cert.subject)
                 self.transport.loseConnection()
         self._connection_watcher = RecurrentCall(RelayConfig.keepalive_interval, self._send_keepalive)
 
@@ -91,6 +98,8 @@ class RelayClientProtocol(LineOnlyReceiver):
         self._queued_keepalives = 0
 
     def lineReceived(self, line):
+        line = line.decode()
+        log.debug(f"Line received: {line} from {self.transport.getPeer().host}:{self.transport.getPeer().port}")
         if line == 'pong':
             self._queued_keepalives -= 1
             return
@@ -130,7 +139,7 @@ class RelayClientProtocol(LineOnlyReceiver):
             else:
                 try:
                     self.headers[name] = value
-                except DecodingError, e:
+                except DecodingError as e:
                     log.error('Could not decode header: %s' % e)
 
 
@@ -154,10 +163,10 @@ class DispatcherConnectingFactory(ClientFactory):
 
     def clientConnectionLost(self, connector, reason):
         self.cancel_delayed()
-        if reason.type != ConnectionDone:
-            log.error('Connection with dispatcher at %(host)s:%(port)d was lost: %%s' % connector.__dict__ % reason.value)
-        else:
-            log.info('Connection with dispatcher at %(host)s:%(port)d was closed' % connector.__dict__)
+#        if reason.type != ConnectionDone:
+        log.error('Connection with dispatcher at %(host)s:%(port)d was lost: %%s' % connector.__dict__ % reason.value)
+#        else:
+#            log.info('Connection with dispatcher at %(host)s:%(port)d was closed' % connector.__dict__)
         if self.parent.connector_needs_reconnect(connector):
             if isinstance(reason.value, CertificateError) or self.connection_lost:
                 self.delayed = reactor.callLater(RelayConfig.reconnect_delay, connector.connect)
@@ -170,6 +179,7 @@ class DispatcherConnectingFactory(ClientFactory):
         return ClientFactory.buildProtocol(self, addr)
 
     def _connected_successfully(self):
+        log.debug('Connected successfully')
         self.connection_lost = False
 
     def cancel_delayed(self):
@@ -199,7 +209,8 @@ class SRVMediaRelayBase(object):
         defer.addCallback(self._cb_got_all)
         return KeepRunning
 
-    def _cb_got_srv(self, (answers, auth, add), port):
+    def _cb_got_srv(self, answ_auth_add, port):
+        (answers, auth, add) = answ_auth_add
         for answer in answers:
             if answer.type == dns.SRV and answer.payload and answer.payload.target != dns.Name("."):
                 return str(answer.payload.target), port
@@ -272,7 +283,7 @@ class MediaRelay(MediaRelayBase):
         self.shutting_down = False
         self.graceful_shutdown = False
         self.start_time = time()
-        super(MediaRelay, self).__init__()
+        super().__init__()
 
     @property
     def status(self):
@@ -284,14 +295,17 @@ class MediaRelay(MediaRelayBase):
     def update_dispatchers(self, dispatchers):
         dispatchers = set(dispatchers)
         for new_dispatcher in dispatchers.difference(self.dispatchers):
-            if new_dispatcher in self.old_connectors.iterkeys():
+            if new_dispatcher in iter(self.old_connectors.keys()):
                 log.info('Restoring old dispatcher at %s:%d' % new_dispatcher)
                 self.dispatcher_connectors[new_dispatcher] = self.old_connectors.pop(new_dispatcher)
             else:
                 log.info('Adding new dispatcher at %s:%d' % new_dispatcher)
                 dispatcher_addr, dispatcher_port = new_dispatcher
                 factory = DispatcherConnectingFactory(self, dispatcher_addr, dispatcher_port)
-                self.dispatcher_connectors[new_dispatcher] = reactor.connectTLS(dispatcher_addr, dispatcher_port, factory, self.tls_context)
+                self.dispatcher_connectors[new_dispatcher] = reactor.connectTLS(dispatcher_addr,
+                                                                                dispatcher_port,
+                                                                                factory,
+                                                                                self.tls_context)
         for old_dispatcher in self.dispatchers.difference(dispatchers):
             try:
                 self.old_connectors[old_dispatcher] = self.dispatcher_connectors.pop(old_dispatcher)
@@ -311,9 +325,9 @@ class MediaRelay(MediaRelayBase):
                        'session_count': len(self.session_manager.sessions),
                        'stream_count': self.session_manager.stream_count,
                        'bps_relayed': self.session_manager.bps_relayed}
-            return cjson.encode(summary)
+            return json.dumps(summary)
         elif command == 'sessions':
-            return cjson.encode(self.session_manager.statistics)
+            return json.dumps(self.session_manager.statistics)
         elif command == 'update':
             if self.graceful_shutdown or self.shutting_down:
                 if not self.session_manager.has_session(**headers):
@@ -331,14 +345,17 @@ class MediaRelay(MediaRelayBase):
             if session is None:
                 return 'error'
             else:
-                return cjson.encode(session.statistics)
+                return json.dumps(session.statistics)
 
     def session_expired(self, session):
         connector = self.dispatcher_connectors.get(session.dispatcher)
         if connector is None:
             connector = self.old_connectors.get(session.dispatcher)
         if connector and connector.state == 'connected':
-            connector.transport.write(' '.join(['expired', cjson.encode(session.statistics)]) + connector.factory.protocol.delimiter)
+#            connector.transport.write(' '.join(['expired', json.dumps(session.statistics)]) + connector.factory.protocol.delimiter)
+            to_write = [elem.encode() for elem in ['expired', json.dumps(session.statistics)]]
+            connector.transport.write(connector.factory.protocol.delimiter.join(to_write) + connector.factory.protocol.delimiter)
+
         else:
             log.warning('dispatcher for expired session is no longer online, statistics are lost!')
 
@@ -366,10 +383,10 @@ class MediaRelay(MediaRelayBase):
                     self._shutdown_done()
 
     def connector_needs_reconnect(self, connector):
-        if connector in self.dispatcher_connectors.values():
+        if connector in list(self.dispatcher_connectors.values()):
             return True
         else:
-            for dispatcher, old_connector in self.old_connectors.items():
+            for dispatcher, old_connector in list(self.old_connectors.items()):
                 if old_connector is connector:
                     if self.dispatcher_session_count.get(dispatcher, 0) > 0:
                         return True
