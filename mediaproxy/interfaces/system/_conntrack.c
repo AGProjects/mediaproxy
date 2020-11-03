@@ -17,6 +17,9 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 
+#ifndef Py_TYPE
+    #define Py_TYPE(ob) (((PyObject*)(ob))->ob_type)
+#endif
 
 #define DEFAULT_TIMEOUT 60
 
@@ -46,9 +49,9 @@ enum {
 };
 
 
-typedef struct ForwardingRule {
+typedef struct {
     PyObject_HEAD
-    
+
     struct nf_conntrack *conntrack;
     int is_active;
     int done_init;
@@ -194,7 +197,7 @@ ForwardingRule_dealloc(ForwardingRule *self)
     }
     nfct_destroy(self->conntrack);
 
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 
@@ -414,13 +417,13 @@ ForwardingRule_set_timeout(ForwardingRule *self, PyObject *value, void *closure)
         PyErr_SetString(PyExc_TypeError, "Cannot delete the timeout attribute");
         return -1;
     }
-  
-    if (!PyInt_Check(value)) {
+
+    if (!PyLong_Check(value)) {
         PyErr_SetString(PyExc_TypeError, "The timeout attribute value must be an int");
         return -1;
     }
 
-    timeout = PyInt_AsUnsignedLongMask(value);
+    timeout = PyLong_AsUnsignedLongMask(value);
     if (timeout > UINT32_MAX) {
         PyErr_SetString(PyExc_ValueError, "Timeout value too large");
         return -1;
@@ -478,45 +481,49 @@ static PyMemberDef ForwardingRule_members[] = {
 
 
 static PyTypeObject ForwardingRule_Type = {
-    PyObject_HEAD_INIT(NULL)
-    0,                                      /* ob_size */
-    "mediaproxy.interfaces.system._conntrack.ForwardingRule",  /* tp_name */
-    sizeof(ForwardingRule),                 /* tp_basicsize */
-    0,                                      /* tp_itemsize */
-    (destructor) ForwardingRule_dealloc,    /* tp_dealloc */
-    0,                                      /* tp_print */
-    0,                                      /* tp_getattr */
-    0,                                      /* tp_setattr */
-    0,                                      /* tp_compare */
-    0,                                      /* tp_repr */
-    0,                                      /* tp_as_number */
-    0,                                      /* tp_as_sequence */
-    0,                                      /* tp_as_mapping */
-    0,                                      /* tp_hash */
-    0,                                      /* tp_call */
-    0,                                      /* tp_str */
-    0,                                      /* tp_getattro */
-    0,                                      /* tp_setattro */
-    0,                                      /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, /* tp_flags */
-    "A conntrack based mediaproxy forwarding rule",                /* tp_doc */
-    (traverseproc) ForwardingRule_traverse, /* tp_traverse */
-    (inquiry) ForwardingRule_clear,         /* tp_clear */
-    0,                                      /* tp_richcompare */
-    0,                                      /* tp_weaklistoffset */
-    0,                                      /* tp_iter */
-    0,                                      /* tp_iternext */
-    0,                                      /* tp_methods */
-    ForwardingRule_members,                 /* tp_members */
-    ForwardingRule_getseters,               /* tp_getset */
-    0,                                      /* tp_base */
-    0,                                      /* tp_dict */
-    0,                                      /* tp_descr_get */
-    0,                                      /* tp_descr_set */
-    offsetof(ForwardingRule, dict),         /* tp_dictoffset */
-    (initproc) ForwardingRule_init,         /* tp_init */
-    0,                                      /* tp_alloc */
-    ForwardingRule_new,                     /* tp_new */
+    PyVarObject_HEAD_INIT(NULL, 0)
+//    0,                                      // ob_size
+    "mediaproxy.interfaces.system._conntrack.ForwardingRule",  // tp_name 
+    sizeof(ForwardingRule),                 // tp_basicsize 
+    0,                                      // tp_itemsize */
+    (destructor) ForwardingRule_dealloc,    // tp_dealloc */
+    0,                                      // tp_print */
+    0,                                      // tp_getattr */
+    0,                                      // tp_setattr */
+    0,                                      // tp_compare */
+    0,                                      // tp_repr */
+    0,                                      // tp_as_number */
+    0,                                      // tp_as_sequence */
+    0,                                      // tp_as_mapping */
+    0,                                      // tp_hash */
+    0,                                      // tp_call */
+    0,                                      // tp_str */
+    0,                                      // tp_getattro */
+    0,                                      // tp_setattro */
+    0,                                      // tp_as_buffer */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, // tp_flags */
+//    Py_TPFLAGS_DEFAULT,                     // tp_flags */
+    "A conntrack based mediaproxy forwarding rule",                // tp_doc */
+    (traverseproc) ForwardingRule_traverse, // tp_traverse */
+    (inquiry) ForwardingRule_clear,         // tp_clear */
+    0,                                      // tp_richcompare */
+    0,                                      // tp_weaklistoffset */
+    0,                                      // tp_iter */
+    0,                                      // tp_iternext */
+    0,                                      // tp_methods */
+    ForwardingRule_members,                 // tp_members */
+    ForwardingRule_getseters,               // tp_getset */
+    0,                                      // tp_base */
+    0,                                      // tp_dict */
+    0,                                      // tp_descr_get */
+    0,                                      // tp_descr_set */
+    offsetof(ForwardingRule, dict),         // tp_dictoffset */
+    (initproc) ForwardingRule_init,         // tp_init */
+    0,                                      // tp_alloc */
+    ForwardingRule_new,                     // tp_new */
+    0,                                  // tp_free
+    0,                                  // tp_is_gc
+
 };
 
 
@@ -539,7 +546,7 @@ ExpireWatcher_dealloc(ExpireWatcher *self)
     if (self->ct_handle != NULL)
         nfct_close(self->ct_handle);
 
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 
@@ -635,7 +642,7 @@ ExpireWatcher_read(ExpireWatcher *self)
 static PyObject*
 ExpireWatcher_get_fd(ExpireWatcher *self, void *closure)
 {
-    return PyInt_FromLong(nfct_fd(self->ct_handle));
+    return PyLong_FromLong(nfct_fd(self->ct_handle));
 }
 
 
@@ -652,45 +659,45 @@ static PyGetSetDef ExpireWatcher_getseters[] = {
 
 
 static PyTypeObject ExpireWatcher_Type = {
-    PyObject_HEAD_INIT(NULL)
-    0,                                     /* ob_size */
-    "mediaproxy.interfaces.system._conntrack.ExpireWatcher",  /* tp_name */
-    sizeof(ExpireWatcher),                 /* tp_basicsize */
-    0,                                     /* tp_itemsize */
-    (destructor) ExpireWatcher_dealloc,    /* tp_dealloc */
-    0,                                     /* tp_print */
-    0,                                     /* tp_getattr */
-    0,                                     /* tp_setattr */
-    0,                                     /* tp_compare */
-    0,                                     /* tp_repr */
-    0,                                     /* tp_as_number */
-    0,                                     /* tp_as_sequence */
-    0,                                     /* tp_as_mapping */
-    0,                                     /* tp_hash */
-    0,                                     /* tp_call */
-    0,                                     /* tp_str */
-    0,                                     /* tp_getattro */
-    0,                                     /* tp_setattro */
-    0,                                     /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,  /* tp_flags */
-    "Monitor forwarding rules for expiration", /* tp_doc */
-    0,                                     /* tp_traverse */
-    0,                                     /* tp_clear */
-    0,                                     /* tp_richcompare */
-    0,                                     /* tp_weaklistoffset */
-    0,                                     /* tp_iter */
-    0,                                     /* tp_iternext */
-    ExpireWatcher_methods,                 /* tp_methods */
-    0,                                     /* tp_members */
-    ExpireWatcher_getseters,               /* tp_getset */
-    0,                                     /* tp_base */
-    0,                                     /* tp_dict */
-    0,                                     /* tp_descr_get */
-    0,                                     /* tp_descr_set */
-    0,                                     /* tp_dictoffset */
-    (initproc) ExpireWatcher_init,         /* tp_init */
-    0,                                     /* tp_alloc */
-    ExpireWatcher_new,                     /* tp_new */
+    PyVarObject_HEAD_INIT(NULL, 0)
+//    0,                                     // ob_size */
+    "mediaproxy.interfaces.system._conntrack.ExpireWatcher",  // tp_name */
+    sizeof(ExpireWatcher),                 // tp_basicsize */
+    0,                                     // tp_itemsize */
+    (destructor) ExpireWatcher_dealloc,    // tp_dealloc */
+    0,                                     // tp_print */
+    0,                                     // tp_getattr */
+    0,                                     // tp_setattr */
+    0,                                     // tp_compare */
+    0,                                     // tp_repr */
+    0,                                     // tp_as_number */
+    0,                                     // tp_as_sequence */
+    0,                                     // tp_as_mapping */
+    0,                                     // tp_hash */
+    0,                                     // tp_call */
+    0,                                     // tp_str */
+    0,                                     // tp_getattro */
+    0,                                     // tp_setattro */
+    0,                                     // tp_as_buffer */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,  // tp_flags */
+    "Monitor forwarding rules for expiration", // tp_doc */
+    0,                                     // tp_traverse */
+    0,                                     // tp_clear */
+    0,                                     // tp_richcompare */
+    0,                                     // tp_weaklistoffset */
+    0,                                     // tp_iter */
+    0,                                     // tp_iternext */
+    ExpireWatcher_methods,                 // tp_methods */
+    0,                                     // tp_members */
+    ExpireWatcher_getseters,               // tp_getset */
+    0,                                     // tp_base */
+    0,                                     // tp_dict */
+    0,                                     // tp_descr_get */
+    0,                                     // tp_descr_set */
+    0,                                     // tp_dictoffset */
+    (initproc) ExpireWatcher_init,         // tp_init */
+    0,                                     // tp_alloc */
+    ExpireWatcher_new,                     // tp_new */
 };
 
 
@@ -698,34 +705,46 @@ static PyMethodDef _conntrack_methods[] = {
     { NULL }  /* Sentinel */
 };
 
+PyDoc_STRVAR(module_doc, "Low level connection tracking manipulation for MediaProxy");
 
-PyMODINIT_FUNC
-init_conntrack(void) 
+PyMODINIT_FUNC PyInit__conntrack(void) 
 {
-    PyObject* module;
+    PyObject *module;
     struct iptc_handle *handle;
 
     if ((handle = iptc_init("nat")) == NULL) {
         PyErr_SetString(PyExc_RuntimeError, "Could not initialize the iptables 'nat' table. Missing kernel support or running without root priviliges.");
-        return;
+        return NULL;
     }
     iptc_free(handle);
 
     memset(forwarding_rules, 0, sizeof(ForwardingRule *) * 65536);
 
     if (PyType_Ready(&ForwardingRule_Type) < 0)
-        return;
+        return NULL;
     if (PyType_Ready(&ExpireWatcher_Type) < 0)
-        return;
+        return NULL;
 
-    module = Py_InitModule3("mediaproxy.interfaces.system._conntrack", _conntrack_methods, "Low level connection tracking manipulation for MediaProxy");
+    static struct PyModuleDef moduledef = {
+        PyModuleDef_HEAD_INIT,
+        "_conntrack",        /* m_name */
+        module_doc,          /* m_doc */
+        -1,                  /* m_size */
+        _conntrack_methods,  /* m_methods */
+        NULL,                /* m_reload */
+        NULL,                /* m_traverse */
+        NULL,                /* m_clear */
+        NULL,                /* m_free */
+    };
+
+    module = PyModule_Create(&moduledef);
 
     if (module == NULL)
-        return;
+        return NULL;
 
     Error = PyErr_NewException("mediaproxy.interfaces.system._conntrack.Error", NULL, NULL);
     if (Error == NULL)
-        return;
+        return NULL;
     Py_INCREF(Error);
     PyModule_AddObject(module, "Error", Error);
 
@@ -736,6 +755,8 @@ init_conntrack(void)
 
     // Module version (the MODULE_VERSION macro is defined by setup.py)
     PyModule_AddStringConstant(module, "__version__", string(MODULE_VERSION));
+
+    return module;
 
 }
 
