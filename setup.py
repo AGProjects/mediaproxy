@@ -30,7 +30,7 @@ setup(
 
     description=title,
     long_description=description,
-    url='http://www.ag-projects.com/MediaProxy.html',
+    url='http://mediaproxy.ag-projects.com',
 
     author='AG Projects',
     author_email='support@ag-projects.com',

@@ -1,24 +1,22 @@
 Source: mediaproxy
 Section: net
 Priority: optional
-Maintainer: Dan Pascu <dan@ag-projects.com>
+Maintainer: Adrian Georgescu <ag@ag-projects.com>
 Uploaders: Tijmen de Mes <tijmen@ag-projects.com>
-Build-Depends: debhelper (>= 11), dh-apache2, dh-python, python-all-dev, python-all-dbg, libnetfilter-conntrack-dev, iptables-dev
+Build-Depends: debhelper (>= 11), dh-apache2, dh-python, python3-all-dev, libnetfilter-conntrack-dev
 Standards-Version: 4.5.0
 
 Package: mediaproxy-common
 Architecture: any
-Depends: ${python:Depends}, ${shlibs:Depends}, ${misc:Depends},
+Depends: ${python3:Depends}, ${shlibs:Depends}, ${misc:Depends},
          iptables,
-         python-application (>= 2.8.0),
-         python-cjson,
-         python-gnutls (>= 3.0.0),
-         python-pyrad (>= 2.1),
-         python-sqlobject,
-         python-systemd,
-         python-twisted-core,
-         python-twisted-names,
-         python-zope.interface
+         python3-application,
+         python3-gnutls,
+         python3-pyrad,
+         python3-sqlobject,
+         python3-systemd,
+         python3-twisted,
+         python3-zope.interface
 Description: MediaProxy common files
  MediaProxy is a distributed far end NAT traversal solution for media streams
  of SIP calls. MediaProxy has a dispatcher running on the same host as the
@@ -40,7 +38,7 @@ Description: MediaProxy common files
 
 Package: mediaproxy-dispatcher
 Architecture: all
-Depends: ${python:Depends}, ${misc:Depends}, mediaproxy-common (>= ${source:Version})
+Depends: ${python3:Depends}, ${misc:Depends}, mediaproxy-common
 Description: MediaProxy dispatcher for OpenSIPS
  MediaProxy is a distributed far end NAT traversal solution for media streams
  of SIP calls. MediaProxy has a dispatcher running on the same host as the
@@ -62,7 +60,7 @@ Description: MediaProxy dispatcher for OpenSIPS
 
 Package: mediaproxy-relay
 Architecture: all
-Depends: ${python:Depends}, ${misc:Depends}, mediaproxy-common (>= ${source:Version})
+Depends: ${python3:Depends}, ${misc:Depends}, mediaproxy-common
 Description: MediaProxy relay for OpenSIPS
  MediaProxy is a distributed far end NAT traversal solution for media streams
  of SIP calls. MediaProxy has a dispatcher running on the same host as the
