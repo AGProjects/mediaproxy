@@ -1,3 +1,9 @@
+mediaproxy (4.0.0) unstable; urgency=medium
+
+  * Migration to Python 3
+
+ -- Adrian Georgescu <ag@ag-projects.com>  Tue, 03 Nov 2020 02:39:39 +0100
+
 mediaproxy (3.0.3) unstable; urgency=medium
 
   * Remove invalid argument to loseConnection
