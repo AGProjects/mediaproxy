@@ -39,17 +39,12 @@ if __name__ == '__main__':
 
     if options.config_directory is not None:
         process.configuration.local_directory = options.config_directory
+
     if options.runtime_directory is not None:
         process.runtime.directory = options.runtime_directory
 
     if not sys.platform.startswith('linux'):
         log.critical('Cannot start %s. A Linux host is required for operation.' % fullname)
-        sys.exit(1)
-
-    try:
-        subprocess.call(['modprobe', 'ip_tables'], env={'PATH': '/usr/sbin:/sbin:/usr/bin:/bin'})
-    except OSError as e:
-        log.critical('Cannot start %s: failed to load the ip_tables kernel module: %s' % (fullname, e))
         sys.exit(1)
 
     try:
