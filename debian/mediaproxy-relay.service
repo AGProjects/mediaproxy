@@ -7,6 +7,7 @@ After=network.target nss-lookup.target thor-eventserver.service
 Type=simple
 Environment=PYTHONUNBUFFERED=yes
 ExecStart=/usr/bin/media-relay --systemd
+ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-abnormal
 LimitCORE=infinity
 

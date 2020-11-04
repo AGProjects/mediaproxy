@@ -276,6 +276,18 @@ functions in the proxy configuration, because in that case there is no dialog
 that is tracked by the proxy which could be terminated using dlg_end_dlg.
 
 
+Gracefull shutdown
+------------------
+
+To tell media-relay component to gracefully shutdown when using systemd:
+
+sudo systemctl reload mediaproxy-relay
+
+The reload command will send the HUP signal to the PID of the relay
+component and the software will shutdown when the last relayed call has
+ended.
+ 
+
 Management interface
 --------------------
 
