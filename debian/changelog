@@ -1,3 +1,9 @@
+mediaproxy (4.0.1) unstable; urgency=medium
+
+  * Added gracefull shutdown option to systemd unit using reload command
+
+ -- Adrian Georgescu <ag@ag-projects.com>  Wed, 04 Nov 2020 12:29:17 +0100
+
 mediaproxy (4.0.0) unstable; urgency=medium
 
   * Migration to Python 3
