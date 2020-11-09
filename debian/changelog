@@ -1,3 +1,9 @@
+mediaproxy (4.0.2) unstable; urgency=medium
+
+  * Fix for fetching statistics 
+
+ -- Adrian Georgescu <ag@ag-projects.com>  Mon, 09 Nov 2020 15:50:01 +0100
+
 mediaproxy (4.0.1) unstable; urgency=medium
 
   * Added gracefull shutdown option to systemd unit using reload command
