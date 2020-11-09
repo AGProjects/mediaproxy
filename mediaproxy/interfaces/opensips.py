@@ -196,7 +196,7 @@ class UNIXSocketConnection(object):
 
     def send(self, request):
         try:
-            self.transport.write(json.dumps(request.__data__), OpenSIPSConfig.socket_path)
+            self.transport.write(json.dumps(request.__data__).encode(), OpenSIPSConfig.socket_path)
         except socket.error as e:
             log.error("cannot write request to %s: %s" % (OpenSIPSConfig.socket_path, e[1]))
             request.deferred.errback(Failure(Error("Cannot send MI request %s to OpenSIPS" % request.method)))
