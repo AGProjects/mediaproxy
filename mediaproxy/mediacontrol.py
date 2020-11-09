@@ -660,7 +660,14 @@ class Session(object):
         stats['callee_ua'] = self.callee_ua or 'Unknown'
         stats['streams'] = streams = []
         stream_attributes = ('media_type', 'status', 'timeout_wait')
-        for stream in sorted(all_streams, key=attrgetter('start_time')):  # type: MediaStream
+        streams_to_sort = []
+        for stream in all_streams:
+            try:
+                if stream and stream.start_time:
+                    streams_to_sort.append(stream)
+            except AttributeError:
+                pass
+        for stream in sorted(streams_to_sort, key=attrgetter('start_time')):  # type: MediaStream
             info = dict((name, getattr(stream, name)) for name in stream_attributes)
             info['caller_codec'] = stream.rtp.caller.codec
             info['callee_codec'] = stream.rtp.callee.codec
