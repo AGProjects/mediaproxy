@@ -272,10 +272,10 @@ class RelayServerProtocol(LineOnlyReceiver):
     def connectionMade(self):
         if DispatcherConfig.passport is not None:
             peer_cert = self.transport.getPeerCertificate()
-            log.debug(f"peer {self.transport.getPeer().host}:{self.transport.getPeer().port} {peer_cert.subject}")
-#            if not DispatcherConfig.passport.accept(peer_cert):
-#                self.transport.loseConnection()
-#                return
+            if not DispatcherConfig.passport.accept(peer_cert):
+                log.error(f"Refuse connection from {self.transport.getPeer().host}:{self.transport.getPeer().port} with invalid passport {peer_cert.subject}")
+                self.transport.loseConnection()
+                return
         self.authenticated = True
         self.factory.new_relay(self)
 
