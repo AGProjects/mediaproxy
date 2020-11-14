@@ -287,6 +287,7 @@ class RelayServerProtocol(LineOnlyReceiver):
         except ValueError:
             first = line
             rest = ''
+
         if first == 'expired':
             try:
                 stats = json.loads(rest)
@@ -325,6 +326,7 @@ class RelayServerProtocol(LineOnlyReceiver):
                 self.disconnect_timer = None
             self.reply(b'pong')
             return
+
         try:
             command, defer, timer = self.commands.pop(first)
         except KeyError:
