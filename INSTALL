@@ -2,7 +2,7 @@
 MediaProxy installation procedure
 ---------------------------------
 
-Copyright (c) 2008-2012 AG Projects
+Copyright (c) 2008-2020 AG Projects
 http://ag-projects.com
 
 Authors: Ruud Klaver, Dan Pascu, Saul Ibarra
@@ -35,28 +35,26 @@ In order to build and install, MediaProxy has the following requirements:
    Distribution provided kernel images should normally provide of all these
    features as modules. The Debian kernel images have all these features
    available and can be used out of the box.
- - libnetfilter-conntrack (at least version 0.0.89)
+ - libnetfilter-conntrack
    Most of the Linux distributions separate a library package into runtime
    and development packages. To build MediaProxy, the development version
    is needed (it usually has a -dev suffix in the package name).
- - iptables (at least version 1.4.3)
+ - iptables
    To build MediaProxy, the development version is needed (usually has a -dev
    suffix in the package name). For running the development package is not
    needed, only plain iptables is enough.
- - Python (at least 2.5)
+ - Python3
    http://python.org
- - Twisted framework (at least 2.5.0 with epollreactor support)
+ - Twisted framework
    http://twistedmatrix.com
- - python-zopeinterface (this is also a requirement for twisted)
-   http://zope.org/Products/ZopeInterface
- - python-application (at least 1.2.8)
-   http://pypi.python.org/pypi/python-application
+ - python3-zope.interface
+   http://zope.org
+ - python3-application
+   http://download.ag-projects.com/others/
  - GNU-TLS
    http://www.gnu.org/software/gnutls
- - python-gnutls (at least 3.0.0)
-   http://pypi.python.org/pypi/python-gnutls
- - python-cjson
-   http://pypi.python.org/pypi/python-cjson
+ - python3-gnutls (at least 3.0.0)
+   http://download.ag-projects.com/others/
 
 For the database accounting module:
 
@@ -65,8 +63,8 @@ For the database accounting module:
 
 For the RADIUS accounting module:
 
- - pyrad (at least 1.1)
-   http://www.wiggy.net/code/pyrad/
+ - pyrad
+   https://pypi.org/project/pyrad/
 
 
 Installation
@@ -111,14 +109,13 @@ method to install them by running easy_install (make sure to run them as root):
 
 easy_install twisted
 easy_install zope.interface
-easy_install python-application
-easy_install python-cjson
-easy_install python-gnutls # this needs libgnutls-dev >= 2.4.1 installed
 easy_install sqlobject
 easy_install pyrad
 
-All of the above should work out of the box, except python-gnutls which needs
-libgnutls-dev at least version 2.4.1 to be installed to succeed.
+python3-application and python3-gnutls can be downloaded from 
+
+http://download.ag-projects.com/others/
+
 
 An alternative method to install the python packages is to download, unpack
 and run (as root):
@@ -166,10 +163,10 @@ work with Debian testing and unstable and should work without changes in
 Ubuntu 8.04 Hardy as well, though they were not tested there):
 
 apt-get update
-apt-get install devscripts cdbs debhelper python-all-dev python-support \
-                iptables-dev libnetfilter-conntrack-dev python-application python-cjson \
-                python-gnutls python-twisted-core python-twisted-names \
-                python-zopeinterface python-pyrad python-sqlobject
+apt-get install devscripts cdbs debhelper python3-all-dev \
+                iptables-dev libnetfilter-conntrack-dev python3-application \
+                python3-gnutls python3-twisted python3-zope.interface \
+                python3-pyrad python3-sqlobject
 
 then unpack MediaProxy and in the directory where it was unpacked run:
 
