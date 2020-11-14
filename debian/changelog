@@ -1,3 +1,9 @@
+mediaproxy (4.0.3) unstable; urgency=medium
+
+  * Fixed checking relay passport
+
+ -- Adrian Georgescu <ag@ag-projects.com>  Sat, 14 Nov 2020 16:42:47 +0100
+
 mediaproxy (4.0.2) unstable; urgency=medium
 
   * Fix for fetching statistics 
