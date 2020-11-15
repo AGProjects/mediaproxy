@@ -154,12 +154,21 @@ class ManagementControlProtocol(ControlProtocol):
     logger = ProtocolLogger(name='Management Interface')
 
     def connectionMade(self):
-        if DispatcherConfig.management_use_tls and DispatcherConfig.management_passport is not None:
-            peer_cert = self.transport.getPeerCertificate()
-            log.debug(f"peer {self.transport.getPeer().host}:{self.transport.getPeer().port} {peer_cert.subject}")
-            if not DispatcherConfig.management_passport.accept(peer_cert):
-                self.transport.loseConnection()
-                return
+        if DispatcherConfig.management_use_tls:
+            peer = self.transport.getPeer()
+            certificate = self.transport.getPeerCertificate()
+            subject = certificate.subject
+            common_name = subject.common_name
+            if DispatcherConfig.management_passport is not None:
+                if not DispatcherConfig.management_passport.accept(certificate):
+                    log.error("Dispatcher management connection to %s at %s:%d refused due to wrong passport" % (common_name, peer.host, peer.port))
+                    self.transport.loseConnection()
+                    return
+                log.info('Dispatcher management connected to %s at %s:%d' % (common_name, peer.host, peer.port))
+            else:
+                log.info('Dispatcher management connected to %s at %s:%d' % (common_name, peer.host, peer.port))
+        else:
+             log.info('Dispatcher management connected to %s:%d' % (peer.host, peer.port))
 
     def lineReceived(self, line):
         line = line.decode()
@@ -270,12 +279,18 @@ class RelayServerProtocol(LineOnlyReceiver):
             self.disconnect_timer = reactor.callLater(DispatcherConfig.relay_recover_interval, self.transport.connectionLost, failure.Failure(TCPTimedOutError()))
 
     def connectionMade(self):
+        peer = self.transport.getPeer()
+        certificate = self.transport.getPeerCertificate()
+        subject = certificate.subject
+        common_name = subject.common_name
         if DispatcherConfig.passport is not None:
-            peer_cert = self.transport.getPeerCertificate()
-            if not DispatcherConfig.passport.accept(peer_cert):
-                log.error(f"Refuse connection from {self.transport.getPeer().host}:{self.transport.getPeer().port} with invalid passport {peer_cert.subject}")
+            if not DispatcherConfig.passport.accept(certificate):
+                log.error("Dispatcher connection to relay %s at %s:%d refused due to wrong passport" % (common_name, peer.host, peer.port))
                 self.transport.loseConnection()
                 return
+            log.info('Dispatcher connected to relay %s at %s:%d' % (common_name, peer.host, peer.port))
+        else:
+            log.info('Dispatcher connected to relay %s at %s:%d' % (common_name, peer.host, peer.port))
         self.authenticated = True
         self.factory.new_relay(self)
 

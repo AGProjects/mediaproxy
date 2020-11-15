@@ -82,13 +82,19 @@ class RelayClientProtocol(LineOnlyReceiver, TimeoutMixin):
 
     def connectionMade(self):
         peer = self.transport.getPeer()
-        log.info('Connected to dispatcher at %s:%d' % (peer.host, peer.port))
+        certificate = self.transport.getPeerCertificate()
+        subject = certificate.subject
+        common_name = subject.common_name
+
         if RelayConfig.passport is not None:
-            peer_cert = self.transport.getPeerCertificate()
-            log.debug(f"peer {self.transport.getPeer().host}:{self.transport.getPeer().port} {peer_cert.subject}")
-            if not RelayConfig.passport.accept(peer_cert):
-                log.debug("Media dispatcher certificate %s refused" % peer_cert.subject)
+            if not RelayConfig.passport.accept(certificate):
+                log.error("Connection to relay %s at %s:%d refused due to wrong passport" % (common_name, peer.host, peer.port))
                 self.transport.loseConnection()
+                return
+            log.info('Relay connected to dispatcher %s at %s:%d' % (common_name, peer.host, peer.port))
+        else:
+            log.info('Relay connected to dispatcher %s at %s:%d' % (common_name, peer.host, peer.port))
+
         self._connection_watcher = RecurrentCall(RelayConfig.keepalive_interval, self._send_keepalive)
 
     def connectionLost(self, reason=connectionDone):
