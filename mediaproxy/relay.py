@@ -29,7 +29,7 @@ from twisted.names.client import lookupService
 from twisted.names.error import DomainError
 
 from mediaproxy import __version__
-from mediaproxy.configuration import RelayConfig
+from mediaproxy.configuration import RelayConfig, ThorNetworkConfig
 from mediaproxy.headers import DecodingDict, DecodingError
 from mediaproxy.mediacontrol import SessionManager, RelayPortsExhaustedError
 from mediaproxy.scheduler import RecurrentCall, KeepRunning
@@ -275,10 +275,13 @@ class SRVMediaRelayBase(object):
         reactor.stop()
 
 
+MediaRelayBase = SRVMediaRelayBase
+
 try:
-    from mediaproxy.sipthor import SIPThorMediaRelayBase as MediaRelayBase
+    if ThorNetworkConfig.domain is not None:
+        from mediaproxy.sipthor import SIPThorMediaRelayBase as MediaRelayBase
 except ImportError:
-    MediaRelayBase = SRVMediaRelayBase
+    pass
 
 
 class MediaRelay(MediaRelayBase):
