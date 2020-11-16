@@ -87,7 +87,7 @@ class X509Credentials(twisted.X509Credentials):
     def __init__(self, cert_name):
         self.X509cert_name = '%s.crt' % cert_name
         self.X509key_name = '%s.key' % cert_name
-        log.info("Loading relay TLS certificate passport %s of %s (%s)" % (self.X509cert.subject.common_name, self.X509cert.subject.organization_unit, self.X509cert.subject.organization))
+        log.info("Loading TLS certificate passport for %s of %s (%s)" % (self.X509cert.subject.common_name, self.X509cert.subject.organization_unit, self.X509cert.subject.organization))
         twisted.X509Credentials.__init__(self, self.X509cert, self.X509key, [self.X509ca], [self.X509crl])
         self.verify_peer = True
         self.verify_period = TLSConfig.verify_interval
