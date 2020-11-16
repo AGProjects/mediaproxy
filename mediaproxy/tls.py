@@ -6,6 +6,7 @@ __all__ = ['X509Credentials']
 import os
 import stat
 
+from application import log
 from application.process import process
 from gnutls import crypto
 from gnutls.interfaces import twisted
@@ -16,7 +17,6 @@ from mediaproxy.configuration import TLSConfig
 class FileDescriptor(object):
     def __init__(self, name, type):
         certs_path = os.path.normpath(TLSConfig.certs_path)
-#        print(f"Tls config from {certs_path}")
         self.path = os.path.join(certs_path, name)
         self.klass = type
         self.timestamp = 0
@@ -47,6 +47,8 @@ class X509Entity(object):
         name = getattr(obj or type_, self.name_attr, None)
         if name is None:
             return None
+        certs_path = os.path.normpath(TLSConfig.certs_path)
+        log.debug("Loaded %s file from %s/%s" % (self.name_attr, certs_path, name))
         descriptor = self.descriptors.setdefault(name, FileDescriptor(name, self.type))
         return descriptor.get()
 
@@ -85,7 +87,7 @@ class X509Credentials(twisted.X509Credentials):
     def __init__(self, cert_name):
         self.X509cert_name = '%s.crt' % cert_name
         self.X509key_name = '%s.key' % cert_name
-#        print(f"cert file called {cert_name}")
+        log.info("Loading relay TLS certificate passport %s of %s (%s)" % (self.X509cert.subject.common_name, self.X509cert.subject.organization_unit, self.X509cert.subject.organization))
         twisted.X509Credentials.__init__(self, self.X509cert, self.X509key, [self.X509ca], [self.X509crl])
         self.verify_peer = True
         self.verify_period = TLSConfig.verify_interval
