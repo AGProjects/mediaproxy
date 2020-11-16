@@ -203,6 +203,10 @@ class SRVMediaRelayBase(object):
 
     def _do_lookup(self):
         defers = []
+        if not RelayConfig.dispatchers:
+             log.error('No dispatcher(s) defined in config.ini')
+             return
+
         for addr, port, is_domain in RelayConfig.dispatchers:
             if is_domain:
                 defer = lookupService("_sip._udp.%s" % addr)
