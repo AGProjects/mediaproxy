@@ -7,6 +7,7 @@ from application.python.queue import EventQueue
 
 import pyrad.client
 import pyrad.dictionary
+import os
 
 from mediaproxy.configuration import RadiusConfig
 
@@ -62,6 +63,7 @@ class RadiusAccounting(EventQueue, pyrad.client.Client):
 
     def __init__(self):
         main_config_file = process.configuration.file(RadiusConfig.config_file)
+        log.info('Loading Radius configuration file %s' % main_config_file)
         if main_config_file is None:
             raise RuntimeError('Cannot find the radius configuration file: %r' % RadiusConfig.config_file)
         try:
@@ -72,19 +74,19 @@ class RadiusAccounting(EventQueue, pyrad.client.Client):
                 server, acctport = server.split(':')
                 acctport = int(acctport)
             except ValueError:
-                log.info('Could not load additional RADIUS dictionary file: %r' % RadiusConfig.additional_dictionary)
                 acctport = 1813
+
             log.info('Using RADIUS server at %s:%d' % (server, acctport))
             secret = secrets[server]
             log.info("Using RADIUS dictionary file %s" % config['dictionary'])
             dicts = [RadiusDictionaryFile(config['dictionary'])]
             if RadiusConfig.additional_dictionary:
+                log.info("Using additional RADIUS dictionary file %s" % RadiusConfig.additional_dictionary)
                 additional_dictionary = process.configuration.file(RadiusConfig.additional_dictionary)
                 if additional_dictionary:
-                    log.info("Using additional RADIUS dictionary file %s" % RadiusConfig.additional_dictionary)
                     dicts.append(RadiusDictionaryFile(additional_dictionary))
                 else:
-                    log.warning('Could not load additional RADIUS dictionary file: %r' % RadiusConfig.additional_dictionary)
+                    log.error("Radius dictionary file %s cannot be loaded" % RadiusConfig.additional_dictionary)
             raddict = pyrad.dictionary.Dictionary(*dicts)
             timeout = int(config['radius_timeout'])
             retries = int(config['radius_retries'])
