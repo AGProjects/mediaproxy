@@ -284,6 +284,7 @@ class MediaSubStream(object):
             return self._counters
         else:
             try:
+                log.debug(', '.join([f"{key}={self.forwarding_rule.counters[key]}" for key in self.forwarding_rule.counters.keys()]))
                 return self._counters + self.forwarding_rule.counters
             except _conntrack.Error:
                 return self._counters
@@ -291,6 +292,7 @@ class MediaSubStream(object):
     def _stop_relaying(self):
         if self.forwarding_rule is not None:
             try:
+                log.debug(', '.join([f"{key}={self.forwarding_rule.counters[key]}" for key in self.forwarding_rule.counters.keys()]))
                 self._counters += self.forwarding_rule.counters
             except _conntrack.Error:
                 pass
