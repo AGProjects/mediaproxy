@@ -203,9 +203,12 @@ class SRVMediaRelayBase(object):
 
     def _do_lookup(self):
         defers = []
-        if not RelayConfig.dispatchers:
+        if not RelayConfig.dispatchers and ThorNetworkConfig.domain is None:
              log.error('No dispatcher(s) defined in config.ini')
              return
+
+        if RelayConfig.dispatchers and ThorNetworkConfig.domain is not None:
+             log.info('Using statically defined dispatchers from config.ini')
 
         for addr, port, is_domain in RelayConfig.dispatchers:
             if is_domain:
@@ -278,6 +281,7 @@ class SRVMediaRelayBase(object):
 try:
     if ThorNetworkConfig.domain is not None:
         from mediaproxy.sipthor import SIPThorMediaRelayBase as MediaRelayBase
+        log.info('SIP Thor discovery is enabled')
 except ImportError:
     MediaRelayBase = SRVMediaRelayBase
 
