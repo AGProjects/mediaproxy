@@ -1,3 +1,19 @@
+mediaproxy (4.0.4) unstable; urgency=medium
+
+  * Improve logging at start
+  * Added libiptc-dev build dependency
+  * Log which dispatchers will be used
+  * Use local logger for traffic
+  * Log call statistics
+  * Fixed logging of radius configurations
+  * Improve log line for used TLS certificate 
+  * Allow use of configured dispatchers in Thor mode
+  * Added logs about TLS certificates loaded at start
+  * Log remote certificate common name for all TLS connections
+  * Fixed sending back expired event to dispatcher
+
+ -- Adrian Georgescu <ag@ag-projects.com>  Sat, 21 Nov 2020 13:47:58 +0100
+
 mediaproxy (4.0.3) unstable; urgency=medium
 
   * Fixed checking relay passport
