@@ -275,13 +275,12 @@ class SRVMediaRelayBase(object):
         reactor.stop()
 
 
-MediaRelayBase = SRVMediaRelayBase
-
 try:
     if ThorNetworkConfig.domain is not None:
         from mediaproxy.sipthor import SIPThorMediaRelayBase as MediaRelayBase
 except ImportError:
-    pass
+    MediaRelayBase = SRVMediaRelayBase
+
 
 
 class MediaRelay(MediaRelayBase):
