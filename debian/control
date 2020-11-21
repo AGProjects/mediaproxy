@@ -3,7 +3,7 @@ Section: net
 Priority: optional
 Maintainer: Adrian Georgescu <ag@ag-projects.com>
 Uploaders: Tijmen de Mes <tijmen@ag-projects.com>
-Build-Depends: debhelper (>= 11), dh-apache2, dh-python, python3-all-dev, libnetfilter-conntrack-dev
+Build-Depends: debhelper (>= 11), dh-apache2, dh-python, python3-all-dev, libnetfilter-conntrack-dev, libiptc-dev
 Standards-Version: 4.5.0
 
 Package: mediaproxy-common
