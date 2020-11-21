@@ -278,7 +278,7 @@ class SRVMediaRelayBase(object):
 try:
     if ThorNetworkConfig.domain is not None:
         if not RelayConfig.dispatchers:
-            log.info('Using dispatchers discovered using SIP Thor')
+            log.info('Using dispatchers discovered using SIP Thor for domain %s' % ThorNetworkConfig.domain)
             from mediaproxy.sipthor import SIPThorMediaRelayBase as MediaRelayBase
         else:
             log.info('Using dispatchers defined in config.ini')
