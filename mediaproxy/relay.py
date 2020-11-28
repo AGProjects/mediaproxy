@@ -275,6 +275,8 @@ class SRVMediaRelayBase(object):
         reactor.stop()
 
 
+MediaRelayBase = SRVMediaRelayBase
+
 try:
     if ThorNetworkConfig.domain is not None:
         if not RelayConfig.dispatchers:
@@ -284,7 +286,7 @@ try:
             log.info('Using dispatchers defined in config.ini')
             MediaRelayBase = SRVMediaRelayBase
 except ImportError:
-    MediaRelayBase = SRVMediaRelayBase
+    pass
 
 
 class MediaRelay(MediaRelayBase):
