@@ -20,7 +20,8 @@ from mediaproxy.interfaces.system import _conntrack
 from mediaproxy.iputils import is_routable_ip
 from mediaproxy.scheduler import RecurrentCall, KeepRunning
 
-UDP_TIMEOUT_FILE = '/proc/sys/net/ipv4/netfilter/ip_conntrack_udp_timeout_stream'
+UDP_TIMEOUT_FILE = '/proc/sys/net/netfilter/nf_conntrack_udp_timeout_stream'
+
 
 rtp_payloads = {
     0: 'G711u', 1: '1016', 2: 'G721', 3: 'GSM', 4: 'G723', 5: 'DVI4', 6: 'DVI4',
