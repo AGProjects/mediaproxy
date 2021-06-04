@@ -162,6 +162,25 @@ For information of how to install MediaProxy, please consult the INSTALL
 file.
 
 
+Important note
+--------------
+
+For Linux kernels >= 4.9 and < 5.1 you must add a rule to trigger the
+connection tracking:
+
+sudo iptables -I INPUT -m state --state NEW
+
+Starting with kernel 5.1 you can enable enable_hooks parameter:
+
+modprobe nf_conntrack enable_hooks=1
+
+or use the iptables rule above.
+
+For more information about this requirement see:
+
+https://github.com/torvalds/linux/commit/ba3fbe663635ae7b33a2d972c5d2def036258e42
+
+
 Operation
 ---------
 
