@@ -1,3 +1,9 @@
+mediaproxy (4.0.5) unstable; urgency=medium
+
+  * Fixed module import 
+
+ -- Adrian Georgescu <ag@ag-projects.com>  Wed, 06 Jan 2021 22:47:46 +0100
+
 mediaproxy (4.0.4) unstable; urgency=medium
 
   * Improve logging at start

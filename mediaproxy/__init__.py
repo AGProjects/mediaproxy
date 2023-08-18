@@ -1,5 +1,5 @@
 
-__version__ = '4.0.4'
+__version__ = '4.0.5'
 
 # mediaproxy configuration and runtime settings
 mediaproxy_subdirectory = 'mediaproxy'
