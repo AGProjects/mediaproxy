@@ -14,6 +14,7 @@ Depends: ${python3:Depends}, ${shlibs:Depends}, ${misc:Depends},
          python3-gnutls,
          python3-pyrad,
          python3-sqlobject,
+         python3-mysqldb,
          python3-systemd,
          python3-twisted,
          python3-zope.interface
