@@ -47,19 +47,6 @@ Features
  - Supports routing media between multiple interfaces
 
 
-Background
------------
-
-MediaProxy 2.0 is the second generation media relay application which is
-based on a completely new design that allows for major improvements in areas
-such as scalability (an order of magnitude more scalable than previous
-version) and security (communication between relay and dispatcher is
-encrypted).
-
-New features have been added to support call flows related to user mobility
-and fax transmission.
-
-
 Architecture
 ------------
 
@@ -273,9 +260,9 @@ firebird, maxdb, mssql and sybase.
 Closing expired calls
 ---------------------
 
-Starting with version 2.1.0, MediaProxy supports closing calls for which all
-the media streams did timeout, but for which no BYE was received to close the
-call in the standard way.
+MediaProxy supports closing calls for which all the media streams did
+timeout, but for which no BYE was received to close the call in the standard
+way.
 
 This feature will only work, when the OpenSIPS mediaproxy module uses the
 engage_media_proxy() command to start MediaProxy for a given call. In this
