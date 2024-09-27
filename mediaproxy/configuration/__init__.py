@@ -32,6 +32,7 @@ class RelayConfig(ConfigSection):
 
     relay_ip = ConfigSetting(type=IPAddress, value=host.default_ip)
     advertised_ip = ConfigSetting(type=IPAddress, value=None)
+    auto_detect_interfaces = False
     stream_timeout = 90
     on_hold_timeout = 7200
     traffic_sampling_period = 15

@@ -44,6 +44,7 @@ Features
  - Database accounting of complete media information including all streams,
    their type, codecs and duration.
  - Supports ICE negotiation by behaving like a TURN relay candiate
+ - Supports routing media between multiple interfaces
 
 
 Background
@@ -293,6 +294,35 @@ of the MediaProxy configuration as socket_path.
 This feature is not available when using the use_media_proxy/end_media_session
 functions in the proxy configuration, because in that case there is no dialog
 that is tracked by the proxy which could be terminated using dlg_end_dlg.
+
+
+Multiple interfaces
+-------------------
+
+When using MediaProxy, the default IP address of the relay machine will appear
+in the c line of the SDP proposed to each party.
+
+On systems with multiple network interfaces, this IP address can be
+automatically set with the IP addresss that coresponds to the interface that
+has a route for the IP adress of each side of the call.
+
+In order to decide which network interface should be used, the mp_signaling_ip
+avp in OpenSIPS configuration should be set as follows:
+
+$avp(mp_signaling_ip) = sourceIP_destinationIP
+
+The sourceIP is the IP address where the SIP INVITE originated from. The
+destinationIP is the IP address where the SIP INVITE will be sent to.
+
+If destinationIP is not known, $avp(mp_signaling_ip) can be set only to
+sourceIP.  Otherwise, if the avp is not set, the source IP address of the
+original SIP INVITE packet will be used.
+
+This behaviour can be enabled my setting auto_detect_interfaces to True in the
+relay configuration.
+
+The IP address can also be always overwritten by configuring advertised_ip in
+the relay configuration. If so, auto_detect_interfaces setting has no effect.
 
 
 Gracefull shutdown

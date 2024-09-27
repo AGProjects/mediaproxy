@@ -3,6 +3,7 @@ import hashlib
 import struct
 
 from application import log
+from application.system import host
 from base64 import b64encode as base64_encode
 from itertools import chain
 from collections import deque
@@ -345,7 +346,7 @@ class MediaSubStream(object):
 
 
 class MediaParty(object):
-    def __init__(self, stream):
+    def __init__(self, stream, party):
         self.manager = stream.session.manager
         self.logger = stream.logger
         self._remote_sdp = None
@@ -354,9 +355,16 @@ class MediaParty(object):
         while True:
             self.listener_rtp = None
             self.ports = port_rtp, port_rtcp = self.manager.get_ports()
+            listen_ip = None
+            if RelayConfig.auto_detect_interfaces and not RelayConfig.advertised_ip:
+                if party == 'callee' and stream.session.destination_ip:
+                    listen_ip = host.outgoing_ip_for(stream.session.destination_ip)
+                else:
+                    listen_ip = host.outgoing_ip_for(stream.session.caller_ip)
+
             try:
-                self.listener_rtp = reactor.listenUDP(port_rtp, StreamListenerProtocol(), interface=RelayConfig.relay_ip)
-                self.listener_rtcp = reactor.listenUDP(port_rtcp, StreamListenerProtocol(), interface=RelayConfig.relay_ip)
+                self.listener_rtp = reactor.listenUDP(port_rtp, StreamListenerProtocol(), interface=listen_ip or RelayConfig.relay_ip)
+                self.listener_rtcp = reactor.listenUDP(port_rtcp, StreamListenerProtocol(), interface=listen_ip or RelayConfig.relay_ip)
             except CannotListenError:
                 if self.listener_rtp is not None:
                     self.listener_rtp.stopListening()
@@ -388,8 +396,8 @@ class MediaStream(object):
         self.session = session  # type: Session
         self.logger = session.logger
         self.media_type = media_type
-        self.caller = MediaParty(self)
-        self.callee = MediaParty(self)
+        self.caller = MediaParty(self, 'caller')
+        self.callee = MediaParty(self, 'callee')
         self.rtp = MediaSubStream(self, self.caller.listener_rtp, self.callee.listener_rtp)
         self.rtcp = MediaSubStream(self, self.caller.listener_rtcp, self.callee.listener_rtcp)
         getattr(self, initiating_party).remote_sdp = (media_ip, media_port)
@@ -490,11 +498,13 @@ class MediaStream(object):
 
 
 class Session(object):
-    def __init__(self, manager, dispatcher, call_id, from_tag, from_uri, to_tag, to_uri, cseq, user_agent, media_list, is_downstream, is_caller_cseq, mark=0):
+    def __init__(self, manager, dispatcher, call_id, from_tag, from_uri, to_tag, to_uri, cseq, user_agent, media_list, is_downstream, is_caller_cseq, mark=0, caller_ip=None, destination_ip=None):
         self.manager = manager
         self.dispatcher = dispatcher
         self.session_id = base64_encode(hashlib.md5(call_id.encode()).digest()).rstrip(b'=')
         self.call_id = call_id
+        self.caller_ip = caller_ip
+        self.destination_ip = destination_ip
         self.from_tag = from_tag
         self.to_tag = None
         self.mark = mark
@@ -623,6 +633,7 @@ class Session(object):
             retval = [(stream.status in ['active', 'on hold']) and tuple(stream.rtp.callee.local) or (stream.rtp.callee.local.host, 0) for stream in self.streams[cseq]]
         else:
             retval = [(stream.status in ['active', 'on hold']) and tuple(stream.rtp.caller.local) or (stream.rtp.caller.local.host, 0) for stream in self.streams[cseq]]
+        self.logger.info('SDP media ip for %s set to %s:%d' % ("callee" if is_downstream else "caller", retval[0][0], retval[0][1]))
         return retval
 
     def cleanup(self):
@@ -776,6 +787,12 @@ class SessionManager(Logger):
 
     def update_session(self, dispatcher, call_id, from_tag, from_uri, to_uri, cseq, user_agent, type, media=[], to_tag=None, **kw):
         key = self._find_session_key(call_id, from_tag, to_tag)
+        try:
+            (signaling_ip, destination_ip) = kw['signaling_ip'].split("_")
+        except ValueError:
+            signaling_ip = kw['signaling_ip']
+            destination_ip = None
+
         if key:
             session = self.sessions[key]
             is_downstream = (session.from_tag != from_tag) ^ (type == 'request')
@@ -786,7 +803,7 @@ class SessionManager(Logger):
         else:
             is_downstream = type == 'request'
             is_caller_cseq = True
-            session = Session(self, dispatcher, call_id, from_tag, from_uri, to_tag, to_uri, cseq, user_agent, media, is_downstream, is_caller_cseq)
+            session = Session(self, dispatcher, call_id, from_tag, from_uri, to_tag, to_uri, cseq, user_agent, media, is_downstream, is_caller_cseq, caller_ip=signaling_ip, destination_ip=destination_ip)
             self.sessions[(call_id, from_tag)] = session
             self.relay.add_session(dispatcher)
         return session.get_local_media(is_downstream, cseq, is_caller_cseq)
