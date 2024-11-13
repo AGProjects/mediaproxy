@@ -38,7 +38,7 @@ class RelayConfig(ConfigSection):
     traffic_sampling_period = 15
     userspace_transmit_every = 1
     dispatchers = ConfigSetting(type=DispatcherAddressList, value=[])
-    port_range = PortRange('50000:60000')
+    port_range = PortRange('40000:60000')
     dns_check_interval = PositiveInteger(60)
     keepalive_interval = PositiveInteger(10)
     reconnect_delay = PositiveInteger(10)
