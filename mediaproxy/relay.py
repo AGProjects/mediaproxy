@@ -35,6 +35,11 @@ from mediaproxy.mediacontrol import SessionManager, RelayPortsExhaustedError
 from mediaproxy.scheduler import RecurrentCall, KeepRunning
 from mediaproxy.tls import X509Credentials
 
+try:
+    from thor.eventservice import ThorEvent
+except ImportError:
+    pass
+
 
 # Increase the system limit for the maximum number of open file descriptors
 # to be able to handle connections to all ports in port_range
@@ -333,6 +338,11 @@ class MediaRelay(MediaRelayBase):
                 log.info('Removing old dispatcher at %s:%d' % old_dispatcher)
                 self._check_disconnect(old_dispatcher)
         self.dispatchers = dispatchers
+
+    def _TH_publish_statistics(self, task):
+        statistics = {'media_relay': {'sessions': len(self.session_manager.sessions), 'bps_relayed': self.session_manager.bps_relayed}}
+        message = dict(ip=self.node.ip, statistics=statistics)
+        self._publish(ThorEvent('Thor.Statistics', message))
 
     def got_command(self, dispatcher, command, headers):
         if command == 'summary':
