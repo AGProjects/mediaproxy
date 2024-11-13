@@ -340,7 +340,12 @@ class MediaRelay(MediaRelayBase):
         self.dispatchers = dispatchers
 
     def _TH_publish_statistics(self, task):
-        statistics = {'media_relay': {'sessions': len(self.session_manager.sessions), 'bps_relayed': self.session_manager.bps_relayed}}
+        statistics = {'media_relay': {'sessions': len(self.session_manager.sessions),
+                                      'bps_relayed': self.session_manager.bps_relayed,
+                                      'ports': len(self.session_manager.ports),
+                                      'bad_ports': len(self.session_manager.bad_ports)
+                                      }
+                      }
         message = dict(ip=self.node.ip, statistics=statistics)
         self._publish(ThorEvent('Thor.Statistics', message))
 
