@@ -437,6 +437,10 @@ class MediaStream(object):
         return self.rtp.counters + self.rtcp.counters
 
     @property
+    def uses_ice(self):
+        return self.caller.uses_ice and self.callee.uses_ice
+
+    @property
     def is_on_hold(self):
         return self.caller.is_on_hold or self.callee.is_on_hold
 
@@ -662,6 +666,11 @@ class Session(object):
             return 0
 
     @property
+    def broken(self):
+        uses_ice = any(s for s in self.streams.values() if s.uses_ice)
+        return self.duration > 90 and not self.relayed_bytes and not uses_ice
+
+    @property
     def relayed_bytes(self):
         return sum(stream.counters.relayed_bytes for stream in set(chain(*iter(self.streams.values()))))
 
@@ -753,6 +762,10 @@ class SessionManager(Logger):
 
     def connectionLost(self, reason):
         reactor.removeReader(self)
+
+    @property
+    def broken_sessions(self):
+        return set(session.call_id for session in self.sessions.values() if session.broken)
 
     # port management
     def get_ports(self):
