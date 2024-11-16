@@ -1,6 +1,7 @@
 
 """Implementation of the MediaProxy relay"""
 
+import apt
 import json
 import signal
 import resource
@@ -40,6 +41,13 @@ try:
 except ImportError:
     pass
 
+
+cache = apt.Cache()
+
+try:
+    relay_version = cache['mediaproxy-common'].versions[0].version.split('+')[0]
+except (KeyError, IndexError):
+    relay_version = None
 
 # Increase the system limit for the maximum number of open file descriptors
 # to be able to handle connections to all ports in port_range
@@ -344,7 +352,8 @@ class MediaRelay(MediaRelayBase):
                                       'bad_sessions': len(self.session_manager.broken_sessions),
                                       'bps_relayed': int(self.session_manager.bps_relayed),
                                       'ports': len(self.session_manager.ports),
-                                      'bad_ports': len(self.session_manager.bad_ports)
+                                      'bad_ports': len(self.session_manager.bad_ports),
+                                      'versions': {'relay': relay_version}
                                       }
                       }
         message = dict(ip=self.node.ip, statistics=statistics)
