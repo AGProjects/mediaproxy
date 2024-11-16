@@ -1,3 +1,12 @@
+mediaproxy (4.1.0) unstable; urgency=medium
+
+  * Publish statistics to Thor network
+  * Added support for routing media between multiple interfaces
+  * Added note about enabling connection tracking in newer kernels
+  * Increase the number of default ports
+
+ -- Adrian Georgescu <ag@ag-projects.com>  Sat, 16 Nov 2024 11:26:16 +0100
+
 mediaproxy (4.0.5) unstable; urgency=medium
 
   * Fixed module import 
