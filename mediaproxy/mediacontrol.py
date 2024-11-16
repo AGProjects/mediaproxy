@@ -667,7 +667,13 @@ class Session(object):
 
     @property
     def broken(self):
-        uses_ice = any(s for s in self.streams.values() if s.uses_ice)
+        uses_ice = False
+        for s in self.streams.values():
+            for m in s:
+                if m.uses_ice:
+                    uses_ice = True
+                    break
+        #uses_ice = any(s for s in self.streams.values() if s.uses_ice)
         return self.duration > 90 and not self.relayed_bytes and not uses_ice
 
     @property
