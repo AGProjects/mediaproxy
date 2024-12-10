@@ -1,6 +1,7 @@
 
 import hashlib
 import struct
+import socket
 
 from application import log
 from application.system import host
@@ -165,12 +166,19 @@ class StreamListenerProtocol(DatagramProtocol):
         # we learnt the IP, empty the STUN packets queue
         if self.stun_queue:
             for data in self.stun_queue:
-                self.transport.write(data, (ip, port))
+                try:
+                    self.transport.write(data, (ip, port))
+                except socket.error as e:
+                    self.logger.info('FATAL: cannot write to network socket: %s' % str(e))
             self.stun_queue = []
 
         if not is_stun:
             if not self.send_packet_count % RelayConfig.userspace_transmit_every:
-                self.transport.write(data, (ip, port))
+                try:
+                    self.transport.write(data, (ip, port))
+                except socket.error as e:
+                    self.logger.info('FATAL: cannot write to network socket: %s' % str(e))
+
             self.send_packet_count += 1
 
 
