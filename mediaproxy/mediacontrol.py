@@ -169,7 +169,7 @@ class StreamListenerProtocol(DatagramProtocol):
                 try:
                     self.transport.write(data, (ip, port))
                 except socket.error as e:
-                    self.logger.info('FATAL: cannot write to network socket: %s' % str(e))
+                    self.logger.critical('FATAL: cannot write to network socket: %s' % str(e))
             self.stun_queue = []
 
         if not is_stun:
@@ -177,7 +177,7 @@ class StreamListenerProtocol(DatagramProtocol):
                 try:
                     self.transport.write(data, (ip, port))
                 except socket.error as e:
-                    self.logger.info('FATAL: cannot write to network socket: %s' % str(e))
+                    self.logger.critical('FATAL: cannot write to network socket: %s' % str(e))
 
             self.send_packet_count += 1
 
