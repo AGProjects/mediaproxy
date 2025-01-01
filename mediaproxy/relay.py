@@ -385,12 +385,15 @@ class MediaRelay(MediaRelayBase):
         connector = self.dispatcher_connectors.get(session.dispatcher)
         if connector is None:
             connector = self.old_connectors.get(session.dispatcher)
-        if connector and connector.state == 'connected':
-            reply = ' '.join(['expired', json.dumps(session.statistics)])
-            log.debug(f"Send expire to {connector.transport.getPeer().host}:{connector.transport.getPeer().port}: {reply}")
-            connector.transport.write(reply.encode() + connector.factory.protocol.delimiter)
+        if connector:
+            if connector.state == 'connected':
+                reply = ' '.join(['expired', json.dumps(session.statistics)])
+                log.debug(f"Send expire for session {session.call_id} to dispatcher {connector.transport.getPeer().host}:{connector.transport.getPeer().port}: {reply}")
+                connector.transport.write(reply.encode() + connector.factory.protocol.delimiter)
+            else:
+                log.warning('dispatcher {connector.transport.getPeer().host}:{connector.transport.getPeer().port} for expired session {session.call_id} is no longer online, statistics are lost!')
         else:
-            log.warning('dispatcher for expired session is no longer online, statistics are lost!')
+            log.warning('dispatcher for expired session {session.call_id} is no longer online, statistics are lost!')
 
     def add_session(self, dispatcher):
         self.dispatcher_session_count[dispatcher] = self.dispatcher_session_count.get(dispatcher, 0) + 1
