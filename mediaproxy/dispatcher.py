@@ -480,7 +480,7 @@ class RelayFactory(Factory):
                 if protocol is not None and protocol.active:
                     try_relays.appendleft(protocol)
                 else:
-                    log.warning('user requested media_relay %s is not available' % preferred_relay)
+                    log.warning('user requested media_relay %s for session %s not available' % (preferred_relay, command.call_id))
             defer = self._try_next(try_relays, command)
             defer.addCallback(self._add_session, try_relays, command)
             return defer
