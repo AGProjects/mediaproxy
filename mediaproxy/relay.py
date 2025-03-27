@@ -344,7 +344,8 @@ class MediaRelay(MediaRelayBase):
                                       'bps_relayed': int(self.session_manager.bps_relayed),
                                       'ports': len(self.session_manager.ports),
                                       'bad_ports': len(self.session_manager.bad_ports),
-                                      'versions': {'relay': __version__}
+                                      'versions': {'relay': __version__},
+                                      'status': self.status
                                       }
                       }
         message = dict(ip=self.node.ip, statistics=statistics)
