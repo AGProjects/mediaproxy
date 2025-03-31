@@ -54,7 +54,7 @@ class Accounting(object):
     def start(self):
         self.handler.start()
 
-    def do_accounting(self, stats):
+    def do_accounting(self, stats, session):
         self.handler.put(stats)
 
     def stop(self):
@@ -66,7 +66,7 @@ class DatabaseAccounting(EventQueue):
     def __init__(self):
         EventQueue.__init__(self, self.do_accounting)
 
-    def do_accounting(self, stats):
+    def do_accounting(self, stats, session):
         sqlrepr = connection.sqlrepr
         names  = ', '.join([DatabaseConfig.callid_column, DatabaseConfig.fromtag_column, DatabaseConfig.totag_column, DatabaseConfig.info_column])
         values = ', '.join((sqlrepr(v) for v in [stats['call_id'], stats['from_tag'], stats['to_tag'], json.dumps(stats)]))

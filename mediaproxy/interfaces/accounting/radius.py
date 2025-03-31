@@ -51,7 +51,7 @@ class Accounting(object):
     def start(self):
         self.handler.start()
 
-    def do_accounting(self, stats):
+    def do_accounting(self, stats, session):
         self.handler.put(stats)
 
     def stop(self):
@@ -100,7 +100,7 @@ class RadiusAccounting(EventQueue, pyrad.client.Client):
             self.bind((config['bindaddr'], 0))
         EventQueue.__init__(self, self.do_accounting)
 
-    def do_accounting(self, stats):
+    def do_accounting(self, stats, session):
         attrs = {}
         attrs['Acct-Status-Type'] = 'Update'
         attrs['User-Name'] = 'mediaproxy@default'
