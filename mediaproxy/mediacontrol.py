@@ -2,6 +2,7 @@
 import hashlib
 import struct
 import socket
+import json
 
 from application import log
 from application.system import host
@@ -815,11 +816,34 @@ class SessionManager(Logger):
 
     def update_session(self, dispatcher, call_id, from_tag, from_uri, to_uri, cseq, user_agent, type, media=[], to_tag=None, **kw):
         key = self._find_session_key(call_id, from_tag, to_tag)
+
+        signaling_ip = None
+        destination_ip = None
+        username = None
+
         try:
-            (signaling_ip, destination_ip) = kw['signaling_ip'].split("_")
-        except ValueError:
-            signaling_ip = kw['signaling_ip']
-            destination_ip = None
+            signaling_data = json.loads(kw['signaling_ip'])
+        except json.decoder.JSONDecodeError:
+            try:
+                (signaling_ip, destination_ip) = kw['signaling_ip'].split("_")
+            except ValueError:
+                signaling_ip = kw['signaling_ip']
+                destination_ip = None
+        else:
+            try:
+                signaling_ip = signaling_data['signaling_ip']
+            except KeyError:
+                pass
+
+            try:
+                destination_ip = signaling_data['destination_ip']
+            except KeyError:
+                pass
+
+            try:
+                username = signaling_data['username']
+            except KeyError:
+                pass
 
         if key:
             session = self.sessions[key]
@@ -831,7 +855,7 @@ class SessionManager(Logger):
         else:
             is_downstream = type == 'request'
             is_caller_cseq = True
-            session = Session(self, dispatcher, call_id, from_tag, from_uri, to_tag, to_uri, cseq, user_agent, media, is_downstream, is_caller_cseq, caller_ip=signaling_ip, destination_ip=destination_ip)
+            session = Session(self, dispatcher, call_id, from_tag, from_uri, to_tag, to_uri, cseq, user_agent, media, is_downstream, is_caller_cseq, caller_ip=signaling_ip, destination_ip=destination_ip, username=username)
             self.sessions[(call_id, from_tag)] = session
             self.relay.add_session(dispatcher)
         return session.get_local_media(is_downstream, cseq, is_caller_cseq)
