@@ -101,9 +101,10 @@ class RadiusAccounting(EventQueue, pyrad.client.Client):
         EventQueue.__init__(self, self.do_accounting)
 
     def do_accounting(self, stats, session):
+        username = session.username if session.username else 'mediaproxy@default'
         attrs = {}
         attrs['Acct-Status-Type'] = 'Update'
-        attrs['User-Name'] = 'mediaproxy@default'
+        attrs['User-Name'] = username
         attrs['Acct-Session-Id'] = stats['call_id']
         attrs['Acct-Session-Time'] = stats['duration']
         attrs['Acct-Input-Octets'] = sum(stream_stats['caller_bytes'] for stream_stats in stats['streams'])

@@ -510,7 +510,7 @@ class MediaStream(object):
 
 
 class Session(object):
-    def __init__(self, manager, dispatcher, call_id, from_tag, from_uri, to_tag, to_uri, cseq, user_agent, media_list, is_downstream, is_caller_cseq, mark=0, caller_ip=None, destination_ip=None):
+    def __init__(self, manager, dispatcher, call_id, from_tag, from_uri, to_tag, to_uri, cseq, user_agent, media_list, is_downstream, is_caller_cseq, mark=0, caller_ip=None, destination_ip=None, username=None):
         self.manager = manager
         self.dispatcher = dispatcher
         self.session_id = base64_encode(hashlib.md5(call_id.encode()).digest()).rstrip(b'=')
@@ -529,6 +529,7 @@ class Session(object):
         self.streams = {}
         self.start_time = None
         self.end_time = None
+        self.username = username
         self.logger = SessionLogger(self)
         self.logger.info('created: from-tag {0.from_tag})'.format(self))
         self.update_media(cseq, to_tag, user_agent, media_list, is_downstream, is_caller_cseq)
