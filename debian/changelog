@@ -4,8 +4,15 @@ mediaproxy (4.1.0) unstable; urgency=medium
   * Added support for routing media between multiple interfaces
   * Added note about enabling connection tracking in newer kernels
   * Increase the number of default ports
+  * Allow passing json data from signaling_ip avp to media session
+  * Add username attribute to Session
+  * Pass session to accounting request
+  * Added relay status to statistics
+  * Log call id when user selected relay is not available
+  * Print dispatcher address in log lines
+  * Add log for when cannot write to network socket
 
- -- Adrian Georgescu <ag@ag-projects.com>  Sat, 16 Nov 2024 11:26:16 +0100
+ -- Adrian Georgescu <ag@ag-projects.com>  Wed, 9 Apr 2025 11:26:16 +0100
 
 mediaproxy (4.0.5) unstable; urgency=medium
 
