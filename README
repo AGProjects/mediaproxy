@@ -248,7 +248,7 @@ The information sent in the radius packet is shown below:
   Acct-Session-Time = call duration
   Acct-Input-Octets = bytes received from caller
   Acct-Output-Octets = bytes received from callee
-  NAS-IP-Address = media-relay address
+  NAS-IP-Address = media-relay address (can be set by the dispatcher or auto-detected)
   Sip-User-Agents = caller + callee user agents
   Sip-Applications = "Audio", "Video", ...
   Media-Codecs = codecs used by streams (comma separated)
