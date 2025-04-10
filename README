@@ -196,6 +196,26 @@ For more information about TLS certificates and how to generate your own,
 check the tls/README file.
 
 
+Performance
+-----------
+
+Except during the SIP call setup, when the RTP packets have to be learned by
+the relay from both caller and callee, Media Proxy relay component does not
+stay in the path of the established RTP streams.  Once the first 4 packets
+are received (RTP and RTCP from both sides), two forwarding rules are
+inserted into the Linux Kernel, which then forwards packets automatically
+between the caller and the callee.  The number of calls that can be relayed
+depends only on the Linux kernel capacity to forward packets received on the
+network interfaces.
+
+Only network latency and packet loss can affect the perceived quality of
+audio and video calls.  This can be remedied by removing the loss on the
+receiving and transmitting network segment, by choosing a codec tolerant to
+packet loss, or by adding enough relays to handle the load, if the
+networking layer of each server is not able to handle the number of relayed
+packets.
+
+
 Accounting
 ----------
 
@@ -204,6 +224,11 @@ related to the media streams used by the call. MediaProxy has a modular
 interface to the accounting system, allowing for new modules to be easily
 implemented. Currently it supports database and radius backends. Multiple
 backends can be configured and used simultaneously.
+
+The lack of packets for a predefined timeout period (tipically 90 seconds
+but it can be adjusted) during the call will cause the kernel to trigger a
+user space notification, which will cause Media Proxy to instruct OpenSIPS
+to generate a BYE request to both end-points.
 
 
 Radius accounting
