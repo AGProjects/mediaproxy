@@ -269,8 +269,7 @@ Closing expired calls
 ---------------------
 
 MediaProxy supports closing calls for which all the media streams did
-timeout, but for which no BYE was received to close the call in the standard
-way.
+timeout. This will also happen if no BYE was received to close the call.
 
 This feature will only work, when the OpenSIPS mediaproxy module uses the
 engage_media_proxy() command to start MediaProxy for a given call. In this
