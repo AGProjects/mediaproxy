@@ -125,29 +125,12 @@ that are included as well as information about how to generate your own.
 
 MediaProxy is meant to be used together with OpenSIPS' mediaproxy module.
 
-This version of MediaProxy (2.0 or higher) cannot be used in combination
-with any version of OpenSIPS older than 1.4 or any components of MediaProxy
-older than 2.0. You must completely upgrade any previous installation of
-OpenSER to OpenSIPS to use this version of MediaProxy.
-
-No STUN or TURN support are required in the clients.
-
 The SIP User Agents must work symmetrically (that is to send and receive
 data on the same port for each stream), which is documented in RFC 4961.
 
-To display the history of the media streams CDRTool 6.5 or higher is
-required.
+To display the history of the media streams CDRTool application is needed.
 
-Some features that were present in the previous version have been removed:
-
-- Support for specifying media relays per domain has been discontinued
-- Support for DNS records has been discontinued
-- Support for asymmetric clients has been discontinued
-- Support for other operating systems than Linux has been discontinued
-  (only for the media relay, as the dispatcher has no such limitation)
-
-For information of how to install MediaProxy, please consult the INSTALL
-file.
+For information of how to install MediaProxy, please consult INSTALL.
 
 
 Important note
