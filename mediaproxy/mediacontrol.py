@@ -697,6 +697,7 @@ class Session(object):
         stats = dict((name, getattr(self, name)) for name in attributes)
         stats['caller_ua'] = self.caller_ua or 'Unknown'
         stats['callee_ua'] = self.callee_ua or 'Unknown'
+        stats['username'] = self.username
         stats['streams'] = streams = []
         stream_attributes = ('media_type', 'status', 'timeout_wait')
         streams_to_sort = []

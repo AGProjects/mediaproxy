@@ -612,7 +612,7 @@ class Dispatcher(object):
         if stats['start_time'] is not None:
             for accounting in self.accounting:
                 try:
-                    accounting.do_accounting(stats, session)
+                    accounting.do_accounting(stats)
                 except Exception as e:
                     log.exception('An unhandled error occurred while doing accounting: %s' % e)
 
