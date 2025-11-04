@@ -1,3 +1,9 @@
+mediaproxy (4.1.1) unstable; urgency=medium
+
+  * Fixed accounting 
+
+ -- Tijmen de Mes <tijmen@ag-projects.com>  Tue, 04 Nov 2025 14:35:08 +0100
+
 mediaproxy (4.1.0) unstable; urgency=medium
 
   * Publish statistics to Thor network
