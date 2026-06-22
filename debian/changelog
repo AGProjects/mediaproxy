@@ -1,3 +1,9 @@
+mediaproxy (4.1.2) unstable; urgency=medium
+
+  * Fixed stale code causing media loss on 2 calls from the same ip
+
+ -- Tijmen de Mes <tijmen@ag-projects.com>  Mon, 22 Jun 2026 11:10:39 +0200
+
 mediaproxy (4.1.1) unstable; urgency=medium
 
   * Fixed accounting 
