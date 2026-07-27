@@ -101,7 +101,7 @@ class RadiusAccounting(EventQueue, pyrad.client.Client):
         EventQueue.__init__(self, self.do_accounting)
 
     def do_accounting(self, stats):
-        username = stats['username'] if stats['username'] is not None else 'mediaproxy@default'
+        username = stats.get('username') or 'mediaproxy@default'
         attrs = {}
         attrs['Acct-Status-Type'] = 'Update'
         attrs['User-Name'] = username
